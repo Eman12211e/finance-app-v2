@@ -102,3 +102,65 @@
   .lab-grid { grid-template-columns: minmax(0, 1fr); }
   .lab, .tabs { padding-left: 12px; padding-right: 12px; }
 }
+
+/* ---- Understand Before You Sign ---- */
+.sign[hidden] { display: none; }
+.sign { display: grid; gap: var(--gap); padding: var(--gap) 24px; max-width: 1400px; margin: 0 auto; }
+.sign-banner { background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 12px; }
+.sign-legend { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: .9rem; }
+.sign-layout { display: grid; gap: var(--gap); grid-template-columns: 220px minmax(0, 1fr) 300px; align-items: start; }
+.sign-doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sign-doc-button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface); color: var(--text); }
+.sign-doc-button[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.sign-doc-title { font-weight: 600; }
+.sign-view { display: grid; gap: var(--gap); min-width: 0; }
+.sign-small { font-size: .85rem; }
+.sign-sources { margin: 0; padding-left: 18px; font-size: .9rem; }
+.sign-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.sign-filter { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; }
+.sign-filter[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sign-row { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.sign-row[hidden] { display: none; }
+.sign-heading { grid-column: 1 / -1; margin: 0; }
+.sign-original { border-radius: 8px; padding: 12px; background: var(--bg); border-left: 4px solid var(--border); }
+.sign-origin-badge { display: inline-block; font-weight: 700; font-size: .8rem; border-radius: 6px; padding: 2px 8px;
+  margin: 0 0 4px; border: 1px solid currentColor; }
+.sign-origin-official .sign-origin-badge, li.sign-origin-official strong { color: var(--up); }
+.sign-origin-official { border-left-color: var(--up); }
+.sign-origin-firm .sign-origin-badge, li.sign-origin-firm strong { color: var(--accent); }
+.sign-origin-firm { border-left-color: var(--accent); }
+.sign-origin-summary .sign-origin-badge, li.sign-origin-summary strong { color: var(--muted); }
+.sign-origin-example .sign-origin-badge, li.sign-origin-example strong { color: var(--down); }
+.sign-origin-example { border-left-color: var(--down); border-left-style: dashed; }
+.sign-legend li { background: none; border: 0; padding: 0; }
+.sign-passage { margin: 8px 0; font-family: Georgia, "Times New Roman", serif; line-height: 1.55; }
+.sign-cite { color: var(--muted); margin: 0; }
+.sign-block { margin-bottom: 10px; }
+.sign-block h4 { margin-bottom: 4px; }
+.sign-list, .sign-questions, .sign-checklist-items { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.sign-questions { list-style: none; padding-left: 0; }
+.sign-question label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.sign-question input { margin-top: 5px; width: 18px; height: 18px; flex: none; }
+.sign-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+.sign-tag { font-size: .75rem; border-radius: 999px; padding: 0 8px; background: var(--accent-soft); }
+.sign-checklist { position: sticky; top: 12px; }
+.sign-checklist-actions { display: flex; gap: 8px; margin-top: 12px; }
+.sign-print-note { display: none; }
+@media (max-width: 1100px) {
+  .sign-layout { grid-template-columns: 200px minmax(0, 1fr); }
+  .sign-checklist { grid-column: 1 / -1; position: static; }
+}
+@media (max-width: 720px) {
+  .sign { padding-left: 12px; padding-right: 12px; }
+  .sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  body.print-checklist { background: #fff; }
+  body.print-checklist * { visibility: hidden; }
+  body.print-checklist #sign-checklist, body.print-checklist #sign-checklist * { visibility: visible; }
+  body.print-checklist #sign-checklist { position: absolute; left: 0; top: 0; width: 100%; border: 0; }
+  body.print-checklist .sign-checklist-actions, body.print-checklist #sign-checklist .muted { display: none; }
+  body.print-checklist .sign-print-note { display: block; }
+  body.print-checklist #disclaimer-footer { display: none; }
+}

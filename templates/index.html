@@ -19,6 +19,7 @@
   <script src="/static/js/accounts.js" defer></script>
   <script src="/static/js/sentiment.js" defer></script>
   <script src="/static/js/lab.js" defer></script>
+  <script src="/static/js/sign.js" defer></script>
   <script src="/static/js/app.js" defer></script>
 </head>
 <body>
@@ -36,6 +37,7 @@
   <nav class="tabs" aria-label="Sections">
     <button type="button" class="tab" data-tab="explore" aria-pressed="true">Explore</button>
     <button type="button" class="tab" data-tab="lab" aria-pressed="false">AI Comparison Lab</button>
+    <button type="button" class="tab" data-tab="sign" aria-pressed="false">Understand Before You Sign</button>
   </nav>
 
   <main class="layout" id="explore-view">
@@ -54,6 +56,7 @@
   </main>
 
   <section id="lab-root" class="lab" aria-labelledby="lab-title" hidden></section>
+  <section id="sign-root" class="sign" aria-labelledby="sign-title" hidden></section>
 
   <div id="checklist-root"></div>
   <div id="accounts-root"></div>

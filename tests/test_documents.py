@@ -177,3 +177,45 @@ def test_source_checker_matches_ignoring_whitespace_and_flags_changes():
     assert rows == [("OK", "s1", "matches source"), ("OK", "s1", "matches source"),
                     ("FAIL", "s2", "not found: You can lose more funds than you deposit")]
     assert checker.check(doc, {})[0][0] == "MANUAL"
+
+
+# ---- interface (static checks; the page itself is checked in a real browser before release) ----
+
+def read(*parts):
+    with open(os.path.join(ROOT, *parts), encoding="utf-8") as f:
+        return f.read()
+
+
+def test_page_has_sign_tab_and_scripts_in_order(client):
+    html = client.get("/").get_data(as_text=True)
+    assert 'data-tab="sign"' in html and 'id="sign-root"' in html
+    assert html.index("/static/js/accounts.js") < html.index("/static/js/sign.js") < html.index("/static/js/app.js")
+
+
+def test_sign_js_collects_and_stores_nothing():
+    js = read("static", "js", "sign.js")
+    for banned in ("innerHTML", "fetch(", "localStorage", "sessionStorage", "document.cookie", "XMLHttpRequest",
+                   "textarea", '"text"', '"file"', '"password"', "FormData", "postDocument"):
+        assert banned not in js, banned
+    assert re.findall(r'\.type = "(\w+)"', js) and set(re.findall(r'box\.type = "(\w+)"', js)) == {"checkbox"}
+    assert "Nothing you select is saved or sent." in js
+    assert "never asks for your Social" in js and "It never signs, submits or opens anything for you." in js
+
+
+def test_sign_js_labels_every_origin_and_links_accounts_101():
+    js = read("static", "js", "sign.js")
+    for label in ("Official text", "Firm disclosure", "Summary", "Fictional example"):
+        assert label in js
+    assert "window.Accounts.open(s.accounts_101)" in js
+    assert "function open(entryName)" in read("static", "js", "accounts.js")
+
+
+def test_checklist_prints_alone_and_layout_stacks_on_phones():
+    css = read("static", "css", "features.css")
+    assert "@media print" in css and "body.print-checklist #sign-checklist" in css
+    assert ".sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }" in css
+
+
+def test_tabs_are_owned_by_app_js():
+    assert "showTab" in read("static", "js", "app.js")
+    assert '".tab"' not in read("static", "js", "lab.js") and '".tab"' not in read("static", "js", "sign.js")

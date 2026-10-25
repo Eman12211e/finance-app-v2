@@ -220,14 +220,8 @@
     root.appendChild(results);
   }
 
-  function show(tab) {
-    var explore = document.getElementById("explore-view");
-    explore.hidden = tab !== "explore";
-    root.hidden = tab !== "lab";
-    document.querySelectorAll(".tab").forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.dataset.tab === tab));
-    });
-    if (tab === "lab" && !config) {
+  function show() {
+    if (root && !config) {
       root.textContent = "";
       root.appendChild(el("p", "muted", "Loading the Lab…"));
       window.Api.getLabConfig().then(function (env) {
@@ -245,10 +239,7 @@
   window.Lab = {
     init: function () {
       root = document.getElementById("lab-root");
-      if (!root) return;
-      document.querySelectorAll(".tab").forEach(function (b) {
-        b.addEventListener("click", function () { show(b.dataset.tab); });
-      });
     },
+    show: show,
   };
 })();

@@ -51,6 +51,12 @@
         body: JSON.stringify({ statement_id: statementId }),
       });
     },
+    getDocuments: function () {
+      return request("/api/documents");
+    },
+    getDocument: function (id) {
+      return request("/api/documents/" + encodeURIComponent(id));
+    },
     getLabConfig: function () {
       return request("/api/lab/config");
     },

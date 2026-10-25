@@ -218,14 +218,23 @@
     }
   }
 
-  function open() {
+  // entryName (optional) expands and focuses one account type, e.g. "Margin brokerage".
+  function open(entryName) {
     var root = document.getElementById("accounts-root");
     if (!root) return;
     if (!backdrop) build(root);
-    if (!backdrop.hidden) return;
-    opener = document.activeElement;
-    backdrop.hidden = false;
-    dialog.focus();
+    if (backdrop.hidden) {
+      opener = document.activeElement;
+      backdrop.hidden = false;
+      dialog.focus();
+    }
+    if (typeof entryName !== "string") return;
+    var button = Array.prototype.find.call(dialog.querySelectorAll(".acct-toggle"), function (b) {
+      return b.textContent === entryName;
+    });
+    if (!button) return;
+    if (button.getAttribute("aria-expanded") !== "true") toggle(button, document.getElementById(button.getAttribute("aria-controls")));
+    button.focus();
   }
 
   function close() {
