@@ -1,0 +1,68 @@
+{
+  "checked_at": "2026-10-24T22:41:29Z",
+  "results": [
+    {
+      "provider": "finnhub",
+      "endpoint": "quote",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "finnhub",
+      "endpoint": "profile2",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "finnhub",
+      "endpoint": "earnings",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "finnhub",
+      "endpoint": "calendar_earnings",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "fmp",
+      "endpoint": "profile",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "fmp",
+      "endpoint": "profile_etf",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "fmp",
+      "endpoint": "income_statement_q",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "fmp",
+      "endpoint": "balance_sheet_q",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    },
+    {
+      "provider": "fmp",
+      "endpoint": "dividends",
+      "ok": true,
+      "status": 200,
+      "note": "usable data"
+    }
+  ]
+}

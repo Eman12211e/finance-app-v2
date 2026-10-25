@@ -1,0 +1,9 @@
+# OPTIONAL: only for the Sentiment Explorer (local ProsusAI/finbert on CPU). The core app and tests do not need these.
+# Install:  venv\Scripts\python -m pip install -r requirements-sentiment.txt
+# Then download the model once:  venv\Scripts\python scripts\download_sentiment_model.py
+# Model weights are CC BY-NC-SA 4.0 (non-commercial). They go to the Hugging Face cache outside this repo; never commit them.
+torch==2.14.1
+transformers==5.20.2
+tokenizers==0.23.3
+safetensors==0.8.0
+huggingface-hub==2.3.0

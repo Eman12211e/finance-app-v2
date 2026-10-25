@@ -1,0 +1,280 @@
+{
+  "generated_at": "2026-10-24T22:27:18Z",
+  "generator": "yfinance",
+  "tickers": {
+    "AAPL": {
+      "snapshot": {
+        "ticker": "AAPL",
+        "name": "Apple Inc.",
+        "is_etf": false,
+        "exchange": "NasdaqGS",
+        "currency": "USD",
+        "sector": "Technology",
+        "description_full": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company offers iPhone, a line of smartphones; Mac, a line of personal computers; iPad, a line of multi-purpose tablets; and wearables, home, and accessories comprising AirPods, Apple Vision Pro, Apple TV, Apple Watch, Beats products, and HomePod, as well as Apple branded and third-party accessories. It also provides AppleCare support and cloud services; and operates various platforms, including the App Store that allows customers to discover and download applications and digital content, such as books, music, video, games, and podcasts, as well as advertising services include third-party licensing arrangements and its own advertising platforms. In addition, the company offers various subscription-based services, such as Apple Arcade, a game subscription service; Apple Fitness+, a personalized fitness service; Apple Music, which offers users a curated listening experience with on-demand radio stations; Apple News+, a subscription news and magazine service; Apple TV, which offers original content and live sports; Apple Card, a co-branded credit card; and Apple Pay, a cashless payment service, as well as licenses its intellectual property. The company serves consumers, and small and mid-sized businesses; and the education, enterprise, and government markets. It distributes third-party applications for its products through the App Store. The company also sells its products through its retail and online stores, and direct sales force; and third-party cellular network carriers and resellers. The company was formerly known as Apple Computer, Inc. and changed its name to Apple Inc. in January 2007. Apple Inc. was founded in 1976 and is headquartered in Cupertino, California.",
+        "price": 347.725,
+        "change_percent": -0.14215,
+        "market_cap": 5074761285632.0,
+        "dividend_yield": 0.31,
+        "expense_ratio": null
+      },
+      "financials": {
+        "quarters": [
+          {
+            "period_end": "2026-06-30",
+            "revenue": 109417000000.0,
+            "net_income": 29789000000.0,
+            "cash_and_equivalents": 39544000000.0
+          },
+          {
+            "period_end": "2026-03-31",
+            "revenue": 111184000000.0,
+            "net_income": 29578000000.0,
+            "cash_and_equivalents": 45572000000.0
+          },
+          {
+            "period_end": "2025-12-31",
+            "revenue": 143756000000.0,
+            "net_income": 42097000000.0,
+            "cash_and_equivalents": 45317000000.0
+          },
+          {
+            "period_end": "2025-09-30",
+            "revenue": 102466000000.0,
+            "net_income": 27466000000.0,
+            "cash_and_equivalents": 35934000000.0
+          },
+          {
+            "period_end": "2025-06-30",
+            "revenue": 94036000000.0,
+            "net_income": 23434000000.0,
+            "cash_and_equivalents": 36269000000.0
+          }
+        ],
+        "eps": {
+          "period_end": "2026-06-30",
+          "report_date": null,
+          "actual": 2.02,
+          "estimate": 1.89243
+        },
+        "dividend": {
+          "pays_dividend": true,
+          "last_amount": 0.27,
+          "last_ex_date": "2026-08-10"
+        },
+        "next_earnings_date": "2026-11-02"
+      }
+    },
+    "MSFT": {
+      "snapshot": {
+        "ticker": "MSFT",
+        "name": "Microsoft Corporation",
+        "is_etf": false,
+        "exchange": "NasdaqGS",
+        "currency": "USD",
+        "sector": "Technology",
+        "description_full": "Microsoft Corporation, a technology company, develops and supports a portfolio of technology solutions for individuals and businesses worldwide. Its products include operating systems, server applications, business solution applications, software development tools, desktop and server management tools, and video games; and devices, such as PCs, tablets, gaming and entertainment consoles, other intelligent devices, and related accessories. The company's Productivity and Business Processes segment offers Microsoft 365 Commercial, Enterprise Mobility + Security, Power BI, Exchange, SharePoint, Microsoft Teams, Microsoft 365 Security and Compliance, Microsoft 365 Copilot, and Windows Commercial on-premises and Office licensed on-premises. This segment also provides Microsoft 365 Consumer products and cloud services; LinkedIn, including talent solutions, marketing solutions, subscriptions, and sales solutions; Dynamics 365, a set of cloud-based applications; and on-premises ERP and CRM applications. Its Intelligent Cloud segment offers server products and cloud services; cloud and AI consumption-based services, GitHub cloud services, health and life sciences cloud services, as well as virtual desktop offerings, and other cloud services; SQL Server, Windows Server, Visual Studio, System Center, and related client access licenses; and enterprise support services, industry solutions, Microsoft partner network, and learning experience. The company's More Personal Computing segment provides Windows OEM licensing and devices comprising Surface and PC accessories; XBOX hardware, and XBOX first- and third-party content and services; XBOX Game Pass and other subscriptions; XBOX Cloud Gaming, advertising, and other cloud services; and search advertising consisting of Bing, Copilot, Microsoft News, Microsoft Edge, and third-party affiliates. It sells its products through partners and retail networks. The company was founded in 1975 and is headquartered in Redmond, Washington.",
+        "price": 524.51,
+        "change_percent": 0.658247,
+        "market_cap": 3894773022720.0,
+        "dividend_yield": 0.75,
+        "expense_ratio": null
+      },
+      "financials": {
+        "quarters": [
+          {
+            "period_end": "2026-06-30",
+            "revenue": 90007000000.0,
+            "net_income": 35766000000.0,
+            "cash_and_equivalents": 20935000000.0
+          },
+          {
+            "period_end": "2026-03-31",
+            "revenue": 82886000000.0,
+            "net_income": 31778000000.0,
+            "cash_and_equivalents": 32105000000.0
+          },
+          {
+            "period_end": "2025-12-31",
+            "revenue": 81273000000.0,
+            "net_income": 38458000000.0,
+            "cash_and_equivalents": 24296000000.0
+          },
+          {
+            "period_end": "2025-09-30",
+            "revenue": 77673000000.0,
+            "net_income": 27747000000.0,
+            "cash_and_equivalents": 28849000000.0
+          },
+          {
+            "period_end": "2025-06-30",
+            "revenue": 76441000000.0,
+            "net_income": 27233000000.0,
+            "cash_and_equivalents": 30242000000.0
+          }
+        ],
+        "eps": {
+          "period_end": "2026-06-30",
+          "report_date": null,
+          "actual": 4.74,
+          "estimate": 4.23939
+        },
+        "dividend": {
+          "pays_dividend": true,
+          "last_amount": 0.91,
+          "last_ex_date": "2026-08-20"
+        },
+        "next_earnings_date": "2026-10-28"
+      }
+    },
+    "KO": {
+      "snapshot": {
+        "ticker": "KO",
+        "name": "The Coca-Cola Company",
+        "is_etf": false,
+        "exchange": "NYSE",
+        "currency": "USD",
+        "sector": "Consumer Defensive",
+        "description_full": "The Coca-Cola Company, a beverage company, manufactures and sells various nonalcoholic beverages in the United States and internationally. The company provides Trademark Coca-Cola, sparkling soft drinks and flavors; water, sports, coffee, and tea; juice, value-added dairy, and plant-based beverages; and emerging beverages. It also offers beverage concentrates and syrups, as well as fountain syrups to fountain retailers comprising restaurants and convenience stores. The company sells its products under the Coca-Cola, Diet Coke/Coca-Cola Light, Coca-Cola Zero Sugar, caffeine free Diet Coke, Cherry Coke, Fanta, Sprite, Simply, Fanta Orange, Fanta Zero Orange, Fanta Zero Sugar, Fanta Apple, Sprite Zero Sugar, Simply Orange, Simply Apple, Simply Grapefruit, Fresca, Schweppes, Thums Up, Aquarius, Ayataka, BODYARMOR, Ciel, Costa, Crystal, Dasani, Fuze Tea, Georgia, glac\u00e9au smartwater, glac\u00e9au vitaminwater, Gold Peak, I LOHAS, Powerade, Topo Chico, Core Power, Del Valle, fairlife, innocent, Maaza, Minute Maid, Minute Maid Pulpy, Santa Clara, and dogadan brands. It operates through a network of independent bottling partners, distributors, wholesalers, and retailers, as well as through bottling and distribution operators. The Coca-Cola Company was founded in 1886 and is headquartered in Atlanta, Georgia.",
+        "price": 92.71,
+        "change_percent": -2.75855,
+        "market_cap": 398889320448.0,
+        "dividend_yield": 2.29,
+        "expense_ratio": null
+      },
+      "financials": {
+        "quarters": [
+          {
+            "period_end": "2026-06-30",
+            "revenue": 13380000000.0,
+            "net_income": 4425000000.0,
+            "cash_and_equivalents": 12907000000.0
+          },
+          {
+            "period_end": "2026-03-31",
+            "revenue": 12472000000.0,
+            "net_income": 3924000000.0,
+            "cash_and_equivalents": 10574000000.0
+          },
+          {
+            "period_end": "2025-12-31",
+            "revenue": 11822000000.0,
+            "net_income": 2271000000.0,
+            "cash_and_equivalents": 10270000000.0
+          },
+          {
+            "period_end": "2025-09-30",
+            "revenue": 12455000000.0,
+            "net_income": 3696000000.0,
+            "cash_and_equivalents": 12732000000.0
+          },
+          {
+            "period_end": "2025-06-30",
+            "revenue": 12535000000.0,
+            "net_income": 3810000000.0,
+            "cash_and_equivalents": 9590000000.0
+          }
+        ],
+        "eps": {
+          "period_end": "2026-06-30",
+          "report_date": null,
+          "actual": 0.97,
+          "estimate": 0.93225
+        },
+        "dividend": {
+          "pays_dividend": true,
+          "last_amount": 0.53,
+          "last_ex_date": "2026-09-15"
+        },
+        "next_earnings_date": "2026-10-27"
+      }
+    },
+    "NVDA": {
+      "snapshot": {
+        "ticker": "NVDA",
+        "name": "NVIDIA Corporation",
+        "is_etf": false,
+        "exchange": "NasdaqGS",
+        "currency": "USD",
+        "sector": "Technology",
+        "description_full": "NVIDIA Corporation operates as a data center scale AI infrastructure company in the United States, Taiwan, China, Hong Kong, Europe, and internationally. It operates through Compute & Networking, and Graphics segments. The Compute & Networking segment provides data center accelerated computing and networking platforms and artificial intelligence solutions and software, and automotive platforms and autonomous and electric vehicle solutions, including software. The Graphics segment offers GeForce GPUs for gaming and PCs; Quadro/NVIDIA RTX GPUs for enterprise workstation graphics. The company's products are used in gaming, professional visualization, data center, and automotive markets. It sells its products to original equipment manufacturers, original device manufacturers, system integrators and distributors, independent software vendors, cloud service providers, add-in board manufacturers, distributors, automotive manufacturers and tier-1 automotive suppliers, and other ecosystem participants. It has a collaboration with Cisco to develop Ultra-Dense Small Form Factor Pluggable (USFP), a high-density optical module pluggable transceiver. It has a collaboration with ChipAgents to develop Build-A-Chip-Bench, a benchmark for AI agents carrying chip design tasks and The Company has a strategic alliance with MediaTek to build the next generations of AI computing platforms. NVIDIA Corporation was incorporated in 1993 and is headquartered in Santa Clara, California.",
+        "price": 210.96,
+        "change_percent": -0.589039,
+        "market_cap": 5094050889728.0,
+        "dividend_yield": 0.47,
+        "expense_ratio": null
+      },
+      "financials": {
+        "quarters": [
+          {
+            "period_end": "2026-07-31",
+            "revenue": 96221000000.0,
+            "net_income": 59688000000.0,
+            "cash_and_equivalents": 22443000000.0
+          },
+          {
+            "period_end": "2026-04-30",
+            "revenue": 81615000000.0,
+            "net_income": 58321000000.0,
+            "cash_and_equivalents": 13237000000.0
+          },
+          {
+            "period_end": "2026-01-31",
+            "revenue": 68127000000.0,
+            "net_income": 42960000000.0,
+            "cash_and_equivalents": 10605000000.0
+          },
+          {
+            "period_end": "2025-10-31",
+            "revenue": 57006000000.0,
+            "net_income": 31910000000.0,
+            "cash_and_equivalents": 11486000000.0
+          },
+          {
+            "period_end": "2025-07-31",
+            "revenue": 46743000000.0,
+            "net_income": 26422000000.0,
+            "cash_and_equivalents": 11639000000.0
+          }
+        ],
+        "eps": {
+          "period_end": "2026-07-31",
+          "report_date": null,
+          "actual": 2.22,
+          "estimate": 2.09113
+        },
+        "dividend": {
+          "pays_dividend": true,
+          "last_amount": 0.25,
+          "last_ex_date": "2026-09-10"
+        },
+        "next_earnings_date": "2026-11-17"
+      }
+    },
+    "VOO": {
+      "snapshot": {
+        "ticker": "VOO",
+        "name": "Vanguard S&P 500 ETF",
+        "is_etf": true,
+        "exchange": "NYSEArca",
+        "currency": "USD",
+        "sector": null,
+        "description_full": "The fund manager employs an indexing investment approach designed to track the performance of the Standard & Poor's 500 Index, a widely recognized benchmark of U.S. stock market performance that is dominated by the stocks of large U.S. companies. The advisor attempts to replicate the target index by investing all, or substantially all, of its assets in the stocks that make up the index, holding each stock in approximately the same proportion as its weighting in the index. The fund is non-diversified.",
+        "price": 698.58,
+        "change_percent": -0.529684,
+        "market_cap": null,
+        "dividend_yield": 1.06,
+        "expense_ratio": 0.03
+      },
+      "financials": {
+        "quarters": [],
+        "eps": null,
+        "dividend": {
+          "pays_dividend": true,
+          "last_amount": 1.823,
+          "last_ex_date": "2026-09-28"
+        },
+        "next_earnings_date": null
+      }
+    }
+  }
+}

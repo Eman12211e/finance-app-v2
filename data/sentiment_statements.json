@@ -1,0 +1,11 @@
+{
+  "note": "These example statements are fictional and written for this app. They are not real news and do not describe a real company.",
+  "statements": [
+    {"id": "outlook-raised", "text": "The company raised its full-year sales outlook after a strong quarter."},
+    {"id": "investigation", "text": "Regulators opened an investigation into the company's accounting practices."},
+    {"id": "annual-meeting", "text": "The company will hold its annual shareholder meeting next month."},
+    {"id": "store-closures", "text": "The retailer announced store closures as customer demand weakened."},
+    {"id": "supply-deal", "text": "The manufacturer signed a long-term supply agreement with a major customer."},
+    {"id": "new-cfo", "text": "The board appointed a new chief financial officer."}
+  ]
+}

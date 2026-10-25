@@ -1,0 +1,56 @@
+<!doctype html>
+<!-- Owner: Agent B. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Money Basics</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/features.css">
+  <script src="/static/js/api.js" defer></script>
+  <script src="/static/js/profile.js" defer></script>
+  <script src="/static/js/watchlist.js" defer></script>
+  <script src="/static/js/company.js" defer></script>
+  <script src="/static/js/chat.js" defer></script>
+  <script src="/static/js/alerts.js" defer></script>
+  <script src="/static/js/checklist.js" defer></script>
+  <script src="/static/js/risk_education.js" defer></script>
+  <script src="/static/js/accounts.js" defer></script>
+  <script src="/static/js/sentiment.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="brand">Money Basics</h1>
+    <div class="header-actions">
+      <button id="profile-chip" type="button" class="chip">Set your profile</button>
+      <div id="alerts-root"></div>
+      <button id="checklist-open" type="button" class="button-secondary">Before you buy</button>
+      <button id="accounts-open" type="button" class="button-secondary">Learn about accounts</button>
+      <button id="sentiment-open" type="button" class="button-secondary" hidden>Sentiment Explorer</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="card col-watchlist" aria-labelledby="watchlist-title">
+      <h2 id="watchlist-title">Watchlist</h2>
+      <div id="watchlist-root"></div>
+      <section id="risk-education" aria-labelledby="risk-education-title"></section>
+    </aside>
+    <section class="col-company" aria-label="Company">
+      <div id="snapshot-root" class="card"></div>
+      <div id="earnings-root" class="card"></div>
+    </section>
+    <aside class="card col-chat" aria-label="Chat">
+      <div id="chat-root"></div>
+    </aside>
+  </main>
+
+  <div id="checklist-root"></div>
+  <div id="accounts-root"></div>
+  <div id="sentiment-root"></div>
+
+  <footer id="disclaimer-footer">This app is for education only. It does not give financial advice. Investing has risk, and you can lose money. Talk to a licensed professional before you make decisions.</footer>
+</body>
+</html>

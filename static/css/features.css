@@ -1,0 +1,68 @@
+/* Owner: Agent D. Alerts, toast and checklist only. Reuses style.css tokens; every selector is scoped. */
+
+/* ---- bell + badge ---- */
+#alerts-root { position: relative; }
+#alerts-root .fe-bell {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 36px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+#alerts-root .fe-bell:hover { border-color: var(--accent); }
+#alerts-root .fe-badge {
+  position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px;
+  border-radius: 999px; background: var(--accent); color: #fff;
+  font-size: .75rem; font-weight: 700; line-height: 20px; text-align: center;
+}
+#alerts-root .fe-badge[hidden] { display: none; }
+
+/* ---- dropdown (position set by alerts.js) ---- */
+#alerts-root .fe-panel {
+  position: fixed; z-index: 45; max-height: 60vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .12); padding: 16px;
+}
+#alerts-root .fe-panel[hidden] { display: none; }
+#alerts-root .fe-panel-title { font-size: 1.05rem; margin: 0 0 8px; }
+#alerts-root .fe-alert { border-top: 1px solid var(--border); padding: 10px 0; }
+#alerts-root .fe-alert:first-child { border-top: 0; }
+#alerts-root .fe-alert-title { font-size: 1rem; margin: 6px 0 4px; }
+#alerts-root .fe-alert-body, #alerts-root .fe-empty { margin: 0; color: var(--text); }
+#alerts-root .fe-empty { color: var(--muted); }
+
+/* ---- simulated label: outlined pill, clearly visible ---- */
+#alerts-root .fe-label, .fe-toast .fe-label {
+  display: inline-block; padding: 1px 10px; border-radius: 999px;
+  border: 1.5px solid #b45309; color: #92400e; background: #fffbeb;
+  font-size: .78rem; font-weight: 700;
+}
+
+/* ---- toast ---- */
+.fe-toast {
+  /* z-index: above the onboarding modal (50) so a first visit still sees it, below the checklist modal (55) */
+  position: fixed; top: 76px; right: 16px; z-index: 52; width: min(360px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid #b45309;
+  border-radius: var(--radius); box-shadow: 0 8px 24px rgba(15, 23, 42, .15); padding: 12px 14px;
+}
+.fe-toast .fe-toast-title { font-weight: 700; margin: 6px 0 2px; }
+.fe-toast .fe-toast-body { margin: 0; }
+
+/* ---- checklist modal ---- */
+#checklist-root .fe-backdrop {
+  position: fixed; inset: 0; z-index: 55; padding: 16px;
+  display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .45);
+}
+#checklist-root .fe-backdrop[hidden] { display: none; }
+#checklist-root .fe-dialog {
+  width: 100%; max-width: 480px; max-height: calc(100vh - 32px); overflow-y: auto;
+  background: var(--surface); border-radius: var(--radius); padding: 24px;
+}
+#checklist-root .fe-dialog-title { font-size: 1.2rem; margin: 0 0 12px; }
+#checklist-root .fe-checklist { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 10px; }
+#checklist-root .fe-checklist li { display: flex; gap: 10px; align-items: flex-start; }
+#checklist-root .fe-checklist input { width: 18px; height: 18px; margin-top: 3px; flex: none; }
+#checklist-root .fe-note { color: var(--muted); font-size: .95rem; }
+#checklist-root .fe-close {
+  margin-top: 8px; border-radius: 999px; padding: 6px 16px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+#checklist-root .fe-close:hover { border-color: var(--accent); }
