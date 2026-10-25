@@ -37,6 +37,8 @@
 }
 
 /* ---- toast ---- */
+/* The simulated alert toast belongs to Explore; hide it over the Lab and Understand Before You Sign. */
+body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .fe-toast {
   /* z-index: above the onboarding modal (50) so a first visit still sees it, below the checklist modal (55) */
   position: fixed; top: 76px; right: 16px; z-index: 52; width: min(360px, calc(100vw - 32px));

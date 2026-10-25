@@ -270,6 +270,11 @@ def test_checklist_prints_alone_and_layout_stacks_on_phones():
     assert ".sign-top { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) 360px;" in css
 
 
+def test_alert_toast_only_shows_on_explore():
+    assert "document.body.dataset.tab = tab;" in read("static", "js", "app.js")
+    assert 'body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }' in read("static", "css", "features.css")
+
+
 def test_tabs_are_owned_by_app_js():
     assert "showTab" in read("static", "js", "app.js")
     assert '".tab"' not in read("static", "js", "lab.js") and '".tab"' not in read("static", "js", "sign.js")

@@ -17,6 +17,7 @@
   // Tabs: each view is a section; a module's show() loads its content the first time it is opened.
   var VIEWS = { explore: ["explore-view", null], lab: ["lab-root", window.Lab], sign: ["sign-root", window.Sign] };
   function showTab(tab) {
+    document.body.dataset.tab = tab;  // CSS keys tab-specific visibility (e.g. the alert toast) off this
     Object.keys(VIEWS).forEach(function (key) {
       var view = document.getElementById(VIEWS[key][0]);
       if (view) view.hidden = key !== tab;
