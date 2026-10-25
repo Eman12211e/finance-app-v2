@@ -82,6 +82,21 @@ To re-check quoted wording against the live HTML sources (free, no keys; PDF sou
 venv\Scripts\python scripts\check_document_sources.py
 ```
 
+## Brokerage Comparison Explorer (data and API, milestone B1)
+
+Dated, source-backed facts about brokerage firms in `data/brokerages/*.json`, with the comparison criteria in
+`data/brokerage_criteria.json`. Each fact cites its source (the firm's Form CRS hosted by FINRA, or the firm's own
+pricing pages), a short quote and the date it was verified; anything not verified is shown as Unknown. Firms are
+listed alphabetically and never ranked; promotions are not shown. B1 covers Charles Schwab and Fidelity.
+
+To re-check the facts against their sources (free; sites that refuse automated requests are listed for a manual check):
+
+```powershell
+venv\Scripts\python scripts\check_brokerage_sources.py
+```
+
+When a fact changes, update it, its `verified_on` date and the firm's `audit` list.
+
 ## Optional: Sentiment Explorer (local FinBERT)
 
 Off by default. It classifies fixed, fictional example statements with the Hugging Face model

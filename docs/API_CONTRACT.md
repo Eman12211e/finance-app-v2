@@ -524,3 +524,22 @@ location, passage, plain_english, why_it_matters, tags, look_for, questions, acc
 SEC-filed Form CRS), `summary` (our paraphrase of a FINRA or SIPC source, with at most one short quote), `example`
 (fictional text written for this app). Errors: `INVALID_REQUEST` 400 (malformed id), `DATA_NOT_AVAILABLE` 404.
 There is no route that accepts user data.
+
+
+## V2: Brokerage Comparison Explorer (B1, read-only)
+
+`GET /api/brokerages` → `data`: `firms` [{id, brand, legal_entity, crd, brokercheck_url}] (alphabetical), `criteria`
+[{id, label, explanation, fields [{id, label, type}], accounts_101?, guide? {doc, section}}], `filters` [{id, label}],
+`fee_examples` [{id, field, label, unit, note}], `excluded` [{brand, reason}], `notice`, `app_incentives`,
+`stale_after_days` (90).
+
+`GET /api/brokerages/compare?firms=a,b[&criteria=x,y][&filters=x,y][&quantity=n]` (2–5 firms, quantity 1–1000)
+→ `data`: `firms` (always alphabetical), `criteria` [{…, rows [{field, label, cells {firm_id: cell}}]}], `filters`
+[{id, label, results {firm_id: "meets" | "does_not_meet" | "unknown"}}], `filter_summary` {firm_id: {meets,
+does_not_meet, unknown}}, `fee_examples` [{…, quantity, results {firm_id: {cents, display} | null}}], `notice`,
+`app_incentives`, `excluded`, `stale_after_days`, `today`.
+
+A cell: `kind` (`firm_terms` = the firm's own published terms or filing; `regulatory_record` = what a regulator
+holds on file; `unknown`), `display`, `value`, `verified_on`, `age_days`, `stale`; known cells add `location`,
+`quote`, `source` {publisher, title, url, kind, effective, retrieved_on}; unknown cells add `reason`, `check_url`.
+Money values are integer cents. Unknown is never counted as "does not meet". Errors: `INVALID_REQUEST` 400.
