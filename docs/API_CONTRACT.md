@@ -533,7 +533,7 @@ There is no route that accepts user data.
 `fee_examples` [{id, field, label, unit, note}], `excluded` [{brand, reason}], `notice`, `app_incentives`,
 `stale_after_days` (90).
 
-`GET /api/brokerages/compare?firms=a,b[&criteria=x,y][&filters=x,y][&quantity=n]` (2–5 firms, quantity 1–1000)
+`GET /api/brokerages/compare?firms=a,b[&criteria=x,y][&filters=x,y][&quantity=n]` (2–4 firms, quantity 1–1000)
 → `data`: `firms` (always alphabetical), `criteria` [{…, rows [{field, label, cells {firm_id: cell}}]}], `filters`
 [{id, label, results {firm_id: "meets" | "does_not_meet" | "unknown"}}], `filter_summary` {firm_id: {meets,
 does_not_meet, unknown}}, `fee_examples` [{…, quantity, results {firm_id: {cents, display} | null}}], `notice`,

@@ -57,6 +57,14 @@
     getDocument: function (id) {
       return request("/api/documents/" + encodeURIComponent(id));
     },
+    getBrokerages: function () {
+      return request("/api/brokerages");
+    },
+    compareBrokerages: function (p) {
+      var query = new URLSearchParams({ firms: p.firms.join(","), criteria: p.criteria.join(","), quantity: String(p.quantity) });
+      if (p.filters.length) query.set("filters", p.filters.join(","));
+      return request("/api/brokerages/compare?" + query.toString());
+    },
     getLabConfig: function () {
       return request("/api/lab/config");
     },

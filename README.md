@@ -82,7 +82,13 @@ To re-check quoted wording against the live HTML sources (free, no keys; PDF sou
 venv\Scripts\python scripts\check_document_sources.py
 ```
 
-## Brokerage Comparison Explorer (data and API, milestone B1)
+## Compare Brokerages
+
+The "Compare Brokerages" tab shows 2 to 4 firms side by side (stacked cards on phones) for the topics you pick, with
+each fact's source, effective date and check date, and labels for source-checked, owner-checked, Unknown and
+"Depends on plan" information. Optional filters show which firms meet a condition without ranking them.
+
+### Data and API
 
 Dated, source-backed facts about brokerage firms in `data/brokerages/*.json`, with the comparison criteria in
 `data/brokerage_criteria.json`. Each fact cites its source (the firm's Form CRS hosted by FINRA, or the firm's own

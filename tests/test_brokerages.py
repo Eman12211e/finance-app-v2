@@ -361,3 +361,63 @@ def test_checker_asks_for_periodic_rechecks_of_owner_verified_facts():
             "facts": [{**OWNER_FACT, "source": "guide"}]}
     rows = checker().check_firm(firm, {}.get, TODAY)
     assert any(s == "MANUAL" and "owner-checked 2026-10-26" in d for s, _, d in rows)
+
+
+# ---- interface (B3); the page itself is checked in a real browser before release ----
+
+def read(*parts):
+    with open(os.path.join(ROOT, *parts), encoding="utf-8") as f:
+        return f.read()
+
+
+def test_compare_allows_two_to_four_firms():
+    assert len(brokerages.compare(["schwab", "fidelity", "ibkr", "robinhood"], today=TODAY)["firms"]) == 4
+    with pytest.raises(InvalidRequest, match="between 2 and 4"):
+        brokerages.compare(["schwab", "fidelity", "ibkr", "robinhood", "etrade"], today=TODAY)
+
+
+def test_page_has_compare_brokerages_tab_and_scripts_in_order(client):
+    html = client.get("/").get_data(as_text=True)
+    assert 'data-tab="brokers"' in html and 'id="brokers-root"' in html
+    assert html.index("/static/js/sign.js") < html.index("/static/js/brokers.js") < html.index("/static/js/app.js")
+    assert 'brokers: ["brokers-root", window.Brokers]' in read("static", "js", "app.js")
+
+
+def test_brokers_js_collects_and_stores_nothing():
+    js = read("static", "js", "brokers.js")
+    for banned in ("innerHTML", "fetch(", "localStorage", "sessionStorage", "document.cookie", "XMLHttpRequest",
+                   "textarea", '"text"', '"file"', '"password"', '"number"', "FormData"):
+        assert banned not in js, banned
+    assert set(re.findall(r'box\.type = "(\w+)"', js)) == {"checkbox"}
+
+
+def test_brokers_js_labels_every_state_and_never_ranks():
+    js = read("static", "js", "brokers.js")
+    for label in ("Source-checked", "Owner-checked", "Depends on plan", "Unknown", "Not a regulatory certification."):
+        assert label in js
+    assert "Why unknown: " in js and "What you can check: " in js
+    code = re.sub(r"(?m)^\s*//.*$", "", js)  # the header comment may say what the file never does
+    assert not re.search(r"\.sort\(|\brank|\bscore|\bbest\b|\brecommended\b", code, re.IGNORECASE)
+
+
+def test_brokers_js_cautions_about_costs_and_risk():
+    js = re.sub(r'"\s*\+\s*"', "", read("static", "js", "brokers.js"))
+    assert "A $0 commission does not mean investing is free." in js
+    assert "not a sign that a strategy is right for you or low-risk" in js
+    assert "Promotions are not shown and never affect this comparison." in js
+
+
+def test_brokers_js_links_accounts_101_and_guides():
+    js = read("static", "js", "brokers.js")
+    assert "window.Accounts.open(name)" in js and "window.Sign.openAt(criterion.guide.doc, criterion.guide.section)" in js
+    assert "openAt: function (docId, sectionId)" in read("static", "js", "sign.js")
+
+
+def test_comparison_stacks_on_phones_without_horizontal_scroll():
+    css = read("static", "css", "features.css")
+    assert ".br-firms, .br-grid { grid-template-columns: minmax(0, 1fr); }" in css
+    assert ".br-cell-firm { display: block; }" in css and "overflow-x" not in css.split("/* ---- Compare Brokerages ---- */")[1]
+
+
+def test_tab_bar_wraps_so_all_four_tabs_fit_on_phones():
+    assert ".tabs { display: flex; flex-wrap: wrap;" in read("static", "css", "features.css")

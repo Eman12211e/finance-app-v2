@@ -11,6 +11,8 @@
   var currentId = null;
   var filter = "all";
   var picked = {};  // question text -> document title; lives only in this page, never saved or sent
+  var target = null;  // {doc, section} requested by another tab before the guides finished loading
+  var loading = false;
 
   var ORIGINS = {
     official: ["Official text", "Exact wording from a government source."],
@@ -115,6 +117,7 @@
     var row = el("article", "sign-row card");
     row.dataset.tags = s.tags.join(" ");
     row.setAttribute("aria-label", s.heading);
+    row.id = "sign-section-" + s.id;
     row.appendChild(el("h3", "sign-heading", s.heading));
 
     var original = el("div", "sign-original sign-origin-" + s.origin);
@@ -191,6 +194,15 @@
 
     doc.sections.forEach(function (s) { view.appendChild(renderSection(doc, s)); });
     applyFilter();
+    if (target && target.doc === doc.id) {
+      var row = document.getElementById("sign-section-" + target.section);
+      target = null;
+      if (row) {
+        row.setAttribute("tabindex", "-1");
+        row.scrollIntoView({ block: "start" });
+        row.focus({ preventScroll: true });
+      }
+    }
   }
 
   function openDocument(id) {
@@ -280,14 +292,16 @@
     layout.appendChild(checklistBox);
     root.appendChild(layout);
     renderChecklist();
-    openDocument(docs[0].id);
+    openDocument(target ? target.doc : docs[0].id);
   }
 
   function show() {
-    if (!root || list) return;
+    if (!root || list || loading) return;
+    loading = true;
     root.textContent = "";
     root.appendChild(el("p", "muted", "Loading the guides…"));
     window.Api.getDocuments().then(function (env) {
+      loading = false;
       if (!env.ok) {
         root.textContent = "";
         root.appendChild(el("p", "error-text", env.error.message));
@@ -303,5 +317,10 @@
       window.addEventListener("afterprint", function () { document.body.classList.remove("print-checklist"); });
     },
     show: show,
+    // Open a guide at one passage, e.g. from Compare Brokerages. The caller switches to this tab first.
+    openAt: function (docId, sectionId) {
+      target = { doc: docId, section: sectionId };
+      if (list) openDocument(docId); else show();
+    },
   };
 })();

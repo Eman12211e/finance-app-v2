@@ -10,7 +10,7 @@ from services.errors import InvalidRequest
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 FIRMS_DIR = os.path.join(DATA_DIR, "brokerages")
 STALE_AFTER_DAYS = 90
-MAX_FIRMS = 5
+MAX_FIRMS = 4
 MAX_QUANTITY = 1000
 NOTICE = ("This compares published facts. It does not rank firms or tell you which one to choose. "
           "The right fit depends on your own needs.")
