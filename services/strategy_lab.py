@@ -231,6 +231,7 @@ def compare(ticker, scenario_key, model_keys=None, live=False):
             checked["violations"] = []
         else:
             checked = validate_output(result["text"], evidence)
+        checked["checks"]["simulated"] = not live  # so raw API readers cannot mistake mock checks for real ones
         panel = {"model": public_model(m), "inference": result["inference"], "simulated": not live,
                  "prompt_sha256": prompt_hash, **checked, "error": result["error"],
                  "latency_ms": result["latency_ms"], "input_tokens": result["input_tokens"],

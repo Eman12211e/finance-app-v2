@@ -505,9 +505,22 @@ Each panel: `model`, `inference` ("mock" | "live"), `simulated`, `simulated_labe
 `prompt_sha256`, `status` ("ok" | "invalid_output" | "unavailable"), `analysis`, `claims` [{text, evidence_ids,
 stance, issues}], `risks` [{text, evidence_ids, issues}], `assumptions`, `uncertainties`, `unsupported_claims`,
 `violations` [{type, detail}], `disagreements`, `checks` {schema_valid, citations_valid {passed, total},
-numbers_traceable {passed, total}, advice_violations, unsupported_claims, states_uncertainty}, `error`, `latency_ms`,
+numbers_traceable {passed, total}, advice_violations, unsupported_claims, states_uncertainty, simulated}, `error`, `latency_ms`,
 `input_tokens`, `output_tokens`, `cost_usd`, `truncated`.
 
 Errors: `INVALID_REQUEST` 400 (bad scenario or models, live without `confirm_live`), `INVALID_TICKER` 400,
 `DATA_NOT_AVAILABLE` 404, `LIVE_INFERENCE_DISABLED` 403 (message lists every blocking reason),
 `BUDGET_EXCEEDED` 402.
+
+
+## V2: Understand Before You Sign (read-only)
+
+`GET /api/documents` → `data.documents` [{id, title, summary, when_you_see_it, origins, section_count}], in the order
+people usually meet them. `GET /api/documents/<id>` → the full guide: {id, title, summary, when_you_see_it,
+sources {key: {publisher, title, url, version, retrieved_on, license}}, sections [{id, heading, origin, source,
+location, passage, plain_english, why_it_matters, tags, look_for, questions, accounts_101?}]}.
+
+`origin`: `official` (verbatim public-domain government text), `firm` (brief attributed quote from a real firm's
+SEC-filed Form CRS), `summary` (our paraphrase of a FINRA or SIPC source, with at most one short quote), `example`
+(fictional text written for this app). Errors: `INVALID_REQUEST` 400 (malformed id), `DATA_NOT_AVAILABLE` 404.
+There is no route that accepts user data.

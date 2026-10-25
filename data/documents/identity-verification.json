@@ -1,0 +1,99 @@
+{
+  "id": "identity-verification",
+  "title": "Identity verification when opening an account",
+  "summary": "Federal law requires brokerage firms to collect and verify certain information before opening an account. Knowing what a real firm asks for, and what it never needs, helps you spot impostors. This app never asks for any of this information.",
+  "when_you_see_it": "During the account application, on the firm's own website, app or paper form.",
+  "sources": {
+    "cfr_cip": {
+      "publisher": "U.S. Government Publishing Office (Code of Federal Regulations)",
+      "title": "31 CFR 1023.220, Customer identification programs for broker-dealers",
+      "url": "https://www.govinfo.gov/content/pkg/CFR-2025-title31-vol3/xml/CFR-2025-title31-vol3-sec1023-220.xml",
+      "version": "CFR 2025 annual edition",
+      "retrieved_on": "2026-10-25",
+      "license": "public_domain"
+    },
+    "finra_4512": {
+      "publisher": "FINRA",
+      "title": "FINRA Rule 4512, Customer Account Information",
+      "url": "https://www.finra.org/rules-guidance/rulebooks/finra-rules/4512",
+      "version": "Rule text as published on finra.org",
+      "retrieved_on": "2026-10-25",
+      "license": "summarized"
+    },
+    "brokercheck": {
+      "publisher": "FINRA",
+      "title": "BrokerCheck",
+      "url": "https://brokercheck.finra.org/",
+      "version": "Web tool",
+      "retrieved_on": "2026-10-25",
+      "license": "summarized"
+    }
+  },
+  "sections": [
+    {
+      "id": "id-minimum-information",
+      "heading": "What the law says a firm must collect",
+      "origin": "official",
+      "source": "cfr_cip",
+      "location": "31 CFR 1023.220(a)(2)(i)(A)",
+      "passage": "the broker-dealer must obtain, at a minimum, the following information prior to opening an account: (1) Name; (2) Date of birth, for an individual; (3) Address, … and (4) Identification number, which shall be: (i) For a U.S. person, a taxpayer identification number;",
+      "plain_english": "Before opening your account, a firm must get at least your name, date of birth, address and, for U.S. persons, a taxpayer identification number. For most people that number is a Social Security number.",
+      "why_it_matters": "A real firm asking for these is following the law. Someone who contacts you first and asks for them may not be a real firm.",
+      "tags": ["personal_information", "disclosures"],
+      "look_for": ["The request appearing inside the application you started yourself on the firm's own site or app."],
+      "questions": ["How do you verify my identity, and how long do you keep the information?"]
+    },
+    {
+      "id": "id-notice",
+      "heading": "The notice firms give you",
+      "origin": "official",
+      "source": "cfr_cip",
+      "location": "31 CFR 1023.220(a)(5)(iii), sample notice",
+      "passage": "Important Information About Procedures for Opening a New Account To help the government fight the funding of terrorism and money laundering activities, Federal law requires all financial institutions to obtain, verify, and record information that identifies each person who opens an account. What this means for you: When you open an account, we will ask for your name, address, date of birth and other information that will allow us to identify you. We may also ask to see your driver's license or other identifying documents.",
+      "plain_english": "This is the sample notice from the regulation. Many firms show similar wording during the application. It explains why the firm asks for identifying information and may ask to see an ID.",
+      "why_it_matters": "Seeing this notice inside a firm's application is normal. Being asked to send an ID by email or text to someone you do not know is not.",
+      "tags": ["personal_information", "disclosures"],
+      "look_for": ["A secure upload inside the firm's own site or app, if it asks for an ID document."],
+      "questions": ["If you need to see an ID document, how do I provide it securely?"]
+    },
+    {
+      "id": "id-ssn-effort",
+      "heading": "Other information firms try to collect",
+      "origin": "summary",
+      "source": "finra_4512",
+      "location": "FINRA Rule 4512(a)(2)",
+      "passage": "Summary: For most accounts, FINRA's rule also requires a firm to make reasonable efforts to obtain your tax identification or Social Security number, your occupation and employer's name and address, and whether you work for another brokerage firm.",
+      "plain_english": "Questions about your job and employer are part of standard account records. A firm asks whether you work for another brokerage firm because special rules apply to industry employees.",
+      "why_it_matters": "Knowing which questions are standard helps you notice a question that is not.",
+      "tags": ["personal_information"],
+      "look_for": ["Questions beyond these, such as passwords for other accounts, which no legitimate application needs."],
+      "questions": ["Which of these questions are required, and which are optional?"]
+    },
+    {
+      "id": "id-trusted-contact",
+      "heading": "Trusted contact person",
+      "origin": "summary",
+      "source": "finra_4512",
+      "location": "FINRA Rule 4512(a)(1)(F) and (b)",
+      "passage": "Summary: Firms must make reasonable efforts to get the name and contact information of a trusted contact person age 18 or older \"who may be contacted about the customer's account\". If you do not name one, the firm can still open and keep your account.",
+      "plain_english": "A trusted contact is someone the firm may contact about your account for limited reasons, such as possible financial exploitation or confirming your current contact information or health status. The firm must tell you in writing when it may do this. Naming one is your choice.",
+      "why_it_matters": "A trusted contact can help protect you if something goes wrong. Ask the firm what that person can and cannot do, so you know exactly what you are agreeing to.",
+      "tags": ["rights", "personal_information"],
+      "look_for": ["Whether the application treats the trusted contact as optional.", "How to change or remove your trusted contact later."],
+      "questions": ["When would you contact my trusted contact person, and what would you tell them?"]
+    },
+    {
+      "id": "id-check-firm",
+      "heading": "Check the firm before you share anything",
+      "origin": "summary",
+      "source": "brokercheck",
+      "location": "FINRA BrokerCheck",
+      "passage": "Summary: FINRA's free BrokerCheck tool shows whether a firm or a person is registered to sell securities, plus any disclosed disciplinary history.",
+      "plain_english": "Before you enter personal information, you can confirm that the firm is real and registered. Then go to its website by typing the address yourself, instead of using a link from a message.",
+      "why_it_matters": "Impostors copy the names and websites of real firms. Starting from a site you looked up yourself protects you.",
+      "tags": ["personal_information", "rights"],
+      "look_for": ["The firm's exact name and website matching what BrokerCheck shows."],
+      "questions": ["What is your firm's exact registered name, so I can look it up on BrokerCheck?"]
+    }
+  ]
+}

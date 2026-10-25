@@ -120,6 +120,7 @@ def test_six_panels_all_labelled_simulated_with_identical_prompt(client, ticker,
         assert p["simulated"] is True and p["inference"] == "mock" and p["simulated_label"] == LABEL
         assert p["prompt_sha256"] == data["prompt_sha256"]
         assert p["cost_usd"] == "0" and p["latency_ms"] is None and p["test_case"]
+        assert p["checks"]["simulated"] is True
     ids = [e["id"] for e in data["evidence"]["items"]]
     assert len(ids) == len(set(ids)) >= 3
 
@@ -308,6 +309,7 @@ def test_live_compare_is_labelled_live_never_simulated(client, live_ready, monke
     assert data["mode"] == "live" and data["simulated_label"] is None and data["notice"] is None
     for p in data["panels"]:
         assert p["simulated"] is False and p["inference"] == "live" and "simulated_label" not in p
+        assert p["checks"]["simulated"] is False
 
 
 def test_live_compare_refuses_whole_run_over_budget(client, live_ready, monkeypatch):

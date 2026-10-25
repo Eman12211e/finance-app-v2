@@ -1,0 +1,140 @@
+{
+  "id": "brokerage-agreement",
+  "title": "Brokerage account agreement",
+  "summary": "The contract between you and a brokerage firm. Real agreements are long and differ between firms. The clauses below are a fictional example written for this app, mixed with summaries of official rules that real agreements must follow.",
+  "when_you_see_it": "At the end of an account application, usually with a checkbox saying you have read and agree to it.",
+  "sources": {
+    "example": {
+      "publisher": "This app",
+      "title": "Fictional sample customer agreement (Example Brokerage LLC is not a real firm)",
+      "url": null,
+      "version": "Written for this app",
+      "retrieved_on": "2026-10-25",
+      "license": "app_written"
+    },
+    "finra_2268": {
+      "publisher": "FINRA",
+      "title": "FINRA Rule 2268, Requirements When Using Predispute Arbitration Agreements for Customer Accounts",
+      "url": "https://www.finra.org/rules-guidance/rulebooks/finra-rules/2268",
+      "version": "Rule text as published on finra.org",
+      "retrieved_on": "2026-10-25",
+      "license": "summarized"
+    },
+    "sipc": {
+      "publisher": "Securities Investor Protection Corporation",
+      "title": "What SIPC Protects",
+      "url": "https://www.sipc.org/for-investors/what-sipc-protects",
+      "version": "Web page",
+      "retrieved_on": "2026-10-25",
+      "license": "summarized"
+    }
+  },
+  "sections": [
+    {
+      "id": "ba-account-type",
+      "heading": "Who owns the account and who can act on it",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 1",
+      "passage": "This Agreement covers each account you open with Example Brokerage LLC. If the account has more than one owner, each owner may give instructions, and each owner is responsible for all obligations of the account.",
+      "plain_english": "This clause says who controls the account. In this example, any one joint owner can act alone, and every owner is responsible for what happens in the account.",
+      "why_it_matters": "With a joint account, one owner's decisions can affect everyone on the account.",
+      "tags": ["rights", "risks"],
+      "look_for": ["Whether joint owners can act alone or must agree.", "What happens to a joint account if an owner dies."],
+      "questions": ["Can any one owner trade or withdraw money without the others agreeing?"],
+      "accounts_101": "Joint taxable brokerage"
+    },
+    {
+      "id": "ba-fees",
+      "heading": "Fees and changes to fees",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 4",
+      "passage": "You agree to pay the commissions, fees and charges in our current Fee Schedule. We may change the Fee Schedule by giving you notice. Fees may be deducted from your account.",
+      "plain_english": "You agree to a fee list that the firm can change later. In this example, the firm can take fees straight out of your account.",
+      "why_it_matters": "The fee schedule is often a separate document. Fees for things like paper statements, transfers out or inactivity can be easy to miss.",
+      "tags": ["fees"],
+      "look_for": ["The separate fee schedule.", "How much notice the firm gives before changing fees.", "Fees for transferring your account to another firm."],
+      "questions": ["Where is the current fee schedule, and how will you tell me before fees change?"]
+    },
+    {
+      "id": "ba-cash-sweep",
+      "heading": "Cash sweep",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 6",
+      "passage": "Uninvested cash in your account will be automatically swept into the Example Bank Deposit Program unless you choose another option. The interest rate paid may be lower than rates available elsewhere. We and our affiliates earn income on swept cash.",
+      "plain_english": "Cash that you have not invested is moved into a default place chosen by the firm. The firm may earn more on that cash than it pays you.",
+      "why_it_matters": "This is the same kind of conflict the Form CRS page shows as the \"spread\" on cash. It is a cost that never appears as a fee.",
+      "tags": ["fees", "disclosures"],
+      "look_for": ["The current interest rate on swept cash.", "Other cash options and how to choose them."],
+      "questions": ["What rate does the default cash option pay today, and what other cash options can I choose?"]
+    },
+    {
+      "id": "ba-settlement",
+      "heading": "Paying for trades on time",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 7",
+      "passage": "You agree to pay for each purchase by the settlement date. If you do not, we may sell the securities without notice and charge you for any loss, and we may restrict your account.",
+      "plain_english": "When you buy, the money must be there by the settlement date. If it is not, the firm can sell what you bought and charge you if it sold for less.",
+      "why_it_matters": "In a cash account you can only invest money you have. Late payment can lead to forced sales and trading restrictions.",
+      "tags": ["risks", "rights"],
+      "look_for": ["The settlement date the firm uses.", "What \"restrict your account\" means and for how long."],
+      "questions": ["What happens if a deposit has not cleared by the time a purchase settles?"],
+      "accounts_101": "Cash brokerage"
+    },
+    {
+      "id": "ba-order-routing",
+      "heading": "Where your orders go",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 9",
+      "passage": "We may route your orders to market centers, including firms that pay us for directing orders to them. We will disclose this payment as required by law.",
+      "plain_english": "The firm may be paid for sending your orders to certain trading firms. This is often called payment for order flow.",
+      "why_it_matters": "Payments for order flow are a conflict of interest. Schwab's Form CRS lists \"order routing revenue\" among the ways it earns money.",
+      "tags": ["disclosures", "fees"],
+      "look_for": ["The firm's order routing report and execution quality information."],
+      "questions": ["Do you receive payment for routing my orders, and how do you check that I get good prices?"]
+    },
+    {
+      "id": "ba-statements",
+      "heading": "Checking statements and reporting errors",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional agreement, Section 11",
+      "passage": "You must review each confirmation and statement promptly. If you do not report an error in writing within 10 days, the confirmation or statement will be considered accurate.",
+      "plain_english": "In this example, you have a short deadline to report mistakes. After that, the firm treats the statement as correct.",
+      "why_it_matters": "Deadlines like this make it harder to fix a mistake you notice late.",
+      "tags": ["rights", "risks"],
+      "look_for": ["The deadline for reporting errors and how to report them.", "Whether reports must be in writing."],
+      "questions": ["How long do I have to report an error, and how do I report it?"]
+    },
+    {
+      "id": "ba-arbitration",
+      "heading": "Arbitration instead of court",
+      "origin": "summary",
+      "source": "finra_2268",
+      "location": "FINRA Rule 2268(a)",
+      "passage": "Summary: If an agreement requires arbitration, FINRA's rule says it must clearly disclose that \"All parties to this agreement are giving up the right to sue each other in court, including the right to a trial by jury\", except as the arbitration forum's rules allow. It must also say that arbitration awards are generally final and binding, that discovery is generally more limited than in court, that arbitrators do not have to explain their decision, that the panel may include a minority of arbitrators connected to the securities industry, and that time limits may apply.",
+      "plain_english": "Most brokerage agreements say disputes go to arbitration, not court. FINRA requires the agreement to spell out what you give up when you agree to that.",
+      "why_it_matters": "Agreeing to arbitration changes how any future dispute would be handled. These disclosures are some of the most important lines in the agreement.",
+      "tags": ["rights", "disclosures"],
+      "look_for": ["The highlighted arbitration clause.", "The highlighted notice just before the signature line or agreement checkbox, which must say the agreement has an arbitration clause and where to find it.", "Which arbitration forum the agreement names."],
+      "questions": ["Which arbitration forum would hear a dispute, and where can I read its rules?"]
+    },
+    {
+      "id": "ba-sipc",
+      "heading": "What SIPC protection does and does not cover",
+      "origin": "summary",
+      "source": "sipc",
+      "location": "SIPC, What SIPC Protects",
+      "passage": "Summary: SIPC protects customers when cash and securities are missing from their accounts at a financially troubled SIPC-member brokerage firm, up to $500,000, which includes a $250,000 limit for cash. SIPC does not protect against the decline in value of your securities, or against losses from bad investment advice.",
+      "plain_english": "SIPC helps if a member brokerage firm fails and your assets are missing. It does not cover investment losses.",
+      "why_it_matters": "SIPC is not the same as FDIC bank insurance, and it does not protect you from market losses.",
+      "tags": ["risks", "disclosures"],
+      "look_for": ["\"Member SIPC\" on the firm's documents.", "Whether swept cash is held at a bank (FDIC rules) or at the broker (SIPC rules)."],
+      "questions": ["Is my cash protected by SIPC or by FDIC insurance, and up to what limits?"]
+    }
+  ]
+}

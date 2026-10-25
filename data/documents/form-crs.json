@@ -1,0 +1,151 @@
+{
+  "id": "form-crs",
+  "title": "Form CRS (relationship summary)",
+  "summary": "A short summary, usually two pages, that a brokerage firm must give you. It covers its services, fees, conflicts of interest and disciplinary history. The SEC sets what it must say; each firm writes its own version.",
+  "when_you_see_it": "Before or when you open an account, or when a firm first recommends an account type or investment.",
+  "sources": {
+    "sec_formcrs": {
+      "publisher": "U.S. Securities and Exchange Commission",
+      "title": "Form CRS and instructions",
+      "url": "https://www.sec.gov/files/formcrs.pdf",
+      "version": "SEC 2942 (05-20); OMB 3235-0766, expires March 31, 2029",
+      "retrieved_on": "2026-10-25",
+      "license": "public_domain"
+    },
+    "schwab_crs": {
+      "publisher": "Charles Schwab & Co., Inc. (copy hosted by the SEC)",
+      "title": "Relationship Summary: Broker-Dealer",
+      "url": "https://reports.adviserinfo.sec.gov/crs/crs_5393.pdf",
+      "version": "Dated December 12, 2025 (BDL111173-13)",
+      "retrieved_on": "2026-10-25",
+      "license": "quoted_with_attribution"
+    },
+    "investor_gov_crs": {
+      "publisher": "U.S. Securities and Exchange Commission (Investor.gov)",
+      "title": "Search for a firm's or professional's relationship summary",
+      "url": "https://www.investor.gov/CRS",
+      "version": "Web page",
+      "retrieved_on": "2026-10-25",
+      "license": "public_domain"
+    }
+  },
+  "sections": [
+    {
+      "id": "crs-research-tools",
+      "heading": "What the SEC requires: a pointer to free research tools",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 1.B",
+      "passage": "State that free and simple tools are available to research firms and financial professionals at Investor.gov/CRS, which also provides educational materials about broker-dealers, investment advisers, and investing.",
+      "plain_english": "Every relationship summary must tell you about Investor.gov/CRS. There you can look up a firm and the people who work there, and read their own relationship summaries.",
+      "why_it_matters": "You can check a firm and a financial professional yourself, for free, before you trust them with money.",
+      "tags": ["disclosures", "rights"],
+      "look_for": ["The Investor.gov/CRS link near the start of the summary.", "The date of the summary, which must appear at the beginning."],
+      "questions": ["What will I find about this firm and its representatives on Investor.gov/CRS?"]
+    },
+    {
+      "id": "crs-fees-required",
+      "heading": "What the SEC requires: the same fee warning in every summary",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 3.A",
+      "passage": "You will pay fees and costs whether you make or lose money on your investments. Fees and costs will reduce any amount of money you make on your investments over time. Please make sure you understand what fees and costs you are paying.",
+      "plain_english": "The SEC makes every firm include these exact sentences. Fees are charged even in years when your investments lose value, and they reduce what you keep.",
+      "why_it_matters": "Small fees repeated over many years can add up to a large amount.",
+      "tags": ["fees"],
+      "look_for": ["Each kind of fee: commissions, account fees, fund expenses and transfer fees.", "Where the summary points you for the full fee details."],
+      "questions": ["Which fees would I pay on this account each year, even if I make no trades?"]
+    },
+    {
+      "id": "crs-fees-firm",
+      "heading": "How one firm describes its fees",
+      "origin": "firm",
+      "source": "schwab_crs",
+      "location": "Schwab relationship summary, \"What fees will I pay?\"",
+      "passage": "If you place a trade, you will pay a commission or transaction fee in some cases. There can also be expenses built into the trade price or the investment itself.",
+      "plain_english": "This firm says some trades have a visible fee, and some costs are built in where you may not see them, such as fund expenses or a difference in the trade price.",
+      "why_it_matters": "A trade with no visible commission can still have costs. Built-in costs are easy to miss.",
+      "tags": ["fees", "disclosures"],
+      "look_for": ["Which trades have a commission and which do not.", "The words \"built into\" or \"expenses\", which point to costs you may not see on a confirmation."],
+      "questions": ["Which costs are built into the price or the investment, and where can I see them?"]
+    },
+    {
+      "id": "crs-fees-question",
+      "heading": "Questions the SEC requires firms to print for you",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 3.A, conversation starter",
+      "passage": "Help me understand how these fees and costs might affect my investments. If I give you $10,000 to invest, how much will go to fees and costs, and how much will be invested for me?",
+      "plain_english": "The SEC requires firms to print questions like this one, called \"conversation starters\", so you can ask them out loud. Firms may adapt the wording. Schwab, for example, writes \"Can you help me understand how these fees and costs might affect my investments?\"",
+      "why_it_matters": "A worked example with a real amount often makes fees clearer than a list of percentages.",
+      "tags": ["fees", "rights"],
+      "look_for": ["A box or bold text with questions: the SEC requires them to stand out."],
+      "questions": ["If I invest $10,000 with you, how much goes to fees and costs in the first year, and how much is invested for me?"]
+    },
+    {
+      "id": "crs-best-interest",
+      "heading": "What the SEC requires: the best-interest statement",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 3.B(i)(a), text required for broker-dealers that make recommendations",
+      "passage": "When we provide you with a recommendation, we have to act in your best interest and not put our interest ahead of yours. At the same time, the way we make money creates some conflicts with your interests. You should understand and ask us about these conflicts because they can affect the recommendations we provide you.",
+      "plain_english": "Firms that make recommendations must use this exact wording, with emphasis. It says two things at once: the firm must act in your best interest when it recommends something, and the way it earns money still creates conflicts.",
+      "why_it_matters": "A conflict of interest does not mean a recommendation is wrong. It means there is a reason to ask how the firm benefits.",
+      "tags": ["rights", "disclosures"],
+      "look_for": ["This exact text, which Schwab's summary also uses word for word.", "The examples of conflicts that follow it."],
+      "questions": ["How might your conflicts of interest affect me, and how will you address them?"]
+    },
+    {
+      "id": "crs-conflicts-firm",
+      "heading": "How one firm describes a conflict: cash in your account",
+      "origin": "firm",
+      "source": "schwab_crs",
+      "location": "Schwab relationship summary, list of how the firm earns money",
+      "passage": "The “spread” on cash in your accounts—i.e., the difference between what we earn and what we pay you in interest.",
+      "plain_english": "Cash waiting in your account can earn the firm more interest than it pays you. The firm keeps the difference, called the spread.",
+      "why_it_matters": "Where your uninvested cash goes, and what it earns, is a cost even though it never shows up as a fee.",
+      "tags": ["fees", "disclosures"],
+      "look_for": ["The interest rate paid on cash, and where the cash is held.", "Other income listed nearby, such as order routing revenue."],
+      "questions": ["What interest rate will my uninvested cash earn, and what other options do I have for holding cash?"]
+    },
+    {
+      "id": "crs-self-directed",
+      "heading": "How one firm describes who makes decisions",
+      "origin": "firm",
+      "source": "schwab_crs",
+      "location": "Schwab relationship summary, \"What investment services and advice can you provide me?\"",
+      "passage": "The decision to invest will always be yours—we will not place any trades on your behalf without your direction. We do not manage or monitor your brokerage accounts.",
+      "plain_english": "In this brokerage account, nobody at the firm watches your investments for you. You decide what to buy and sell, and you keep track of it.",
+      "why_it_matters": "Some people assume a firm keeps an eye on their account. In a self-directed brokerage account, that is usually not the case.",
+      "tags": ["rights", "risks"],
+      "look_for": ["Whether the account is monitored, and by whom.", "The difference between brokerage and advisory services, if the firm offers both."],
+      "questions": ["Will anyone at the firm monitor this account, and what would that service cost?"]
+    },
+    {
+      "id": "crs-discipline-required",
+      "heading": "What the SEC requires: a yes-or-no answer about legal or disciplinary history",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 4",
+      "passage": "Do you or your financial professionals have legal or disciplinary history?",
+      "plain_english": "Firms must answer \"Yes\" or \"No\" under this heading. Schwab's summary answers \"Yes.\" The SEC requires \"Yes\" if the firm or any of its financial professionals has certain events to disclose.",
+      "why_it_matters": "A \"Yes\" is a signal to look up the details. The details tell you what happened, when, and how serious it was.",
+      "tags": ["disclosures", "risks"],
+      "look_for": ["The answer: \"Yes\" or \"No\".", "A link to Investor.gov/CRS to research the details."],
+      "questions": ["As a financial professional, do you have any disciplinary history? For what type of conduct?"]
+    },
+    {
+      "id": "crs-contact",
+      "heading": "Questions about who you will deal with",
+      "origin": "official",
+      "source": "sec_formcrs",
+      "location": "Form CRS instructions, Item 5.C, conversation starter",
+      "passage": "Who is my primary contact person? Is he or she a representative of an investment adviser or a broker-dealer? Who can I talk to if I have concerns about how this person is treating me?",
+      "plain_english": "These required questions help you learn who you will work with, which rules apply to them, and where to go if something goes wrong.",
+      "why_it_matters": "Knowing where to raise a concern before you need to makes it easier to act quickly.",
+      "tags": ["rights"],
+      "look_for": ["A phone number to request an up-to-date copy of the summary.", "Where to find more information about the firm's services."],
+      "questions": ["Who is my primary contact, and who can I talk to if I have concerns about how this person is treating me?"]
+    }
+  ]
+}

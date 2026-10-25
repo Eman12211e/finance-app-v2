@@ -1,0 +1,105 @@
+{
+  "id": "margin-agreement",
+  "title": "Margin agreement",
+  "summary": "The agreement that lets you borrow from a brokerage firm to buy investments, using your investments as collateral. Before a firm opens a margin account, FINRA requires it to give you a margin disclosure statement. This page mixes summaries of that rule with a fictional example agreement.",
+  "when_you_see_it": "Only if you apply for margin. Many applications ask whether you want a cash account or a margin account.",
+  "sources": {
+    "finra_2264": {
+      "publisher": "FINRA",
+      "title": "FINRA Rule 2264, Margin Disclosure Statement",
+      "url": "https://www.finra.org/rules-guidance/rulebooks/finra-rules/2264",
+      "version": "Rule text as published on finra.org",
+      "retrieved_on": "2026-10-25",
+      "license": "summarized"
+    },
+    "example": {
+      "publisher": "This app",
+      "title": "Fictional sample margin agreement (Example Brokerage LLC is not a real firm)",
+      "url": null,
+      "version": "Written for this app",
+      "retrieved_on": "2026-10-25",
+      "license": "app_written"
+    }
+  },
+  "sections": [
+    {
+      "id": "ma-lose-more",
+      "heading": "You can lose more than you put in",
+      "origin": "summary",
+      "source": "finra_2264",
+      "location": "FINRA Rule 2264(a), first required risk",
+      "passage": "Summary: The margin disclosure statement must warn: \"You can lose more funds than you deposit in the margin account.\" If the securities you bought on margin fall in value, you may have to add money to the account to avoid a forced sale.",
+      "plain_english": "Borrowing makes gains and losses bigger. If prices fall far enough, you can owe the firm more than you put in.",
+      "why_it_matters": "This is the main difference between margin and a cash account, where your losses are limited to the money you put in.",
+      "tags": ["risks"],
+      "look_for": ["The firm's margin disclosure statement, which must be a separate document or page."],
+      "questions": ["If my investments fell sharply, how much could I end up owing?"],
+      "accounts_101": "Margin brokerage"
+    },
+    {
+      "id": "ma-forced-sale",
+      "heading": "The firm can sell without asking you",
+      "origin": "summary",
+      "source": "finra_2264",
+      "location": "FINRA Rule 2264(a), required risks",
+      "passage": "Summary: The statement must also warn that the firm can force the sale of securities or other assets in your account, can sell them without contacting you, and that you are not entitled to choose which ones are sold. A firm can choose to contact you first, but it does not have to.",
+      "plain_english": "If your account falls below the firm's requirements, the firm can sell your investments right away, choose which ones to sell, and do it without calling you.",
+      "why_it_matters": "A forced sale can happen at a bad price and can create taxes you did not plan for.",
+      "tags": ["risks", "rights"],
+      "look_for": ["How the firm notifies you of a margin call, and how fast it may act."],
+      "questions": ["How will you tell me about a margin call, and how long do I usually have to respond?"]
+    },
+    {
+      "id": "ma-house-requirements",
+      "heading": "Requirements can change, and there is no right to more time",
+      "origin": "summary",
+      "source": "finra_2264",
+      "location": "FINRA Rule 2264(a), required risks",
+      "passage": "Summary: The statement must warn that the firm can increase its \"house\" maintenance margin requirements at any time without advance written notice, and that you are not entitled to an extension of time on a margin call.",
+      "plain_english": "The firm can raise the amount of equity you must keep in the account at any time, which can trigger a margin call even if prices have not moved.",
+      "why_it_matters": "Rules can tighten during volatile markets, which is often exactly when prices are falling.",
+      "tags": ["risks", "rights"],
+      "look_for": ["The firm's current house maintenance requirement."],
+      "questions": ["What is your current maintenance requirement, and when have you raised it in the past?"]
+    },
+    {
+      "id": "ma-interest",
+      "heading": "Interest on what you borrow",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional margin agreement, Section 3",
+      "passage": "You will pay interest on your debit balance at the Example Base Rate plus the spread shown in our Margin Rate Schedule. We may change the Base Rate and the Margin Rate Schedule without prior notice. Interest is charged to your account monthly.",
+      "plain_english": "Borrowed money costs interest, charged every month. In this example, the firm can change the rate without warning.",
+      "why_it_matters": "Interest is charged whether your investments go up or down, so it can turn a small gain into a loss.",
+      "tags": ["fees"],
+      "look_for": ["The current margin rate schedule and how the rate changes with the amount borrowed."],
+      "questions": ["What interest rate would I pay today, and how often does it change?"]
+    },
+    {
+      "id": "ma-collateral",
+      "heading": "Your securities as collateral",
+      "origin": "example",
+      "source": "example",
+      "location": "Fictional margin agreement, Section 5",
+      "passage": "Securities in your margin account may be pledged, lent or otherwise used by us. When your securities are lent, you may receive payments in lieu of dividends, which may be taxed differently than dividends, and you may not be able to vote those shares.",
+      "plain_english": "In this example, signing lets the firm lend out or pledge your securities. That can change how your dividends are taxed and whether you can vote.",
+      "why_it_matters": "These effects are easy to miss because they do not show up as fees.",
+      "tags": ["risks", "disclosures"],
+      "look_for": ["Whether the firm lends securities from margin accounts, and whether it shares any of that income with you."],
+      "questions": ["Will my securities be lent out, and how would that affect my dividends and voting?"]
+    },
+    {
+      "id": "ma-annual",
+      "heading": "Disclosures you are owed",
+      "origin": "summary",
+      "source": "finra_2264",
+      "location": "FINRA Rule 2264(a) and (b)",
+      "passage": "Summary: A firm must give non-institutional customers the margin disclosure statement before or when it opens a margin account, as a separate document or page. After that, it must deliver the statement, or a shorter set of bolded disclosures, at least once a calendar year.",
+      "plain_english": "You are entitled to these risk warnings before you start, and again every year.",
+      "why_it_matters": "If you never received a margin disclosure statement, that is worth asking about.",
+      "tags": ["rights", "disclosures"],
+      "look_for": ["The disclosure statement in your account documents, and the yearly reminder."],
+      "questions": ["Where can I find the margin disclosure statement you gave me when the account opened?"]
+    }
+  ]
+}

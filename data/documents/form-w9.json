@@ -1,0 +1,104 @@
+{
+  "id": "form-w9",
+  "title": "Form W-9",
+  "summary": "An IRS form a brokerage firm asks you to complete so it can report your interest, dividends and sales to the IRS. It asks for your taxpayer identification number, usually your Social Security number. This page shows the official text only. Never type your number into this app.",
+  "when_you_see_it": "While opening a taxable account, usually as part of the firm's own secure application.",
+  "sources": {
+    "irs_fw9": {
+      "publisher": "Internal Revenue Service",
+      "title": "Form W-9, Request for Taxpayer Identification Number and Certification",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "version": "Rev. March 2024",
+      "retrieved_on": "2026-10-25",
+      "license": "public_domain"
+    },
+    "irs_about_w9": {
+      "publisher": "Internal Revenue Service",
+      "title": "About Form W-9",
+      "url": "https://www.irs.gov/forms-pubs/about-form-w-9",
+      "version": "Web page",
+      "retrieved_on": "2026-10-25",
+      "license": "public_domain"
+    }
+  },
+  "sections": [
+    {
+      "id": "w9-purpose",
+      "heading": "Why a firm asks for this form",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, General Instructions, Purpose of Form",
+      "passage": "An individual or entity (Form W-9 requester) who is required to file an information return with the IRS is giving you this form because they must obtain your correct taxpayer identification number (TIN), which may be your social security number (SSN), individual taxpayer identification number (ITIN), adoption taxpayer identification number (ATIN), or employer identification number (EIN), to report on an information return the amount paid to you, or other amount reportable on an information return.",
+      "plain_english": "Brokerage firms must report to the IRS what your account earns and what you sell. To do that they need your taxpayer identification number, which for most people is a Social Security number.",
+      "why_it_matters": "This is a normal and legitimate request from a real brokerage firm. The question is how and where you give it, not whether firms ask.",
+      "tags": ["personal_information", "disclosures"],
+      "look_for": ["That the request comes inside the firm's own website or app, which you opened yourself.", "Which tax forms the firm will send you, such as Form 1099-B for sales and Form 1099-DIV for dividends."],
+      "questions": ["How do you protect my taxpayer identification number after I give it to you?"]
+    },
+    {
+      "id": "w9-tin",
+      "heading": "Part I: your taxpayer identification number",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, Part I",
+      "passage": "Enter your TIN in the appropriate box. The TIN provided must match the name given on line 1 to avoid backup withholding. For individuals, this is generally your social security number (SSN).",
+      "plain_english": "The number must match the name on the form exactly. If they do not match, the firm may have to hold back part of your payments for the IRS.",
+      "why_it_matters": "A typo or a name mismatch can lead to backup withholding, described below.",
+      "tags": ["personal_information", "risks"],
+      "look_for": ["The name on line 1 matching the name on your Social Security card or other tax records."],
+      "questions": ["What happens if my name and number do not match your records?"]
+    },
+    {
+      "id": "w9-certification",
+      "heading": "Part II: what you certify",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, Part II, Certification",
+      "passage": "Under penalties of perjury, I certify that: 1. The number shown on this form is my correct taxpayer identification number (or I am waiting for a number to be issued to me); and 2. I am not subject to backup withholding because (a) I am exempt from backup withholding, or (b) I have not been notified by the Internal Revenue Service (IRS) that I am subject to backup withholding as a result of a failure to report all interest or dividends, or (c) the IRS has notified me that I am no longer subject to backup withholding; and 3. I am a U.S. citizen or other U.S. person (defined below); and 4. The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct.",
+      "plain_english": "Signing means you state, under penalty of perjury, that four things are true: your number is correct, you are not subject to backup withholding (or one of the listed reasons applies), you are a U.S. person, and any FATCA code you entered is correct.",
+      "why_it_matters": "\"Under penalties of perjury\" means a false statement can have legal consequences. Read each item before agreeing to it.",
+      "tags": ["rights", "risks"],
+      "look_for": ["The form's instructions for crossing out item 2 if the IRS has told you that you are subject to backup withholding."],
+      "questions": ["If one of these statements is not true for me, what should I tell you, and what happens next?"]
+    },
+    {
+      "id": "w9-backup-withholding",
+      "heading": "Backup withholding",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, General Instructions, What is backup withholding?",
+      "passage": "Persons making certain payments to you must under certain conditions withhold and pay to the IRS 24% of such payments. This is called “backup withholding.” … You will not be subject to backup withholding on payments you receive if you give the requester your correct TIN, make the proper certifications, and report all your taxable interest and dividends on your tax return.",
+      "plain_english": "If the firm does not have a correct, certified number for you, it may have to send 24% of certain payments, such as dividends and sale proceeds, to the IRS instead of to you.",
+      "why_it_matters": "Withheld amounts count as tax already paid when you file your tax return, but you do not have that money until then.",
+      "tags": ["fees", "risks"],
+      "look_for": ["Notices from the firm saying your number is missing or incorrect."],
+      "questions": ["How would you notify me if backup withholding started on my account?"]
+    },
+    {
+      "id": "w9-requester",
+      "heading": "Who receives the form",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, page 1 header",
+      "passage": "Give form to the requester. Do not send to the IRS.",
+      "plain_english": "The form goes to the firm that asked for it, not to the IRS.",
+      "why_it_matters": "Because the form goes straight to the requester, make sure the requester is the real firm.",
+      "tags": ["personal_information"],
+      "look_for": ["A request that arrives through the firm's secure website or app, not an unexpected email, text or call."],
+      "questions": ["What secure method do you use to collect this form?"]
+    },
+    {
+      "id": "w9-phishing",
+      "heading": "Protecting yourself from phishing",
+      "origin": "official",
+      "source": "irs_fw9",
+      "location": "Form W-9, Secure Your Tax Records From Identity Theft",
+      "passage": "The IRS does not initiate contacts with taxpayers via emails. Also, the IRS does not request personal detailed information through email or ask taxpayers for the PIN numbers, passwords, or similar secret access information for their credit card, bank, or other financial accounts.",
+      "plain_english": "Scammers pretend to be the IRS or a brokerage firm to get your number or passwords. The IRS says it does not start contact by email or ask for passwords.",
+      "why_it_matters": "A request for a password or PIN is a warning sign. Legitimate account opening never needs your passwords for other accounts.",
+      "tags": ["personal_information", "risks"],
+      "look_for": ["Links in unexpected messages. Go to the firm's website by typing its address yourself instead."],
+      "questions": ["How will you contact me, and how can I confirm a message really comes from you?"]
+    }
+  ]
+}
