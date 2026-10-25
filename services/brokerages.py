@@ -6,6 +6,7 @@ import os
 from datetime import date
 
 from services.errors import InvalidRequest
+from services.formatting import cents_display
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 FIRMS_DIR = os.path.join(DATA_DIR, "brokerages")
@@ -43,10 +44,6 @@ def firms():
                     loaded.append(json.load(f))
         _firms = {d["id"]: d for d in sorted(loaded, key=lambda d: d["brand"].lower())}
     return _firms
-
-
-def cents_display(cents):
-    return f"${cents // 100:,}.{cents % 100:02d}"
 
 
 def age(verified_on, today):

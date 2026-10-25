@@ -50,6 +50,18 @@ class LiveInferenceDisabled(AppError):
     default_message = "Live AI inference is turned off. The Lab shows simulated output only."
 
 
+class InvalidState(AppError):
+    code = "INVALID_STATE"
+    http_status = 400
+    default_message = "This practice session could not be verified. Reset to start a new one."
+
+
+class RequestTooLarge(AppError):
+    code = "REQUEST_TOO_LARGE"
+    http_status = 413
+    default_message = "The request is too large."
+
+
 class BudgetExceeded(AppError):
     code = "BUDGET_EXCEEDED"
     http_status = 402

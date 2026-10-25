@@ -52,6 +52,12 @@ LAB_TIMEOUT_SECONDS = int(env("LAB_TIMEOUT_SECONDS", "45"))
 LAB_MODELS_PATH = env("LAB_MODELS_PATH", os.path.join(os.path.dirname(__file__), "data", "lab_models.json"))
 LAB_SPEND_LEDGER = env("LAB_SPEND_LEDGER", os.path.join(os.path.dirname(__file__), "data", "lab_spend.json"))
 
+# Paper Trading Lab: key that signs the browser-held practice log. Set PAPER_STATE_SECRET, or a random local key is
+# created on first use at PAPER_KEY_PATH (gitignored). Changing the key invalidates existing practice sessions.
+PAPER_STATE_SECRET = env("PAPER_STATE_SECRET")
+PAPER_KEY_PATH = env("PAPER_KEY_PATH", os.path.join(os.path.dirname(__file__), "data", "paper_state.key"))
+MAX_REQUEST_BYTES = 64 * 1024
+
 TTL_QUOTE = 60
 TTL_PROFILE = 86400
 TTL_FINANCIALS = 86400

@@ -14,6 +14,7 @@ os.environ.update({
     "HF_TOKEN": "",
     "LAB_LIVE_ENABLED": "0",
     "LAB_DAILY_BUDGET_USD": "0",
+    "PAPER_STATE_SECRET": "test-paper-secret-not-used-anywhere-else",
 })
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

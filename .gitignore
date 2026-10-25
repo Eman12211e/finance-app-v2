@@ -9,3 +9,5 @@ hf_cache/
 .cache/
 # Lab live-inference spend ledger (local only)
 data/lab_spend.json
+# Paper Trading Lab signing key (local only)
+data/paper_state.key

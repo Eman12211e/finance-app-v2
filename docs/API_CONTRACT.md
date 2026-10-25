@@ -546,3 +546,29 @@ retrieved_on} and `verification` {method: `source_check` | `owner_check`, label,
 `check_url`, `to_verify`. Firms carry an optional `entity_note`; `overview` adds `verification_methods`. Filter
 results can also be `varies`, which is never counted as meeting or not meeting.
 Money values are integer cents. Unknown is never counted as "does not meet". Errors: `INVALID_REQUEST` 400.
+
+
+## V2: Paper Trading Lab (P1, simulated only)
+
+All prices are synthetic integer cents; nothing is a real quote or a real order. Requests over 64 KB return
+`REQUEST_TOO_LARGE` (413).
+
+`GET /api/paper/scenarios` → `scenarios` [{id, label, kind, notice, timeframe, symbols, days, first_date}], `notices`.
+
+`POST /api/paper/new` {scenario} → a view. `POST /api/paper/view` {state} → a view.
+`POST /api/paper/preview` {state, order {symbol, side: buy|sell, shares}} → {ok, problems [{code, message}],
+fill_note, symbol?, side?, shares?, reference_close_cents?, estimated_amount_cents?, warning?}; never changes state.
+`POST /api/paper/confirm` {state, order {id, symbol, side, shares}} → a view plus `duplicate` (a repeated id returns
+the state unchanged). `POST /api/paper/cancel` {state, order_id} → a view.
+`POST /api/paper/advance` {state, expected_day} → a view; fills pending orders at the next day's open in placement
+order, rejects buys the open price makes unaffordable (with a reason), and on the last day cancels pending orders and
+ends the scenario. A stale `expected_day` is refused. `POST /api/paper/market` {state} → {dates, bars {symbol:
+[{o, h, l, c, v}]}, notice}, only up to the current day.
+
+A view: `state` (signed: {schema, scenario, day, ended, orders, sig}; send it back unchanged), `scenario`, `day`
+{index, date, is_last, ended}, `quotes` {symbol: {close_cents, date}}, `portfolio` {start_cash_cents, cash_cents,
+positions [{symbol, shares, cost_basis_cents, average_cost_cents, close_cents, market_value_cents,
+unrealized_pl_cents}], realized_pl_cents, unrealized_pl_cents, portfolio_value_cents, total_pl_cents, transactions},
+`orders` [{id, symbol, side, shares, placed_day, status: pending|filled|rejected|cancelled, reason, fill_day}],
+`notices`. Order problem codes: `unsupported_symbol`, `invalid_side`, `invalid_quantity`, `insufficient_cash`,
+`insufficient_shares`, `scenario_ended`, `order_limit`. A state that fails verification returns `INVALID_STATE`.

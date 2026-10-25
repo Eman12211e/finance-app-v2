@@ -37,5 +37,11 @@ def date_display(iso):
     return f"{d:%b} {d.day}, {d.year}"
 
 
+def cents_display(cents):
+    """Integer cents -> "$1,234.56" (negative as "-$1.23")."""
+    sign, cents = ("-", -cents) if cents < 0 else ("", cents)
+    return f"{sign}${cents // 100:,}.{cents % 100:02d}"
+
+
 def field(value, fn):
     return {"value": value, "display": (fn(value) if value is not None else None) or MISSING}
