@@ -31,6 +31,8 @@ _CONTEXT_KEYS = {"ticker", "name", "display", "label", "title", "direction", "co
 
 
 def _call_claude(system, messages, max_tokens) -> str:
+    if config.ZERO_COST_MODE:  # the SDK can authenticate from a saved login even with a blank key
+        raise AIUnavailable()
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY, timeout=config.AI_TIMEOUT_SECONDS)
     # Sonnet 5.5 thinks by default and thinking spends max_tokens; between_tools turns it off (valid at default effort).
     resp = client.messages.create(model=config.CLAUDE_MODEL, max_tokens=max_tokens, system=system, messages=messages,

@@ -115,7 +115,14 @@ def _reserve(amount):
 
 # ---- providers ----
 
+def _zero_cost_guard():
+    # Last line of defence: the Anthropic SDK can authenticate from a saved login even with a blank key.
+    if config.ZERO_COST_MODE:
+        raise LiveInferenceDisabled("Zero-cost development mode is on (ZERO_COST_MODE).")
+
+
 def _call_hf(model, system, user, max_tokens):
+    _zero_cost_guard()
     # Hugging Face router, OpenAI-compatible. "<model>:<provider>" pins the provider so prices match the registry.
     resp = requests.post(
         f"{config.HF_ROUTER_URL}/chat/completions",
@@ -133,6 +140,7 @@ def _call_hf(model, system, user, max_tokens):
 
 
 def _call_anthropic(model, system, user, max_tokens):
+    _zero_cost_guard()
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY, timeout=config.LAB_TIMEOUT_SECONDS)
     # Same call shape V1 verified live for Sonnet 5.5 (services/ai_service.py). between_tools is Sonnet 5.5 only.
     resp = client.messages.create(model=model["model_id"], max_tokens=max_tokens, system=system,

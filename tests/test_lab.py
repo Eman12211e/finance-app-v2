@@ -350,3 +350,21 @@ def test_check_lab_models_flags_missing_changed_and_matching():
     assert rows["kimi"] == ("CHANGED", "price now 0.9 / 3.5 per M tokens")
     assert rows["gpt-oss"] == ("CHANGED", "status error")
     assert rows["deepseek"][0] == rows["glm"][0] == "MISSING" and rows["claude"][0] == "SKIP"
+
+
+# ---- zero-cost guard at every AI call site (the SDK can authenticate from a saved login with a blank key) ----
+
+def test_ai_call_sites_refuse_in_zero_cost_mode_even_with_keys_and_gates_open(live_ready, monkeypatch):
+    from services import ai_service
+    from services.errors import AIUnavailable
+    monkeypatch.setattr(config, "ZERO_COST_MODE", True)  # every other gate stays open
+    model = llm_providers.get_model("qwen")
+    with pytest.raises(LiveInferenceDisabled):
+        llm_providers._call_hf(model, "sys", "user", 10)
+    with pytest.raises(LiveInferenceDisabled):
+        llm_providers._call_anthropic(llm_providers.get_model("claude"), "sys", "user", 10)
+    with pytest.raises(AIUnavailable):
+        ai_service._call_claude("sys", [{"role": "user", "content": "hi"}], 10)
+    with pytest.raises(LiveInferenceDisabled):
+        llm_providers.complete(model, "sys", "user", 10, live=True)
+    assert not live_ready.exists()  # nothing reserved or spent

@@ -313,6 +313,7 @@ class FakeAnthropic:
 
 def fake_sdk(monkeypatch, text, stop_reason, output_tokens):
     monkeypatch.setattr(config, "ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setattr(config, "ZERO_COST_MODE", False)  # exercises the SDK call shape against a fake SDK
     FakeAnthropic.calls = []
     monkeypatch.setattr(ai_service.anthropic, "Anthropic", lambda **kw: FakeAnthropic(text, stop_reason, output_tokens))
 
