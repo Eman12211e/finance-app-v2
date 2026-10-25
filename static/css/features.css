@@ -228,3 +228,47 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
   .br-firms, .br-grid { grid-template-columns: minmax(0, 1fr); }
   .br-cell-firm { display: block; }
 }
+
+/* ---- Practice Trading ---- */
+.paper[hidden] { display: none; }
+.paper { display: grid; gap: var(--gap); padding: var(--gap) 24px; max-width: 1400px; margin: 0 auto; }
+.pt-banner { border: 3px solid #b45309; background: #fffbeb; border-radius: var(--radius); padding: 10px 14px; }
+.pt-banner p { margin: 0 0 4px; }
+.pt-banner-title { font-weight: 800; color: #92400e; letter-spacing: .02em; }
+.pt-title { margin: 0; }
+.pt-message { margin: 0; font-weight: 600; }
+.pt-day { color: var(--muted); margin: 0 0 8px; }
+.pt-stats { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.pt-stat { background: var(--bg); border-radius: 8px; padding: 8px 10px; }
+.pt-stat-label { font-size: .8rem; color: var(--muted); margin: 0; }
+.pt-stat-value { font-size: 1.15rem; font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; }
+.pt-controls, .pt-actions, .pt-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pt-reset { margin-left: auto; }
+.pt-confirm-reset { margin-top: 12px; padding: 10px 12px; border: 2px solid var(--down); border-radius: 8px; display: grid; gap: 8px; justify-items: start; }
+.pt-layout { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 360px) minmax(0, 1fr); align-items: start; }
+.pt-col { display: grid; gap: var(--gap); min-width: 0; }
+.pt-ticket { display: grid; gap: 10px; }
+.pt-ticket select, .pt-ticket input[type="number"], .pt-journal textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; width: 100%; }
+.pt-sides, .pt-journal { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: grid; gap: 6px; }
+.pt-sides { grid-template-columns: repeat(2, max-content); column-gap: 16px; }
+.pt-sides legend { grid-column: 1 / -1; }
+.pt-small { font-size: .85rem; color: var(--muted); margin: 0; }
+.pt-preview { border-top: 1px solid var(--border); padding-top: 10px; display: grid; gap: 8px; }
+.pt-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pt-item { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.pt-item p { margin: 0 0 2px; }
+.pt-item-title { font-weight: 700; }
+.pt-rejected { border-left: 4px solid var(--down); }
+.pt-cancelled { border-left: 4px solid var(--muted); }
+.pt-filled { border-left: 4px solid var(--up); }
+.pt-note { font-style: italic; }
+.pt-damaged { border: 2px solid var(--down); display: grid; gap: 8px; justify-items: start; }
+@media (max-width: 1100px) {
+  .pt-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pt-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .paper { padding-left: 12px; padding-right: 12px; }
+  .pt-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pt-reset { margin-left: 0; }
+}
