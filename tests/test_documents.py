@@ -10,7 +10,7 @@ from services import documents
 from services.prompts import LAB_BANNED_PATTERNS
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
-DOC_FIELDS = {"id", "title", "summary", "when_you_see_it", "sources", "sections"}
+DOC_FIELDS = {"id", "title", "summary", "card_blurb", "when_you_see_it", "sources", "sections"}
 SECTION_FIELDS = {"id", "heading", "origin", "source", "location", "passage", "plain_english", "why_it_matters",
                   "tags", "look_for", "questions"}
 TAGS = {"fees", "risks", "rights", "disclosures", "personal_information"}
@@ -199,7 +199,60 @@ def test_sign_js_collects_and_stores_nothing():
         assert banned not in js, banned
     assert re.findall(r'\.type = "(\w+)"', js) and set(re.findall(r'box\.type = "(\w+)"', js)) == {"checkbox"}
     assert "Nothing you select is saved or sent." in js
-    assert "never asks for your Social" in js and "It never signs, submits or opens anything for you." in js
+
+
+SAFETY = [
+    "Your Safety Comes First",
+    "Before signing any financial document, take time to understand its terms, fees, potential risks, and your rights. "
+    "Always verify that you're dealing with a legitimate financial institution and review any agreement carefully "
+    "before providing personal information or signing.",
+    "Never enter your Social Security number, identification documents, or account passwords into this educational guide.",
+    "Educational information only. Not legal, tax, or investment advice.",
+]
+# Neither promise nor permanently rule out signing, submission or account opening.
+SIGNING_CLAIMS = re.compile(r"never signs|does not sign|doesn't sign|submit forms|opens? (an )?accounts? for you"
+                            r"|sign (online|here|now|electronically)|e-?sign|electronic signature|submit (your|this|the)",
+                            re.IGNORECASE)
+
+
+def js_strings(js):
+    """The page text as written in sign.js, with string concatenations joined."""
+    return re.sub(r'"\s*\+\s*"', "", js)
+
+
+def test_safety_panel_has_the_exact_approved_copy():
+    text = js_strings(read("static", "js", "sign.js"))
+    for line in SAFETY:
+        assert line in text, line
+
+
+def test_no_claim_that_signing_or_account_opening_is_supported():
+    texts = [js_strings(read("static", "js", "sign.js")), read("templates", "index.html")]
+    texts += [read("data", "documents", f"{d}.json") for d in documents.ORDER]
+    for text in texts:
+        assert not SIGNING_CLAIMS.search(text), SIGNING_CLAIMS.search(text).group(0)
+    assert "This app does not sign documents" not in texts[0]
+
+
+def test_intro_wording():
+    text = js_strings(read("static", "js", "sign.js"))
+    assert ("Before opening an investment account, understand the documents you're agreeing to, the risks involved, "
+            "and the rights you may be giving up.") in text
+    assert "Read key passages from account documents next to plain-English explanations" not in text
+
+
+def test_form_crs_is_named_and_explained_for_beginners():
+    crs = documents.get_document("form-crs")
+    assert crs["title"] == "Form CRS (Customer Relationship Summary)"
+    assert crs["summary"] == ("A short disclosure document that explains a financial firm's services, fees, conflicts "
+                              "of interest, and disciplinary history. It helps you understand important details before "
+                              "choosing a firm.")
+    assert documents.list_documents()[0]["title"] == crs["title"]  # first visible mention: the first document card
+
+
+def test_every_card_says_what_it_is_and_why_to_review_it():
+    for d in documents.list_documents():
+        assert "Review it to" in d["card_blurb"] and len(d["card_blurb"].split()) <= 30, d["id"]
 
 
 def test_sign_js_labels_every_origin_and_links_accounts_101():
@@ -213,7 +266,8 @@ def test_sign_js_labels_every_origin_and_links_accounts_101():
 def test_checklist_prints_alone_and_layout_stacks_on_phones():
     css = read("static", "css", "features.css")
     assert "@media print" in css and "body.print-checklist #sign-checklist" in css
-    assert ".sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }" in css
+    assert ".sign-top, .sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }" in css
+    assert ".sign-top { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) 360px;" in css
 
 
 def test_tabs_are_owned_by_app_js():

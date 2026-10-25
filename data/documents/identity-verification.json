@@ -2,6 +2,7 @@
   "id": "identity-verification",
   "title": "Identity verification when opening an account",
   "summary": "Federal law requires brokerage firms to collect and verify certain information before opening an account. Knowing what a real firm asks for, and what it never needs, helps you spot impostors. This app never asks for any of this information.",
+  "card_blurb": "What a firm must collect to confirm who you are. Review it to spot requests a real firm would not make.",
   "when_you_see_it": "During the account application, on the firm's own website, app or paper form.",
   "sources": {
     "cfr_cip": {

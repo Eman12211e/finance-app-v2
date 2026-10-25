@@ -1,7 +1,8 @@
 {
   "id": "form-crs",
-  "title": "Form CRS (relationship summary)",
-  "summary": "A short summary, usually two pages, that a brokerage firm must give you. It covers its services, fees, conflicts of interest and disciplinary history. The SEC sets what it must say; each firm writes its own version.",
+  "title": "Form CRS (Customer Relationship Summary)",
+  "summary": "A short disclosure document that explains a financial firm's services, fees, conflicts of interest, and disciplinary history. It helps you understand important details before choosing a firm.",
+  "card_blurb": "A short summary of a firm's services, fees and conflicts of interest. Review it to compare firms before you choose one.",
   "when_you_see_it": "Before or when you open an account, or when a firm first recommends an account type or investment.",
   "sources": {
     "sec_formcrs": {

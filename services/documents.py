@@ -23,7 +23,8 @@ def _load():
 
 
 def list_documents():
-    return [{"id": d["id"], "title": d["title"], "summary": d["summary"], "when_you_see_it": d["when_you_see_it"],
+    return [{"id": d["id"], "title": d["title"], "summary": d["summary"], "card_blurb": d["card_blurb"],
+             "when_you_see_it": d["when_you_see_it"],
              "origins": sorted({s["origin"] for s in d["sections"]}), "section_count": len(d["sections"])}
             for d in _load().values()]
 

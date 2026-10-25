@@ -2,6 +2,7 @@
   "id": "margin-agreement",
   "title": "Margin agreement",
   "summary": "The agreement that lets you borrow from a brokerage firm to buy investments, using your investments as collateral. Before a firm opens a margin account, FINRA requires it to give you a margin disclosure statement. This page mixes summaries of that rule with a fictional example agreement.",
+  "card_blurb": "Only needed if you borrow to invest. Review it to understand how you could lose more money than you put in.",
   "when_you_see_it": "Only if you apply for margin. Many applications ask whether you want a cash account or a margin account.",
   "sources": {
     "finra_2264": {

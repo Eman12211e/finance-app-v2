@@ -106,7 +106,13 @@
 /* ---- Understand Before You Sign ---- */
 .sign[hidden] { display: none; }
 .sign { display: grid; gap: var(--gap); padding: var(--gap) 24px; max-width: 1400px; margin: 0 auto; }
-.sign-banner { background: var(--accent-soft); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 12px; }
+.sign-top { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+.sign-lead { font-size: 1.1rem; }
+.sign-safety { background: var(--accent-soft); border: 2px solid var(--accent); }
+.sign-safety h3 { margin-top: 0; color: var(--accent); }
+.sign-privacy { font-weight: 600; border-top: 1px solid var(--border); padding-top: 8px; }
+.sign-disclaimer { color: var(--muted); margin: 0; }
+.sign-doc-blurb { font-size: .85rem; color: var(--text); }
 .sign-legend { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: .9rem; }
 .sign-layout { display: grid; gap: var(--gap); grid-template-columns: 220px minmax(0, 1fr) 300px; align-items: start; }
 .sign-doc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -153,7 +159,7 @@
 }
 @media (max-width: 720px) {
   .sign { padding-left: 12px; padding-right: 12px; }
-  .sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }
+  .sign-top, .sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }
 }
 @media print {
   body.print-checklist { background: #fff; }

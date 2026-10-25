@@ -2,6 +2,7 @@
   "id": "form-w9",
   "title": "Form W-9",
   "summary": "An IRS form a brokerage firm asks you to complete so it can report your interest, dividends and sales to the IRS. It asks for your taxpayer identification number, usually your Social Security number. This page shows the official text only. Never type your number into this app.",
+  "card_blurb": "The tax form that asks for your taxpayer identification number. Review it to know why firms ask and how to share it carefully.",
   "when_you_see_it": "While opening a taxable account, usually as part of the firm's own secure application.",
   "sources": {
     "irs_fw9": {

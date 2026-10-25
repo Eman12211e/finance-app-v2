@@ -2,6 +2,7 @@
   "id": "brokerage-agreement",
   "title": "Brokerage account agreement",
   "summary": "The contract between you and a brokerage firm. Real agreements are long and differ between firms. The clauses below are a fictional example written for this app, mixed with summaries of official rules that real agreements must follow.",
+  "card_blurb": "The contract for your account. Review it to see the fees, deadlines and rights you agree to, such as using arbitration instead of court.",
   "when_you_see_it": "At the end of an account application, usually with a checkbox saying you have read and agree to it.",
   "sources": {
     "example": {

@@ -221,18 +221,15 @@
 
   function renderShell(docs) {
     root.textContent = "";
+    var top = el("div", "sign-top");
     var intro = el("div", "card sign-intro");
     var title = el("h2", null, "Understand Before You Sign");
     title.id = "sign-title";
     intro.appendChild(title);
-    intro.appendChild(el("p", null, "Read key passages from account documents next to plain-English explanations, "
-      + "then collect the questions you want to ask a firm."));
-    var banner = el("p", "sign-banner");
-    banner.setAttribute("role", "note");
-    banner.textContent = "Education only. Not legal, tax or investment advice. This app never asks for your Social "
-      + "Security number, ID documents or passwords, so do not type them anywhere here. "
-      + "It never signs, submits or opens anything for you.";
-    intro.appendChild(banner);
+    intro.appendChild(el("p", "sign-lead", "Before opening an investment account, understand the documents you're "
+      + "agreeing to, the risks involved, and the rights you may be giving up."));
+    intro.appendChild(el("p", null, "New to investing? Start with any document below. Each one shows what it says, "
+      + "what it means in plain English, and questions you can tick to build a list to bring to a firm."));
     var legend = el("ul", "sign-legend");
     Object.keys(ORIGINS).forEach(function (key) {
       var li = el("li", "sign-origin-" + key);
@@ -241,7 +238,21 @@
       legend.appendChild(li);
     });
     intro.appendChild(legend);
-    root.appendChild(intro);
+    top.appendChild(intro);
+
+    var safety = el("aside", "card sign-safety");
+    safety.setAttribute("aria-labelledby", "sign-safety-title");
+    var safetyTitle = el("h3", null, "Your Safety Comes First");
+    safetyTitle.id = "sign-safety-title";
+    safety.appendChild(safetyTitle);
+    safety.appendChild(el("p", null, "Before signing any financial document, take time to understand its terms, fees, "
+      + "potential risks, and your rights. Always verify that you're dealing with a legitimate financial institution "
+      + "and review any agreement carefully before providing personal information or signing."));
+    safety.appendChild(el("p", "sign-privacy",
+      "Never enter your Social Security number, identification documents, or account passwords into this educational guide."));
+    safety.appendChild(el("p", "sign-small sign-disclaimer", "Educational information only. Not legal, tax, or investment advice."));
+    top.appendChild(safety);
+    root.appendChild(top);
 
     var layout = el("div", "sign-layout");
     var nav = el("nav", "sign-nav card");
@@ -253,6 +264,7 @@
       b.type = "button";
       b.dataset.id = d.id;
       b.appendChild(el("span", "sign-doc-title", d.title));
+      b.appendChild(el("span", "sign-doc-blurb", d.card_blurb));
       b.appendChild(el("span", "sign-small muted", d.origins.map(function (o) { return ORIGINS[o][0]; }).join(" · ")));
       b.addEventListener("click", function () { openDocument(d.id); });
       li.appendChild(b);

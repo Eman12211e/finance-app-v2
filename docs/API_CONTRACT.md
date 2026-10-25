@@ -515,8 +515,8 @@ Errors: `INVALID_REQUEST` 400 (bad scenario or models, live without `confirm_liv
 
 ## V2: Understand Before You Sign (read-only)
 
-`GET /api/documents` → `data.documents` [{id, title, summary, when_you_see_it, origins, section_count}], in the order
-people usually meet them. `GET /api/documents/<id>` → the full guide: {id, title, summary, when_you_see_it,
+`GET /api/documents` → `data.documents` [{id, title, summary, card_blurb, when_you_see_it, origins, section_count}], in the order
+people usually meet them. `GET /api/documents/<id>` → the full guide: {id, title, summary, card_blurb, when_you_see_it,
 sources {key: {publisher, title, url, version, retrieved_on, license}}, sections [{id, heading, origin, source,
 location, passage, plain_english, why_it_matters, tags, look_for, questions, accounts_101?}]}.
 
