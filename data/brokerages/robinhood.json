@@ -1,0 +1,309 @@
+{
+  "id": "robinhood",
+  "brand": "Robinhood",
+  "legal_entity": "Robinhood Financial LLC",
+  "crd": 165998,
+  "brokercheck_url": "https://brokercheck.finra.org/firm/summary/165998",
+  "official_domains": [
+    "robinhood.com"
+  ],
+  "entity_note": "Robinhood Financial LLC is the introducing broker-dealer. Its affiliate Robinhood Securities, LLC holds customer cash and securities, executes and clears trades, and extends margin credit.",
+  "sources": {
+    "crs": {
+      "publisher": "Robinhood Financial LLC (copy hosted by FINRA)",
+      "title": "Customer Relationship Summary (Form CRS), as filed",
+      "url": "https://files.brokercheck.finra.org/crs_165998.pdf",
+      "kind": "regulatory_filing",
+      "effective": "2026-10-01",
+      "retrieved_on": "2026-10-25",
+      "check": "hash",
+      "sha256": "0644c12d58b3b0876e0023322c32cb75f0e16cdac42176bd62c2f10fcfda3725",
+      "note": "The filed copy includes page 1 of the summary and the customer notice about the update."
+    },
+    "crs_full": {
+      "publisher": "Robinhood Financial LLC",
+      "title": "Customer Relationship Summary (Form CRS), firm's copy",
+      "url": "https://cdn.robinhood.com/assets/robinhood/legal/RHF%20Customer%20Relationship%20Summary.pdf",
+      "kind": "regulatory_filing",
+      "effective": "2026-10-01",
+      "retrieved_on": "2026-10-25",
+      "check": "hash",
+      "sha256": "1130a2a68263e48f363a3f9d89aed086be147f90d8e9f6fb133c55250dc82a84",
+      "note": "Both pages of the summary; same effective date as the filed copy."
+    },
+    "fee_schedule": {
+      "publisher": "Robinhood Financial LLC",
+      "title": "Robinhood Financial Standard Pricing Fee Schedule",
+      "url": "https://cdn.robinhood.com/assets/robinhood/legal/RHF%20Fee%20Schedule.pdf",
+      "kind": "firm_pricing",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "hash",
+      "sha256": "2556f4548f21d8b2630cf2e91003ab90f2d7902ed999ee7e5d5b85ee90aa86d6",
+      "note": "No single effective date; individual items carry their own dates. Document code 20260929-5969628-19014374."
+    },
+    "support": {
+      "publisher": "Robinhood",
+      "title": "Robinhood Support",
+      "url": "https://robinhood.com/us/en/support/",
+      "kind": "firm_page",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "manual",
+      "note": "Address not confirmed by an automated check."
+    }
+  },
+  "facts": [
+    {
+      "field": "account_types",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Individual and joint brokerage accounts, Traditional and Roth IRAs, revocable trust accounts and custodial (UTMA) accounts. No mutual funds or bonds except through ETFs.",
+      "source": "crs_full",
+      "location": "Form CRS, \"What investment services and advice can you provide me?\"",
+      "quote": "We offer individual and joint brokerage accounts, Traditional and Roth Individual Retirement Accounts (IRAs), revocable trust accounts, and custodial (UTMA) accounts. We do not offer mutual funds or fixed income securities, except in the form of an ETF.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "offers_ira",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": true,
+      "display": "Yes: Traditional and Roth IRAs.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "Traditional and Roth Individual Retirement Accounts (IRAs)",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "eligibility",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Not stated in the sources checked for this milestone.",
+      "check_source": "support",
+      "to_verify": "Who may open an account (for example U.S. residency and age requirements), as stated in Robinhood's customer agreement or account-opening pages.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "account_minimum_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": 0,
+      "display": "$0. Robinhood says it has no account minimums.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "We do not have any account minimums.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "account_fees",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Administrative fees apply, such as regulatory and exchange fees and some paper document fees. Robinhood Gold is an optional paid subscription.",
+      "source": "crs_full",
+      "location": "Form CRS, \"What fees will I pay?\"",
+      "quote": "Robinhood offers a subscription-based service called Robinhood Gold for a fee. … Robinhood charges other administrative fees, such as regulatory and exchange fees, and fees for certain paper copies of account documents as outlined in our Fee Schedule.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "transfer_out_fee_cents",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "The fee schedule lists an outgoing ACATS transfer fee, but its table text could not be matched to an amount reliably.",
+      "check_source": "fee_schedule",
+      "to_verify": "The amount next to \"ACATS, Outgoing\" in the Transfers & Money Movement Fees table.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "stock_etf_commission_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": 0,
+      "display": "$0 commissions for U.S.-listed stocks and ETFs in self-directed accounts traded in the app or on the website.",
+      "source": "fee_schedule",
+      "location": "Fee Schedule, Stocks, Options & ETFs",
+      "quote": "Commission-free trading refers to $0 commissions for Robinhood Financial self-directed individual cash or margin brokerage accounts that trade U.S. listed and OTC securities (including ETFs and closed-end funds), and their options via the app or website.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "option_contract_fee_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": 0,
+      "display": "$0 for options on U.S.-listed stocks and ETFs. Index options have a per-contract fee (see other trading costs), and regulatory fees apply.",
+      "source": "fee_schedule",
+      "location": "Fee Schedule, Stocks, Options & ETFs",
+      "quote": "Commission-free trading refers to $0 commissions for Robinhood Financial self-directed individual cash or margin brokerage accounts that trade U.S. listed and OTC securities (including ETFs and closed-end funds), and their options via the app or website.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "other_trading_costs",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Index options: $0.50 per contract, or $0.35 with Robinhood Gold. Regulatory trading fees are added to some trades.",
+      "source": "fee_schedule",
+      "location": "Fee Schedule, Index Options (Contract Fee)",
+      "quote": "Non-Gold Rate: $0.50 per options contract (buys and sells) Gold Rate: $0.35 per options contract (buys and sells)",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "fractional_shares",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": true,
+      "display": "Yes, in many of the stocks, ETFs and ADRs it offers.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "We also offer fractional shares in many of the same stocks, ETFs, and ADRs.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "retirement_services",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Traditional and Roth IRAs.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "Traditional and Roth Individual Retirement Accounts (IRAs)",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "research_education",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Educational content and tools about trading and the markets.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "Robinhood also provides educational content and tools for investors to learn about trading and the markets.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "advisor_access",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "App-based and self-directed. Offers one-time ETF portfolio recommendations (minimum $20) and does not monitor accounts.",
+      "source": "crs_full",
+      "location": "Form CRS, services section",
+      "quote": "Portfolio Recommendations are only available for certain ETFs with a minimum investment of $20.00 … Robinhood Financial does not provide account or investment monitoring services.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "advisor_cost",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "No charge for its one-time portfolio and stock lending recommendations. Advisory services from affiliates were not reviewed.",
+      "source": "crs_full",
+      "location": "Form CRS, \"What fees will I pay?\"",
+      "quote": "nor does it charge for the point in time Portfolio Recommendations or Stock Lending Recommendations we make.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "margin_available",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": true,
+      "display": "Yes. Interest is charged on money you borrow in a margin account.",
+      "source": "crs_full",
+      "location": "Form CRS, \"What fees will I pay?\"",
+      "quote": "Margin Interest: Robinhood charges a percentage on funds you borrow to purchase securities in a margin account.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "margin_rates",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "5.25% for settled margin balances up to $50,000, as of September 16, 2026. Rates are lower for larger balances and can change without notice.",
+      "source": "fee_schedule",
+      "location": "Fee Schedule, Margin table and footnote x",
+      "quote": "Settled Margin Balance Up to $50,000 … Margin interest rate 5.25% … Margin rates shown are as of September 16, 2026.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "cash_handling",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Interest on eligible cash through the High-Yield Cash Program is available to Robinhood Gold subscribers. Robinhood earns compensation from the program.",
+      "source": "crs_full",
+      "location": "Form CRS, conflicts of interest",
+      "quote": "available to Robinhood Gold subscribers. Robinhood earns compensation in connection with this program, which creates a conflict of interest.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "support_contact",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Support channels and hours are not stated in the sources checked for this milestone.",
+      "check_source": "support",
+      "to_verify": "How to contact customer support (phone, chat, email) and the published hours, from Robinhood's help pages.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "opening_requirements",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Firm-specific requirements were not verified. Every broker-dealer must collect your name, date of birth, address and taxpayer identification number; see the identity verification guide.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "promotions",
+      "kind": "unknown",
+      "value": null,
+      "display": "Not shown",
+      "reason": "Promotions change often and are not shown or used in comparisons. Check the firm's own site for current offers and their terms.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "conflicts",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Earns revenue from market centers it routes orders to (payment for order flow), which gives it an incentive for customers to trade more.",
+      "source": "crs_full",
+      "location": "Form CRS, conflicts of interest",
+      "quote": "we earn revenue from third-party market centers to which we route customer orders, so we have an incentive to route orders to market centers that pay or rebate us for such orders, subject to our best execution requirements.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "disciplinary_history",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Yes. Look up the details on Investor.gov/CRS or BrokerCheck.",
+      "source": "crs_full",
+      "location": "Form CRS, disciplinary history",
+      "quote": "Do you or your financial professionals have legal or disciplinary history? Yes.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "regulatory_filing",
+      "kind": "regulatory_record",
+      "method": "source_check",
+      "value": null,
+      "display": "FINRA hosts this firm's Form CRS, effective October 1, 2026 (CRD 165998).",
+      "source": "crs",
+      "location": "FINRA BrokerCheck file server",
+      "quote": "is registered with the U.S. Securities and Exchange Commission as a broker-dealer and is a member of the Financial Industry Regulatory Authority",
+      "verified_on": "2026-10-25"
+    }
+  ],
+  "audit": [
+    {
+      "date": "2026-10-25",
+      "change": "Added Robinhood Financial LLC from its Form CRS (effective 2026-10-01; FINRA-filed and firm copies) and the Standard Pricing Fee Schedule.",
+      "by": "Finance App V2 maintainers"
+    }
+  ]
+}

@@ -540,6 +540,9 @@ does_not_meet, unknown}}, `fee_examples` [{…, quantity, results {firm_id: {cen
 `app_incentives`, `excluded`, `stale_after_days`, `today`.
 
 A cell: `kind` (`firm_terms` = the firm's own published terms or filing; `regulatory_record` = what a regulator
-holds on file; `unknown`), `display`, `value`, `verified_on`, `age_days`, `stale`; known cells add `location`,
-`quote`, `source` {publisher, title, url, kind, effective, retrieved_on}; unknown cells add `reason`, `check_url`.
+holds on file; `unknown`), `display`, `value`, `varies` (price depends on the firm's plan), `verified_on`,
+`age_days`, `stale`; known cells add `location`, `quote`, `source` {publisher, title, url, kind, effective,
+retrieved_on} and `verification` {method: `source_check` | `owner_check`, label, by}; unknown cells add `reason`,
+`check_url`, `to_verify`. Firms carry an optional `entity_note`; `overview` adds `verification_methods`. Filter
+results can also be `varies`, which is never counted as meeting or not meeting.
 Money values are integer cents. Unknown is never counted as "does not meet". Errors: `INVALID_REQUEST` 400.

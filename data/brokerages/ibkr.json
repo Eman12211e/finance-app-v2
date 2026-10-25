@@ -1,0 +1,311 @@
+{
+  "id": "ibkr",
+  "brand": "Interactive Brokers",
+  "legal_entity": "Interactive Brokers LLC",
+  "crd": 36418,
+  "brokercheck_url": "https://brokercheck.finra.org/firm/summary/36418",
+  "official_domains": [
+    "interactivebrokers.com",
+    "ibkr.com"
+  ],
+  "entity_note": "The Form CRS is a joint summary for Interactive Brokers LLC and Interactive Brokers Corp. Retail brokerage accounts are with Interactive Brokers LLC.",
+  "sources": {
+    "crs": {
+      "publisher": "Interactive Brokers LLC (copy hosted by FINRA)",
+      "title": "Customer Relationship Summary (Form CRS)",
+      "url": "https://files.brokercheck.finra.org/crs_36418.pdf",
+      "kind": "regulatory_filing",
+      "effective": "2023-12-19",
+      "retrieved_on": "2026-10-25",
+      "check": "hash",
+      "sha256": "70256cb1c6ebce8a0f7c4246d29acb7bab08910bd12fe585233215a6b64a8830"
+    },
+    "stock_pricing": {
+      "publisher": "Interactive Brokers",
+      "title": "Commissions: Stocks, ETFs and Warrants",
+      "url": "https://www.interactivebrokers.com/en/pricing/commissions-stocks.php",
+      "kind": "firm_pricing",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "quote"
+    },
+    "option_pricing": {
+      "publisher": "Interactive Brokers",
+      "title": "Commissions: Options",
+      "url": "https://www.interactivebrokers.com/en/pricing/commissions-options.php",
+      "kind": "firm_pricing",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "quote"
+    },
+    "products": {
+      "publisher": "Interactive Brokers",
+      "title": "Products and services (address listed in the Form CRS)",
+      "url": "https://www.ibkr.com/products",
+      "kind": "firm_page",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "manual"
+    },
+    "interest": {
+      "publisher": "Interactive Brokers",
+      "title": "Interest rates (address listed in the Form CRS)",
+      "url": "https://www.ibkr.com/interest",
+      "kind": "firm_pricing",
+      "effective": null,
+      "retrieved_on": "2026-10-25",
+      "check": "manual"
+    }
+  },
+  "facts": [
+    {
+      "field": "account_types",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "The Form CRS describes products but not account types, and account pages were not checked in this milestone.",
+      "check_source": "products",
+      "to_verify": "The account types offered to individuals (for example individual, joint, IRA, trust, custodial), as named on the firm's account pages.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "offers_ira",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Not stated in the sources checked for this milestone.",
+      "check_source": "products",
+      "to_verify": "Whether Traditional and Roth IRAs are offered; copy the heading or sentence that says so.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "eligibility",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Not stated in the sources checked for this milestone.",
+      "check_source": "products",
+      "to_verify": "Who may open an account, and any plan restrictions (for example whether IBKR Lite is limited to U.S. residents).",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "account_minimum_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": 0,
+      "display": "Generally $0 to open or keep a brokerage account. Some products and services have their own minimums.",
+      "source": "crs",
+      "location": "Form CRS, Description of Services",
+      "quote": "While there are generally no account minimums or other requirements to open or maintain a brokerage account, certain products and services (e.g., Stock Yield Enhancement Program) may have minimum equity or other requirements.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "account_fees",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Fees depend on what you trade, how much you trade and your pricing plan. Optional subscriptions, such as market data, are charged separately.",
+      "source": "crs",
+      "location": "Form CRS, Fees, Costs, Conflicts, and Standard of Conduct",
+      "quote": "Fees and costs will vary depending on the products you trade, the volume of your trading, and the services and pricing plan you choose.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "transfer_out_fee_cents",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Not stated in the sources checked for this milestone.",
+      "check_source": "products",
+      "to_verify": "Any fee for transferring a whole account to another firm, from the firm's fee pages.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "stock_etf_commission_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "varies": true,
+      "display": "Depends on plan: $0 per share with IBKR Lite; $0.005 per share with IBKR Pro Fixed; volume-based with IBKR Pro Tiered (from $0.0035 per share).",
+      "source": "stock_pricing",
+      "location": "Stocks commissions page, United States table",
+      "quote": "IBKR Pro - Tiered IBKR Pro - Fixed IBKR Lite ≤ 300,000 USD 0.0035 USD 0.005 USD 0.00",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "option_contract_fee_cents",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "varies": true,
+      "display": "Depends on plan, monthly volume and option price. IBKR Lite: $0.65 per contract. IBKR Pro: up to $0.65 per contract for up to 10,000 contracts a month, lower for low-priced options.",
+      "source": "option_pricing",
+      "location": "Options commissions page, United States table",
+      "quote": "IBKR Pro IBKR Lite ≤ 10,000 USD 0.65 /contract",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "other_trading_costs",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Exchange, regulatory and clearing fees can be added to commissions, depending on the plan and product.",
+      "source": "crs",
+      "location": "Form CRS, Exchange, Regulatory, and Clearing Fees",
+      "quote": "These fees may be charged to your account in addition to commissions depending on the commission structure that you choose and the products you trade.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "fractional_shares",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": true,
+      "display": "Yes. Eligible securities and plan rules were not verified.",
+      "source": "crs",
+      "location": "Form CRS, conflicts of interest",
+      "quote": "acts as principal to facilitate the fractional share trading activity of IB LLC clients.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "retirement_services",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Not stated in the sources checked for this milestone.",
+      "check_source": "products",
+      "to_verify": "The retirement accounts offered (for example Traditional, Roth, Rollover or SEP IRA).",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "research_education",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Investment tools and education to help you monitor your account and make your own decisions. Some third-party research is a paid subscription.",
+      "source": "crs",
+      "location": "Form CRS, Description of Services",
+      "quote": "We provide investment tools and education to help you monitor the performance and composition of your account and make decisions as to the investments you choose to make.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "advisor_access",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Self-directed only. IBKR does not employ brokers or advisors to manage accounts and does not make recommendations to retail investors.",
+      "source": "crs",
+      "location": "Form CRS, Description of Services",
+      "quote": "IBKR does not employ human \"brokers\" or \"advisors\" to manage your account.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "advisor_cost",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Not applicable: IBKR does not provide investment advice to retail investors.",
+      "source": "crs",
+      "location": "Form CRS, Description of Services",
+      "quote": "IBKR does not provide investment advice or make recommendations to retail investors on account types or pricing plans.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "margin_available",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": true,
+      "display": "Yes. Margin loan interest and stock borrow fees apply.",
+      "source": "crs",
+      "location": "Form CRS, Interest and Financing Costs",
+      "quote": "IBKR may offer you financing, including allowing you to borrow on margin or to borrow stock for purposes of short selling.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "margin_rates",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "The pricing pages show an advertised starting rate only; the full rate table and its date were not checked.",
+      "check_source": "interest",
+      "to_verify": "The margin rate table for U.S. dollar loans by balance and plan, and the date it applies from.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "cash_handling",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "The Form CRS does not describe interest on uninvested cash, and the rates page was not checked.",
+      "check_source": "interest",
+      "to_verify": "What interest is paid on uninvested cash, on which balances and plans, and the date the rates apply from.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "support_contact",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Phone: 1-877-442-2757 (IBKR Client Services, listed in Form CRS). Support hours were not verified.",
+      "source": "crs",
+      "location": "Form CRS, Additional Information",
+      "quote": "call IBKR Client Services at 1 (877) 442-2757",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "opening_requirements",
+      "kind": "unknown",
+      "value": null,
+      "display": "Unknown",
+      "reason": "Firm-specific requirements were not verified. Every broker-dealer must collect your name, date of birth, address and taxpayer identification number; see the identity verification guide.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "promotions",
+      "kind": "unknown",
+      "value": null,
+      "display": "Not shown",
+      "reason": "Promotions change often and are not shown or used in comparisons. Check the firm's own site for current offers and their terms.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "conflicts",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Receives payment for order flow from some exchanges, market makers and other third parties that execute client orders.",
+      "source": "crs",
+      "location": "Form CRS, Payment for Order Flow",
+      "quote": "IBKR receives payment for order flow from certain exchanges, market makers, and other third parties through whom IBKR executes client orders.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "disciplinary_history",
+      "kind": "firm_terms",
+      "method": "source_check",
+      "value": null,
+      "display": "Yes. Look up the details on Investor.gov/CRS or BrokerCheck.",
+      "source": "crs",
+      "location": "Form CRS, Disciplinary History",
+      "quote": "Disciplinary History: Yes.",
+      "verified_on": "2026-10-25"
+    },
+    {
+      "field": "regulatory_filing",
+      "kind": "regulatory_record",
+      "method": "source_check",
+      "value": null,
+      "display": "FINRA hosts this firm's Form CRS, dated December 19, 2023 (CRD 36418). Check for a newer version before relying on it.",
+      "source": "crs",
+      "location": "FINRA BrokerCheck file server",
+      "quote": "IB LLC and IB Corp (collectively, “IBKR” or “we”) are broker-dealers registered with the Securities and Exchange Commission (“SEC”) and Financial Industry Regulatory Authority (“FINRA”).",
+      "verified_on": "2026-10-25"
+    }
+  ],
+  "audit": [
+    {
+      "date": "2026-10-25",
+      "change": "Added Interactive Brokers LLC from its Form CRS (dated 2023-12-19) and its U.S. stock and options commission pages.",
+      "by": "Finance App V2 maintainers"
+    }
+  ]
+}

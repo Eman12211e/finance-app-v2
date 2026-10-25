@@ -34,8 +34,8 @@ def fields():
 
 # ---- data integrity ----
 
-def test_b1_firms_and_e_trade_excluded_with_a_reason():
-    assert [f["id"] for f in all_firms()] == ["schwab", "fidelity"]  # alphabetical by brand
+def test_firms_in_alphabetical_order_and_e_trade_excluded_with_a_reason():
+    assert [f["brand"] for f in all_firms()] == ["Charles Schwab", "Fidelity Investments", "Interactive Brokers", "Robinhood"]
     excluded = brokerages.criteria()["excluded"]
     assert excluded[0]["brand"] == "E*TRADE" and "legal entity" in excluded[0]["reason"]
 
@@ -61,6 +61,8 @@ def test_fact_values_match_their_field_type():
             kind = fields()[f["field"]]["type"]
             if f["kind"] == "unknown":
                 assert f["value"] is None and f["reason"].strip(), (firm["id"], f["field"])
+            elif f.get("varies"):
+                assert kind in ("money", "boolean") and f["value"] is None, (firm["id"], f["field"])
             elif kind == "money":
                 assert isinstance(f["value"], int) and not isinstance(f["value"], bool) and f["value"] >= 0
             elif kind == "boolean":
@@ -69,15 +71,58 @@ def test_fact_values_match_their_field_type():
                 assert f["value"] is None, (firm["id"], f["field"])
 
 
-def test_known_facts_carry_source_location_and_a_short_quote():
+def fact_problems(firm, f):
+    """Provenance rules every fact must meet, including facts the owner adds after a browser check."""
+    if f["kind"] == "unknown":
+        problems = ["source/quote on an unknown fact"] if "source" in f or "quote" in f else []
+        if bool(f.get("check_source")) != bool(f.get("to_verify")):
+            problems.append("check_source and to_verify must come together")
+        if f.get("check_source") and f["check_source"] not in firm["sources"]:
+            problems.append("check_source not in sources")
+        return problems
+    problems = []
+    if f.get("method") not in brokerages.VERIFICATION:
+        problems.append("missing or unknown verification method")
+    if f.get("source") not in firm["sources"] or not firm["sources"][f["source"]].get("url"):
+        problems.append("needs a source with a URL")
+    if not f.get("location", "").strip() or not 0 < len(f.get("quote", "").split()) <= 40:
+        problems.append("needs a location and a quote of at most 40 words")
+    if f.get("method") == "owner_check" and not f.get("verified_by", "").strip():
+        problems.append("owner checks must say who verified")
+    if f["kind"] == "regulatory_record" and f.get("method") == "owner_check":
+        problems.append("an owner check cannot be a regulatory record")
+    return problems
+
+
+def test_every_fact_meets_the_provenance_rules():
     for firm in all_firms():
         for f in firm["facts"]:
-            if f["kind"] == "unknown":
-                assert "source" not in f and "quote" not in f
-                assert f.get("check_source") in (None, *firm["sources"])
-                continue
-            assert f["source"] in firm["sources"] and f["location"].strip(), (firm["id"], f["field"])
-            assert 0 < len(f["quote"].split()) <= 40, (firm["id"], f["field"])
+            assert fact_problems(firm, f) == [], (firm["id"], f["field"], fact_problems(firm, f))
+
+
+OWNER_FACT = {"field": "option_contract_fee_cents", "kind": "firm_terms", "method": "owner_check", "verified_by": "App owner",
+              "value": 65, "display": "$0.65 per contract.", "source": "pricing_guide", "location": "Pricing guide, options",
+              "quote": "$0.65 per contract", "verified_on": "2026-10-26"}
+
+
+def test_owner_verified_facts_are_accepted_and_labelled_as_not_certification():
+    schwab = copy.deepcopy(brokerages.firms()["schwab"])
+    assert fact_problems(schwab, OWNER_FACT) == []
+    assert fact_problems(schwab, {**OWNER_FACT, "verified_by": ""}) == ["owner checks must say who verified"]
+    assert "an owner check cannot be a regulatory record" in fact_problems(schwab, {**OWNER_FACT, "kind": "regulatory_record"})
+    schwab["facts"] = [OWNER_FACT if f["field"] == OWNER_FACT["field"] else f for f in schwab["facts"]]
+    original = brokerages._firms
+    brokerages._firms = {**brokerages.firms(), "schwab": schwab}
+    try:
+        result = brokerages.compare(["schwab", "fidelity"], quantity=2, today=TODAY)
+    finally:
+        brokerages._firms = original
+    cell = [r for cr in result["criteria"] for r in cr["rows"]
+            if r["field"] == "option_contract_fee_cents"][0]["cells"]["schwab"]
+    assert cell["verification"]["method"] == "owner_check" and cell["verification"]["by"] == "App owner"
+    assert "Not a regulatory certification." in cell["verification"]["label"]
+    assert cell["source"]["url"] == "https://www.schwab.com/pricing-guide" and cell["verified_on"] == "2026-10-26"
+    assert result["fee_examples"][0]["results"]["schwab"] == {"cents": 130, "display": "$1.30"}
 
 
 def test_every_source_is_dated_and_checkable():
@@ -161,7 +206,24 @@ def test_filters_treat_unknown_as_unknown_never_as_no():
     got = {fl["id"]: fl["results"] for fl in result["filters"]}
     assert got["fractional"] == {"schwab": "unknown", "fidelity": "meets"}
     assert got["no_minimum"] == {"schwab": "meets", "fidelity": "meets"}
-    assert result["filter_summary"]["schwab"] == {"meets": 1, "does_not_meet": 0, "unknown": 2}
+    assert result["filter_summary"]["schwab"] == {"meets": 1, "does_not_meet": 0, "varies": 0, "unknown": 2}
+
+
+def test_plan_dependent_prices_are_never_counted_as_meeting_or_not():
+    result = brokerages.compare(["ibkr", "robinhood"], filter_ids=["free_stock_etf_trades"], quantity=10, today=TODAY)
+    assert result["filters"][0]["results"] == {"ibkr": "varies", "robinhood": "meets"}
+    fee = result["fee_examples"][0]["results"]
+    assert fee["ibkr"] is None and fee["robinhood"] == {"cents": 0, "display": "$0.00"}
+    cell = [r for cr in result["criteria"] for r in cr["rows"]
+            if r["field"] == "stock_etf_commission_cents"][0]["cells"]["ibkr"]
+    assert cell["varies"] is True and "Depends on plan" in cell["display"]
+    assert brokerages.match({"op": "eq", "value": 0}, {"kind": "firm_terms", "value": None, "varies": True}) == "varies"
+
+
+def test_entity_notes_explain_affiliated_entities():
+    by_id = {f["id"]: f for f in brokerages.overview()["firms"]}
+    assert "Robinhood Securities, LLC" in by_id["robinhood"]["entity_note"]
+    assert "Interactive Brokers LLC" in by_id["ibkr"]["entity_note"] and by_id["schwab"]["entity_note"] is None
 
 
 def test_match_rule_outcomes():
@@ -188,11 +250,12 @@ def test_cells_show_source_dates_and_unknown_reasons():
     rows = {r["field"]: r for cr in brokerages.compare(["schwab", "fidelity"], today=TODAY)["criteria"] for r in cr["rows"]}
     known = rows["option_contract_fee_cents"]["cells"]["fidelity"]
     assert known["source"]["url"].startswith("https://www.fidelity.com/") and known["verified_on"] == "2026-10-25"
-    assert known["quote"] and known["kind"] == "firm_terms"
+    assert known["quote"] and known["kind"] == "firm_terms" and known["verification"]["method"] == "source_check"
     crs = rows["account_minimum_cents"]["cells"]["schwab"]["source"]
     assert crs["kind"] == "regulatory_filing" and crs["effective"] == "2025-12-12"
     unknown = rows["option_contract_fee_cents"]["cells"]["schwab"]
-    assert unknown["display"] == "Unknown" and unknown["reason"] and unknown["check_url"] == "https://www.schwab.com/pricing"
+    assert unknown["display"] == "Unknown" and unknown["reason"] and unknown["check_url"] == "https://www.schwab.com/pricing-guide"
+    assert "per contract" in unknown["to_verify"]
     assert rows["regulatory_filing"]["cells"]["fidelity"]["kind"] == "regulatory_record"
 
 
@@ -224,7 +287,8 @@ def test_invalid_selections_are_rejected(kwargs, message):
 
 def test_overview_route(client):
     data = client.get("/api/brokerages").get_json()["data"]
-    assert [f["brand"] for f in data["firms"]] == ["Charles Schwab", "Fidelity Investments"]
+    assert [f["brand"] for f in data["firms"]] == ["Charles Schwab", "Fidelity Investments", "Interactive Brokers", "Robinhood"]
+    assert set(data["verification_methods"]) == {"source_check", "owner_check"}
     assert data["excluded"][0]["brand"] == "E*TRADE" and data["stale_after_days"] == 90
     assert "does not rank" in data["notice"] and "no referral or affiliate" in data["app_incentives"]
 
@@ -283,3 +347,17 @@ def test_real_data_passes_the_checker_against_matching_sources():
     page = " ".join(f["quote"] for f in firm["facts"] if f.get("source") in ("pricing", "fractional", "accounts")).encode()
     rows = checker().check_firm(firm, lambda url: page if "fidelity.com" in url else None, TODAY)
     assert not [r for r in rows if r[0] in ("FAIL", "STALE")]
+
+
+def test_owner_checklist_lists_every_open_schwab_field_with_a_page_and_what_to_verify():
+    items = checker().checklist(brokerages.firms()["schwab"])
+    assert len(items) == 11
+    for label, url, what in items:
+        assert label and what.strip() and urlparse(url).hostname.endswith("schwab.com")
+
+
+def test_checker_asks_for_periodic_rechecks_of_owner_verified_facts():
+    firm = {"id": "demo", "sources": {"guide": {"url": "https://demo.example/guide", "check": "manual"}},
+            "facts": [{**OWNER_FACT, "source": "guide"}]}
+    rows = checker().check_firm(firm, {}.get, TODAY)
+    assert any(s == "MANUAL" and "owner-checked 2026-10-26" in d for s, _, d in rows)

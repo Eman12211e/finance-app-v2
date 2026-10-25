@@ -87,7 +87,8 @@ venv\Scripts\python scripts\check_document_sources.py
 Dated, source-backed facts about brokerage firms in `data/brokerages/*.json`, with the comparison criteria in
 `data/brokerage_criteria.json`. Each fact cites its source (the firm's Form CRS hosted by FINRA, or the firm's own
 pricing pages), a short quote and the date it was verified; anything not verified is shown as Unknown. Firms are
-listed alphabetically and never ranked; promotions are not shown. B1 covers Charles Schwab and Fidelity.
+listed alphabetically and never ranked; promotions are not shown. It covers Charles Schwab, Fidelity, Interactive
+Brokers and Robinhood. E*TRADE is excluded until its account-opening entity is verified.
 
 To re-check the facts against their sources (free; sites that refuse automated requests are listed for a manual check):
 
@@ -96,6 +97,20 @@ venv\Scripts\python scripts\check_brokerage_sources.py
 ```
 
 When a fact changes, update it, its `verified_on` date and the firm's `audit` list.
+
+### Adding a fact you checked in a browser
+
+Some sites (for example schwab.com) refuse automated requests. To fill an Unknown field by hand:
+
+```powershell
+venv\Scripts\python scripts\check_brokerage_sources.py --checklist   # each open field, the page to open, what to verify
+```
+
+Open the official page yourself, then replace the Unknown fact in `data/brokerages/<firm>.json` with:
+`"kind": "firm_terms"`, `"method": "owner_check"`, `"verified_by"` (who checked), `"source"` (a key in `sources`
+with the page URL and, if the document shows one, its `effective` date), `"location"`, `"quote"` (the exact wording,
+40 words at most), `"value"`, `"display"` and `"verified_on"`. Add a line to the firm's `audit` list. The app labels
+these as checked by the app owner, not as a regulatory certification. Never enter personal or account details.
 
 ## Optional: Sentiment Explorer (local FinBERT)
 

@@ -7,7 +7,7 @@
     "account_fees": {"label": "Account fees", "type": "text"},
     "transfer_out_fee_cents": {"label": "Fee to transfer your account to another firm", "type": "money"},
     "stock_etf_commission_cents": {"label": "Online U.S. stock and ETF commission", "type": "money"},
-    "option_contract_fee_cents": {"label": "Online options fee per contract", "type": "money"},
+    "option_contract_fee_cents": {"label": "Online options fee per contract (before regulatory fees)", "type": "money"},
     "other_trading_costs": {"label": "Other trading costs", "type": "text"},
     "fractional_shares": {"label": "Fractional shares", "type": "boolean"},
     "retirement_services": {"label": "Retirement accounts", "type": "text"},

@@ -15,6 +15,11 @@ MAX_QUANTITY = 1000
 NOTICE = ("This compares published facts. It does not rank firms or tell you which one to choose. "
           "The right fit depends on your own needs.")
 APP_INCENTIVES = "This app has no referral or affiliate relationship with any brokerage firm."
+# How a fact was checked. An owner check is a person reading the official source; it is not regulatory certification.
+VERIFICATION = {
+    "source_check": "Matched word for word against the official source by the app's source check.",
+    "owner_check": "Checked by the app owner in a browser against the official source. Not a regulatory certification.",
+}
 _criteria = None
 _firms = None
 
@@ -50,7 +55,9 @@ def age(verified_on, today):
 
 
 def match(rule, fact):
-    """'meets' | 'does_not_meet' | 'unknown'. A missing or unknown fact is never counted as not meeting."""
+    """'meets' | 'does_not_meet' | 'varies' | 'unknown'. Missing, unknown or plan-dependent facts never count as not meeting."""
+    if fact is not None and fact.get("varies"):
+        return "varies"
     if fact is None or fact["kind"] == "unknown" or fact["value"] is None:
         return "unknown"
     if rule["op"] == "eq":
@@ -59,8 +66,8 @@ def match(rule, fact):
 
 
 def fee_example(fact, quantity):
-    """Total of a per-unit fee in cents, or None when the fee is unknown."""
-    if fact is None or fact["kind"] == "unknown" or not isinstance(fact["value"], int):
+    """Total of a per-unit fee in cents, or None when the fee is unknown or depends on the plan."""
+    if fact is None or fact["kind"] == "unknown" or fact.get("varies") or not isinstance(fact["value"], int):
         return None
     total = fact["value"] * quantity
     return {"cents": total, "display": cents_display(total)}
@@ -72,13 +79,16 @@ def _facts(firm):
 
 def _cell(firm, fact, today):
     days, stale = age(fact["verified_on"], today)
-    cell = {"kind": fact["kind"], "display": fact["display"], "value": fact["value"],
+    cell = {"kind": fact["kind"], "display": fact["display"], "value": fact["value"], "varies": bool(fact.get("varies")),
             "verified_on": fact["verified_on"], "age_days": days, "stale": stale}
     if fact["kind"] == "unknown":
         cell["reason"] = fact["reason"]
         check = firm["sources"].get(fact.get("check_source"))
         cell["check_url"] = check["url"] if check else None
+        cell["to_verify"] = fact.get("to_verify")
     else:
+        cell["verification"] = {"method": fact["method"], "label": VERIFICATION[fact["method"]],
+                                "by": fact.get("verified_by")}
         src = firm["sources"][fact["source"]]
         cell.update(location=fact["location"], quote=fact["quote"],
                     source={k: src[k] for k in ("publisher", "title", "url", "kind", "effective", "retrieved_on")})
@@ -99,13 +109,14 @@ def _pick(requested, known, what, default):
 def overview():
     c = criteria()
     return {
-        "firms": [{k: f[k] for k in ("id", "brand", "legal_entity", "crd", "brokercheck_url")} for f in firms().values()],
+        "firms": [{k: f[k] for k in ("id", "brand", "legal_entity", "crd", "brokercheck_url")}
+                  | {"entity_note": f.get("entity_note")} for f in firms().values()],
         "criteria": [{**{k: v for k, v in cr.items() if k != "fields"},
                       "fields": [{"id": fid, **c["fields"][fid]} for fid in cr["fields"]]} for cr in c["criteria"]],
         "filters": [{k: fl[k] for k in ("id", "label")} for fl in c["filters"]],
         "fee_examples": [{"id": k, **v} for k, v in c["fee_examples"].items()],
         "excluded": c["excluded"], "notice": NOTICE, "app_incentives": APP_INCENTIVES,
-        "stale_after_days": STALE_AFTER_DAYS,
+        "stale_after_days": STALE_AFTER_DAYS, "verification_methods": VERIFICATION,
     }
 
 
@@ -135,12 +146,14 @@ def compare(firm_ids, criteria_ids=None, filter_ids=None, quantity=1, today=None
     filters = [{"id": fid, "label": by_filter[fid]["label"],
                 "results": {f["id"]: match(by_filter[fid], facts[f["id"]].get(by_filter[fid]["field"])) for f in chosen}}
                for fid in filt]
-    summary = {f["id"]: {r: sum(fl["results"][f["id"]] == r for fl in filters) for r in ("meets", "does_not_meet", "unknown")}
+    summary = {f["id"]: {r: sum(fl["results"][f["id"]] == r for fl in filters)
+                         for r in ("meets", "does_not_meet", "varies", "unknown")}
                for f in chosen}
     fees = [{"id": k, "label": v["label"], "unit": v["unit"], "note": v["note"], "quantity": quantity,
              "results": {f["id"]: fee_example(facts[f["id"]].get(v["field"]), quantity) for f in chosen}}
             for k, v in c["fee_examples"].items()]
-    return {"firms": [{k: f[k] for k in ("id", "brand", "legal_entity", "crd", "brokercheck_url")} for f in chosen],
+    return {"firms": [{k: f[k] for k in ("id", "brand", "legal_entity", "crd", "brokercheck_url")}
+                      | {"entity_note": f.get("entity_note")} for f in chosen],
             "criteria": rows, "filters": filters, "filter_summary": summary, "fee_examples": fees,
             "notice": NOTICE, "app_incentives": APP_INCENTIVES, "excluded": c["excluded"],
             "stale_after_days": STALE_AFTER_DAYS, "today": today.isoformat()}
