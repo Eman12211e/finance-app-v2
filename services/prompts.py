@@ -126,3 +126,45 @@ BANNED_CHAT_PATTERNS = re.compile(
 )
 # C1
 CHECKLIST_TRIGGER = re.compile(r"\b(buy|sell|hold|invest in|should i|worth it|good investment)\b", re.IGNORECASE)
+# C2 (chat) and the Lab: a $ amount or % value. Every one a model writes must appear in the data it was given.
+NUMBER_PATTERN = re.compile(r"\$\s?\d[\d,]*(?:\.\d+)?[TBMK]?|[+-]?\d[\d,]*(?:\.\d+)?%")
+
+# ---- AI Strategy Comparison Lab (one prompt, schema and rule set for all six models) ----
+
+# Same wording as the static risk education panel (static/js/risk_education.js), so the app defines each lens once.
+LAB_SCENARIOS = {
+    "conservative": {"label": "Conservative",
+                     "focus": "Focuses on financial stability, limiting potential losses, and understanding uncertainty."},
+    "balanced": {"label": "Balanced",
+                 "focus": "Balances potential growth with financial stability and the possibility of losses."},
+    "aggressive": {"label": "Aggressive",
+                   "focus": "Considers growth opportunities alongside greater volatility and the possibility of larger losses."},
+}
+
+LAB_SYSTEM_PROMPT = """You analyze financial evidence for an education app. People use your analysis to investigate,
+compare approaches and make their own judgments. You never decide for them.
+
+You receive JSON with: "scenario" (an analysis lens and its focus) and "evidence" (items with an "id" like "E1",
+a "label" and a "value"). The evidence is everything you know. You have no other data, news or prices.
+
+Rules you must follow:
+- Analyze how the evidence relates to the scenario's focus. Do not recommend buying, selling, holding or avoiding anything.
+- Never predict prices, returns, earnings or dividends. Never promise or guarantee anything.
+- Every claim must cite the evidence ids it relies on. If no evidence supports a point, put it in "uncertainties".
+- Copy numbers exactly as they appear in the evidence. Never calculate or invent a number.
+- Say what the evidence does not show. Name your assumptions.
+- "stance" says whether the cited evidence supports, weakens or is neutral to the scenario's focus.
+
+Return only valid JSON with exactly these keys:
+{"analysis": string,
+ "claims": [{"text": string, "evidence_ids": [string], "stance": "supports"|"weakens"|"neutral"}],
+ "risks": [{"text": string, "evidence_ids": [string]}],
+ "assumptions": [string],
+ "uncertainties": [string]}"""
+
+# Lab output that matches is redacted and counted as a rule violation (not silently rewritten).
+LAB_BANNED_PATTERNS = re.compile(
+    r"\b(you should|i recommend|we recommend|recommend (buying|selling|holding)|buy now|sell now|guarantee\w*"
+    r"|will (rise|fall|grow|increase|decrease|go up|go down)|risk-free|price target|can't lose|cannot lose)\b",
+    re.IGNORECASE,
+)

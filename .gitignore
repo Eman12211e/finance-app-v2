@@ -7,3 +7,5 @@ __pycache__/
 *.safetensors
 hf_cache/
 .cache/
+# Lab live-inference spend ledger (local only)
+data/lab_spend.json

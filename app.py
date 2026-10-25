@@ -3,7 +3,7 @@ import logging
 from flask import Flask, render_template
 
 import config
-from routes import alerts, chat, earnings, sentiment, stocks
+from routes import alerts, chat, earnings, lab, sentiment, stocks
 from routes.envelope import ok
 from services import warmup
 
@@ -14,7 +14,7 @@ def create_app():
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
     app = Flask(__name__)
-    for module in (stocks, earnings, chat, alerts, sentiment):
+    for module in (stocks, earnings, chat, alerts, sentiment, lab):
         app.register_blueprint(module.bp)
 
     @app.get("/")
@@ -27,6 +27,7 @@ def create_app():
             {
                 "status": "ok",
                 "data_mode": config.DATA_MODE,
+                "zero_cost_mode": config.ZERO_COST_MODE,
                 "keys_present": {
                     "anthropic": bool(config.ANTHROPIC_API_KEY),
                     "finnhub": bool(config.FINNHUB_API_KEY),

@@ -18,6 +18,7 @@
   <script src="/static/js/risk_education.js" defer></script>
   <script src="/static/js/accounts.js" defer></script>
   <script src="/static/js/sentiment.js" defer></script>
+  <script src="/static/js/lab.js" defer></script>
   <script src="/static/js/app.js" defer></script>
 </head>
 <body>
@@ -32,7 +33,12 @@
     </div>
   </header>
 
-  <main class="layout">
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" class="tab" data-tab="explore" aria-pressed="true">Explore</button>
+    <button type="button" class="tab" data-tab="lab" aria-pressed="false">AI Comparison Lab</button>
+  </nav>
+
+  <main class="layout" id="explore-view">
     <aside class="card col-watchlist" aria-labelledby="watchlist-title">
       <h2 id="watchlist-title">Watchlist</h2>
       <div id="watchlist-root"></div>
@@ -46,6 +52,8 @@
       <div id="chat-root"></div>
     </aside>
   </main>
+
+  <section id="lab-root" class="lab" aria-labelledby="lab-title" hidden></section>
 
   <div id="checklist-root"></div>
   <div id="accounts-root"></div>

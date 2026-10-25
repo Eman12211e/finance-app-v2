@@ -33,6 +33,25 @@ DEFAULT_PROFILE = {"age_range": "25-34", "risk": "medium"}   # used by warmup on
 SENTIMENT_ENABLED = env("SENTIMENT_ENABLED", "0") == "1"
 SENTIMENT_MODEL = "ProsusAI/finbert"
 
+# Zero-cost development mode (default ON): no paid or metered request can be made. Blanking the keys reuses V1's
+# existing no-key fallbacks (demo data, fixed explanations, chat unavailable). Set ZERO_COST_MODE=0 to reactivate.
+ZERO_COST_MODE = env("ZERO_COST_MODE", "1") != "0"
+if ZERO_COST_MODE:
+    ANTHROPIC_API_KEY = FINNHUB_API_KEY = FMP_API_KEY = ""
+    DATA_MODE = "demo"
+    WARM_CACHE = False
+
+# AI Strategy Comparison Lab. Live inference needs ALL of: ZERO_COST_MODE=0, LAB_LIVE_ENABLED=1, a budget above $0,
+# the provider's key, the model marked "confirmed" in data/lab_models.json, and confirm_live in the request.
+HF_TOKEN = "" if ZERO_COST_MODE else env("HF_TOKEN")
+HF_ROUTER_URL = env("HF_ROUTER_URL", "https://router.huggingface.co/v1")
+LAB_LIVE_ENABLED = env("LAB_LIVE_ENABLED", "0") == "1"
+LAB_DAILY_BUDGET_USD = env("LAB_DAILY_BUDGET_USD", "0")   # string; parsed with Decimal in llm_providers
+LAB_MAX_TOKENS = int(env("LAB_MAX_TOKENS", "1200"))
+LAB_TIMEOUT_SECONDS = int(env("LAB_TIMEOUT_SECONDS", "45"))
+LAB_MODELS_PATH = env("LAB_MODELS_PATH", os.path.join(os.path.dirname(__file__), "data", "lab_models.json"))
+LAB_SPEND_LEDGER = env("LAB_SPEND_LEDGER", os.path.join(os.path.dirname(__file__), "data", "lab_spend.json"))
+
 TTL_QUOTE = 60
 TTL_PROFILE = 86400
 TTL_FINANCIALS = 86400

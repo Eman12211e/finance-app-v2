@@ -1,7 +1,14 @@
-# Beginner Friendly Finance App
+# Finance App V2
 Most AI finance tools try to tell you what to do with your money. This project takes a different approach. It uses AI to make complicated financial information understandable, while leaving the analysis and decisions to the user. The goal isn't to replace financial judgment. It's to help people develop it.
 
 A beginner-friendly financial education web app (Flask + vanilla JS). Specs live in `docs/`.
+V2 is an overhaul of [V1](https://github.com/Eman12211e/beginner-friendly-finance-app) (imported at `2eb7701`).
+
+## Zero-cost development mode (on by default)
+
+While `ZERO_COST_MODE` is not `0`, the app cannot make any paid or metered request: the Anthropic, Finnhub, FMP
+and Hugging Face keys are ignored, market data is demo data, and the cache warmup is off. V1 features fall back the
+way they already do without keys (fixed explanations, chat shows "not available"). Tests also block all network calls.
 
 ## Setup (Windows PowerShell)
 
@@ -31,6 +38,36 @@ venv\Scripts\python -m pytest
 venv\Scripts\python scripts\check_endpoints.py   # checks provider endpoints, writes data/endpoint_check.json
 venv\Scripts\python scripts\build_demo_data.py   # rebuilds data/demo_stocks.json from yfinance
 ```
+
+## AI Strategy Comparison Lab
+
+The "AI Comparison Lab" tab shows six models side by side (Qwen, Kimi, DeepSeek, GPT-OSS and GLM through Hugging Face
+Inference Providers, and Claude through the Anthropic API). All six get the same evidence, scenario, prompt and output
+schema, and Python checks every output the same way: citations must exist, every number must appear in the cited
+evidence, and advice or prediction language is withheld and counted.
+
+**Right now every panel is SIMULATED.** The panels come from deterministic test stand-ins that each trip one validator,
+rotating across models by scenario. They are not model output, scores or rankings.
+
+Model ids, providers, prices and licenses live in `data/lab_models.json` (all `provisional`). To check them against the
+public Hugging Face listing (free, no token, no inference):
+
+```powershell
+venv\Scripts\python scripts\check_lab_models.py
+```
+
+### Activating live inference (not approved yet)
+
+Live calls stay refused until **all** of these are true, and the comparison refuses the whole run otherwise:
+
+1. `ZERO_COST_MODE=0` and `LAB_LIVE_ENABLED=1` in `.env`
+2. `LAB_DAILY_BUDGET_USD` above `0` (default `0`)
+3. `HF_TOKEN` and/or `ANTHROPIC_API_KEY` set in `.env` (never committed)
+4. each model's `status` changed to `confirmed` in `data/lab_models.json` after checking it
+5. the request sends `"live": true` and `"confirm_live": true`
+
+Before each call the worst-case cost (estimated input plus `LAB_MAX_TOKENS` output at the listed price) is reserved in
+`data/lab_spend.json` (gitignored), then corrected to the actual usage. A run that could pass the daily budget is refused.
 
 ## Optional: Sentiment Explorer (local FinBERT)
 

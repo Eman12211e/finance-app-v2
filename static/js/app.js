@@ -11,6 +11,7 @@
   if (window.RiskEducation) window.RiskEducation.init();
   if (window.Accounts) window.Accounts.init();
   if (window.Sentiment) window.Sentiment.init();
+  if (window.Lab) window.Lab.init();
 
   var checklistButton = document.getElementById("checklist-open");
   if (checklistButton) {

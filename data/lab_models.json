@@ -1,0 +1,18 @@
+{
+  "verified_on": "2026-10-25",
+  "verification": "Hugging Face models: listed as live in the public https://router.huggingface.co/v1/models listing, license from the Hub API. Claude: Anthropic model table. No inference was run, so output quality is unverified. Prices are USD per million tokens and change; refresh with scripts/check_lab_models.py.",
+  "models": [
+    {"key": "qwen", "label": "Qwen", "adapter": "hf", "model_id": "Qwen/Qwen3.8-27B", "provider": "deepinfra",
+     "license": "Apache-2.0", "context_tokens": 262144, "price_in_per_m": "0.20", "price_out_per_m": "2.50", "status": "provisional"},
+    {"key": "kimi", "label": "Kimi", "adapter": "hf", "model_id": "moonshotai/Kimi-K2.6", "provider": "deepinfra",
+     "license": "Modified MIT", "context_tokens": 262144, "price_in_per_m": "0.75", "price_out_per_m": "3.50", "status": "provisional"},
+    {"key": "deepseek", "label": "DeepSeek", "adapter": "hf", "model_id": "deepseek-ai/DeepSeek-V4.1-Flash", "provider": "deepinfra",
+     "license": "MIT", "context_tokens": 1048576, "price_in_per_m": "0.20", "price_out_per_m": "0.60", "status": "provisional"},
+    {"key": "gpt-oss", "label": "GPT-OSS", "adapter": "hf", "model_id": "openai/gpt-oss-120b", "provider": "deepinfra",
+     "license": "Apache-2.0", "context_tokens": 131072, "price_in_per_m": "0.037", "price_out_per_m": "0.17", "status": "provisional"},
+    {"key": "glm", "label": "GLM", "adapter": "hf", "model_id": "zai-org/GLM-5.3-Flash", "provider": "deepinfra",
+     "license": "MIT", "context_tokens": 1048576, "price_in_per_m": "0.15", "price_out_per_m": "0.50", "status": "provisional"},
+    {"key": "claude", "label": "Claude", "adapter": "anthropic", "model_id": "claude-sonnet-5-5", "provider": "anthropic",
+     "license": "Proprietary (Anthropic API terms)", "context_tokens": 1000000, "price_in_per_m": "2.00", "price_out_per_m": "10.00", "status": "provisional"}
+  ]
+}

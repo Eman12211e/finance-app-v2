@@ -42,3 +42,15 @@ class InvalidRequest(AppError):
     code = "INVALID_REQUEST"
     http_status = 400
     default_message = "The request is missing information or is not valid."
+
+
+class LiveInferenceDisabled(AppError):
+    code = "LIVE_INFERENCE_DISABLED"
+    http_status = 403
+    default_message = "Live AI inference is turned off. The Lab shows simulated output only."
+
+
+class BudgetExceeded(AppError):
+    code = "BUDGET_EXCEEDED"
+    http_status = 402
+    default_message = "This request could go over the AI spending limit, so it was not sent."

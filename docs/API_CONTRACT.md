@@ -486,3 +486,28 @@ All are loaded with `defer`. A missing file (before its agent builds it) must no
 
 ### Safety rule for all frontend code
 Insert any text from the server or the user with `textContent`, never `innerHTML`.
+
+
+## V2: AI Strategy Comparison Lab
+
+`GET /api/lab/config` → `data`: `zero_cost_mode`, `live_enabled`, `live_available`, `daily_budget_usd`,
+`spent_today_usd` (strings, USD), `registry_verified_on`, `registry_verification`, `simulated_label`,
+`scenarios` [{key, label, focus}], `tickers`, `models` [{key, label, adapter, model_id, provider, license, status,
+context_tokens, price_in_per_m, price_out_per_m, live_blocked_reasons}], `criteria` [{key, name, how}].
+
+`POST /api/lab/compare` body `{ticker, scenario, models?: [key], live?: bool, confirm_live?: bool}`.
+`source`/`as_of` are the evidence's. `data`: `mode` ("simulated" | "live"), `simulated_label` and `notice`
+(null when live), `scenario`, `evidence` {ticker, name, is_etf, period_label, source, as_of, items [{id, label, value}],
+not_available}, `prompt_sha256`, `max_tokens`, `panels`, `disagreements` [{evidence_id, label, supports, weakens}],
+`coverage` [{evidence_id, label, cited_by}], `criteria`, `estimated_live_max_cost_usd`.
+
+Each panel: `model`, `inference` ("mock" | "live"), `simulated`, `simulated_label` and `test_case` (simulated only),
+`prompt_sha256`, `status` ("ok" | "invalid_output" | "unavailable"), `analysis`, `claims` [{text, evidence_ids,
+stance, issues}], `risks` [{text, evidence_ids, issues}], `assumptions`, `uncertainties`, `unsupported_claims`,
+`violations` [{type, detail}], `disagreements`, `checks` {schema_valid, citations_valid {passed, total},
+numbers_traceable {passed, total}, advice_violations, unsupported_claims, states_uncertainty}, `error`, `latency_ms`,
+`input_tokens`, `output_tokens`, `cost_usd`, `truncated`.
+
+Errors: `INVALID_REQUEST` 400 (bad scenario or models, live without `confirm_live`), `INVALID_TICKER` 400,
+`DATA_NOT_AVAILABLE` 404, `LIVE_INFERENCE_DISABLED` 403 (message lists every blocking reason),
+`BUDGET_EXCEEDED` 402.

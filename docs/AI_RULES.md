@@ -327,3 +327,16 @@ All static user-facing text, in one place, written to the same style rules.
 5. Does this add to or reduce my diversification?
 6. How long do I plan to hold it?
 7. Did I check the fees (for ETFs)?
+
+
+## 10. V2: AI Strategy Comparison Lab (`services/strategy_lab.py`, `services/llm_providers.py`)
+
+- One prompt (`LAB_SYSTEM_PROMPT`), one output schema, one scenario set (`LAB_SCENARIOS`, the risk education wording)
+  and one validator for all six models. The prompt hash is shown so anyone can see it was identical.
+- Models receive only the evidence pack (display strings with ids E1…En) and the scenario. No user text is sent.
+- Python, not the prompt, enforces the rules on every output: a claim's numbers must appear in the evidence it cites
+  (analysis numbers: anywhere in the evidence); unknown ids are flagged; a claim with no valid id is "unsupported";
+  `LAB_BANNED_PATTERNS` text is withheld and counted; output that is not JSON shows nothing.
+- No aggregate score and no ranking. Factual accuracy, risk identification and consistency need a reproducible
+  benchmark with human raters and are labelled "not scored here".
+- Mock output is always labelled `SIMULATED — NOT REAL MODEL OUTPUT`. A live run is all-or-nothing, never a mix.

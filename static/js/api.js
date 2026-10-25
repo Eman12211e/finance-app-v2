@@ -51,5 +51,15 @@
         body: JSON.stringify({ statement_id: statementId }),
       });
     },
+    getLabConfig: function () {
+      return request("/api/lab/config");
+    },
+    postLabCompare: function (body) {
+      return request("/api/lab/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    },
   };
 })();

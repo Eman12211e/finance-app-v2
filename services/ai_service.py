@@ -17,6 +17,7 @@ from services.prompts import (
     EARNINGS_SYSTEM_PROMPT,
     ETF_SYSTEM_PROMPT,
     FALLBACKS,
+    NUMBER_PATTERN,
     STOCK_QUESTIONS,
 )
 
@@ -25,7 +26,6 @@ log = logging.getLogger(__name__)
 STOCK_KEYS = ("headline", "revenue", "profit", "eps", "cash", "dividend")
 _DIGIT = re.compile(r"[0-9]")
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
-_NUMBER_IN_REPLY = re.compile(r"\$\s?\d[\d,]*(?:\.\d+)?[TBMK]?|[+-]?\d[\d,]*(?:\.\d+)?%")
 _CONTEXT_KEYS = {"ticker", "name", "display", "label", "title", "direction", "comparison", "explain",
                  "etf_message", "period_label", "source_label"}
 
@@ -243,8 +243,8 @@ def chat(message: str, history: list, profile: dict, context_facts: dict | None)
         log.warning("C3 banned advice in chat reply")
         return CHAT_FALLBACK_ADVICE
     # C2: each $ amount / % value must exactly match one shown in the app or typed by the user
-    allowed = {n for s in [*_strings(context), message] for n in _NUMBER_IN_REPLY.findall(s)}
-    unverified = [n for n in _NUMBER_IN_REPLY.findall(reply) if n not in allowed]
+    allowed = {n for s in [*_strings(context), message] for n in NUMBER_PATTERN.findall(s)}
+    unverified = [n for n in NUMBER_PATTERN.findall(reply) if n not in allowed]
     if unverified:
         log.warning("C2 unverified numbers in chat reply: %s", unverified)
         return CHAT_FALLBACK_NUMBERS
