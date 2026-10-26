@@ -233,6 +233,7 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-banner p { margin: 0 0 4px; }
 .pt-banner-title { font-weight: 800; color: var(--warning); letter-spacing: .02em; }
 .pt-title { margin: 0; }
+.pt-start select { max-width: 100%; }  /* long market names must not widen the page on phones */
 .pt-message { margin: 0; font-weight: 600; }
 .pt-day { color: var(--muted); margin: 0 0 8px; }
 .pt-stats { display: grid; gap: 10px; grid-template-columns: repeat(5, minmax(0, 1fr)); }

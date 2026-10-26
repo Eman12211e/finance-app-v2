@@ -63,3 +63,12 @@ def test_bars_until_rejects_days_outside_the_scenario(day):
 def test_unknown_scenario_is_rejected():
     with pytest.raises(InvalidRequest):
         paper_market.get("../config")
+
+
+def test_scenario_b_matches_its_fixed_seed_generator_and_lists_sectors():
+    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    import build_synthetic_scenario
+    m = paper_market.get("synthetic-b")
+    assert build_synthetic_scenario.build_b() == m and m["generator"]["seed"] == build_synthetic_scenario.SEED_B
+    assert paper_market.scenario_ids() == ["synthetic-a", "synthetic-b"]
+    assert {v["sector"] for v in m["symbols"].values()} == set(m["sectors"])

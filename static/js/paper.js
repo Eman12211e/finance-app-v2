@@ -11,6 +11,7 @@
   var busy = false;      // one request at a time: double clicks and overlapping replies cannot race
   var draft = null;      // the previewed order awaiting Confirm or Cancel, with its fixed order id
   var started = false;
+  var scenarioId = "synthetic-b";  // market for a new session; the start screen can change it, Reset keeps the current one
 
   function el(tag, cls, text) {
     var node = document.createElement(tag);
@@ -106,7 +107,7 @@
   // ---- actions ----
 
   function startNew() {
-    call("new", { scenario: "synthetic-a" }, function (data) {
+    call("new", { scenario: view ? view.scenario.id : scenarioId }, function (data) {
       clearAll();
       accept(data);
       draft = null;
@@ -486,6 +487,23 @@
     box.appendChild(title);
     box.appendChild(el("p", null, "Practice placing buy and sell orders with $10,000.00 of fictional cash in a "
       + "synthetic market. Step through simulated days and see how your choices play out, without risking real money."));
+    var pick = el("label", "field", "Practice market ");
+    var select = el("select");
+    select.id = "pt-scenario";
+    select.addEventListener("change", function () { scenarioId = select.value; });
+    pick.appendChild(select);
+    pick.hidden = true;  // shown once the list arrives; without it the default market is used
+    box.appendChild(pick);
+    window.Api.getPaperScenarios().then(function (env) {
+      if (!env.ok) return;
+      env.data.scenarios.forEach(function (s) {
+        var o = el("option", null, s.label + " · " + s.days + " simulated days");
+        o.value = s.id;
+        select.appendChild(o);
+      });
+      select.value = scenarioId;
+      pick.hidden = false;
+    });
     var go = el("button", "button-primary", "Start a practice session");
     go.type = "button";
     go.addEventListener("click", startNew);

@@ -65,6 +65,9 @@
       if (p.filters.length) query.set("filters", p.filters.join(","));
       return request("/api/brokerages/compare?" + query.toString());
     },
+    getPaperScenarios: function () {
+      return request("/api/paper/scenarios");
+    },
     paperPost: function (action, body) {
       return request("/api/paper/" + action, {
         method: "POST",
