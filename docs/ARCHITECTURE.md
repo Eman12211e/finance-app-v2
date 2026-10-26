@@ -1,10 +1,15 @@
-# ARCHITECTURE.md — Financial Education MVP
+# ARCHITECTURE.md — Financial Education MVP (V1), amended for Finance App V2
 
 > Read this whole file before you write any code. It is the single source of truth
 > for structure, ownership, and rules. If something here conflicts with your own
 > idea, follow this file. If something here is unclear, stop and ask.
 
 Related docs: `docs/API_CONTRACT.md` (endpoints, JSON shapes) · `docs/AI_RULES.md` (prompt and content rules)
+
+> **V2 amendment.** Finance App V2 overhauls this V1 MVP; it is not a rebuild. Everything below still applies
+> unless a **V2:** note says otherwise. The agent roster, waves and file ownership in sections 2–3 describe how V1
+> was built and are kept as history. In V2, one implementer (Claude Code) writes production code, an independent
+> auditor reviews read-only, and the owner approves milestones, dependencies and changes to protected files.
 
 ---
 
@@ -18,6 +23,8 @@ The app never tells anyone what to buy or sell.
 **Stack:** Python 3 + Flask · HTML + CSS + vanilla JavaScript (no frameworks, no build step) ·
 browser `localStorage` for profile and watchlist · Claude API (Sonnet 5.5) · Finnhub + FMP free tiers ·
 real-data demo JSON as fallback.
+**V2:** the stack rules are unchanged: no frameworks, no build step, no CDN, and no new runtime dependency without
+the owner's approval. No request goes to any third-party host at runtime (fonts and icons are self-hosted).
 
 **Features (7):**
 1. Onboarding: age range + risk preference
@@ -28,7 +35,12 @@ real-data demo JSON as fallback.
 6. Simulated alerts (generated from real demo data, labeled "Simulated")
 7. Disclaimer (always visible) + pre-purchase checklist (static)
 
+**V2 sections (five tabs):** Explore (the features above) · AI Comparison Lab · Understand Before You Sign ·
+Compare Brokerages · Practice Trading (synthetic-market simulator). Contracts are in `docs/API_CONTRACT.md`.
+
 **Out of scope:** login, database, deployment, charts, news, real notifications, yfinance at runtime.
+**V2:** also out of scope: real trading and brokerage connections. Charts are planned for Practice Trading (P3)
+only after the owner approves the chart library; it must be self-hosted.
 
 ---
 
@@ -280,19 +292,39 @@ API keys come only from `.env`. Keys never appear in frontend code, logs, or err
 | 10 | ETFs (VOO) have no earnings sections. The panel shows a short ETF explanation instead. | ETFs do not report earnings |
 | 11 | Snapshot uses no AI. Profile note is one of 3 static texts by risk level (in `profile.js`). | Instant and deterministic |
 | 12 | Profile lives only in the browser and is sent with each request. No server state. | No sync bugs |
+| 13 | **V2:** `ZERO_COST_MODE` is on by default; while on, no paid or metered call is possible. | Zero-cost development |
+| 14 | **V2:** Simulated output is always labelled simulated, never presented as real results, scores or rankings. | Honesty |
+| 15 | **V2:** Practice Trading state lives in the browser as a server-signed order log; the server re-derives all balances. `services/paper_engine.py`, `services/paper_market.py` and `routes/paper.py` change only with owner approval. | Integrity |
+| 16 | **V2:** No third-party host is contacted at runtime. | Privacy, offline use |
 
 ---
 
 ## 8. Rules for every agent
 
 1. Read `ARCHITECTURE.md`, `API_CONTRACT.md`, and (if your work touches AI) `AI_RULES.md` before coding.
-2. Edit only files you own. Report needed changes elsewhere; do not make them.
+2. Edit only files you own. Report needed changes elsewhere; do not make them. **V2:** the implementer may edit any
+   file except protected files (decision 15), which need owner approval.
 3. Match the contract exactly: field names, types, nesting, error codes.
 4. No new dependencies unless the planner approves. Approved exception: the optional Sentiment Explorer's packages live only in `requirements-sentiment.txt`; the core app and tests never need them.
 5. No frameworks. No build step.
 6. Never invent, estimate, or hard-code financial figures in code. Real numbers live only in `demo_stocks.json` or come from APIs.
+   **V2:** synthetic practice prices come only from seeded generators in `scripts/` and are labelled synthetic.
 7. Never suppress an exception to make a test pass. Never return fake success.
 8. Log with `logging.getLogger(__name__)`. Format: `%(asctime)s %(levelname)s [%(name)s] %(message)s`. Never log keys.
 9. Run your tests before reporting done. Report what you tested and what you did not.
 10. Commit once your done criteria pass. One commit per agent, message: `[Agent X] <what was built>`.
+    **V2:** commit messages follow the milestone's task file (for example `P2.5-step-N: ...`), with the owner's Git
+    identity and no AI attribution.
 11. Final report must list: files changed, tests run + results, anything not finished, any change needed in a file you do not own.
+
+---
+
+## 9. V2: future `services/feeds/` module (not built)
+
+A possible single interface for Practice Trading price data, selected by a separate `PAPER_DATA_MODE` setting
+(Explore's `DATA_MODE` keeps its existing meaning, `demo` | `live`, and is not affected):
+- `synthetic` (default): the fixed-seed scenarios in `data/paper/scenarios/`.
+- Any other mode (for example verified historical data) only after the owner approves the source and its licence.
+
+It must keep look-ahead protection (bars only up to the current replay day) and provenance labels. Building it is
+a separate, approved milestone; nothing in `services/feeds/` exists yet.
