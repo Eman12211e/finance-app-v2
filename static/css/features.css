@@ -69,10 +69,7 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 }
 #checklist-root .fe-close:hover { border-color: var(--accent); }
 
-/* ---- tabs and AI Strategy Comparison Lab ---- */
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px 0; max-width: 1400px; margin: 0 auto; }
-.tab { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 6px 16px; }
-.tab[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* ---- AI Strategy Comparison Lab ---- */
 .layout[hidden], .lab[hidden] { display: none; }
 .lab { display: grid; gap: var(--s-4); padding: var(--s-4) 24px; max-width: 1400px; margin: 0 auto; }
 .lab-results { display: grid; gap: var(--s-4); }
@@ -102,7 +99,7 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 @media (max-width: 1100px) { .lab-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) {
   .lab-grid { grid-template-columns: minmax(0, 1fr); }
-  .lab, .tabs { padding-left: 12px; padding-right: 12px; }
+  .lab { padding-left: 12px; padding-right: 12px; }
 }
 
 /* ---- Understand Before You Sign ---- */

@@ -28,23 +28,43 @@
 <body>
   <header class="app-header">
     <h1 class="brand">Money Basics</h1>
+    <nav class="tabs" aria-label="Sections">
+      <button type="button" class="tab" data-tab="explore" aria-pressed="true">
+        <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>
+        <span class="tab-label">Explore</span><span class="tab-short" aria-hidden="true">Explore</span>
+      </button>
+      <button type="button" class="tab" data-tab="lab" aria-pressed="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span class="tab-label">AI Comparison Lab</span><span class="tab-short" aria-hidden="true">Lab</span>
+      </button>
+      <button type="button" class="tab" data-tab="sign" aria-pressed="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h8l4 4v14H6z M14 3v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 14l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="tab-label">Understand Before You Sign</span><span class="tab-short" aria-hidden="true">Sign</span>
+      </button>
+      <button type="button" class="tab" data-tab="brokers" aria-pressed="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="tab-label">Compare Brokerages</span><span class="tab-short" aria-hidden="true">Brokerages</span>
+      </button>
+      <button type="button" class="tab" data-tab="paper" aria-pressed="false">
+        <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17l5-5 4 3 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 7h5v5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span class="tab-label">Practice Trading</span><span class="tab-short" aria-hidden="true">Practice</span>
+      </button>
+    </nav>
     <div class="header-actions">
+      <div id="alerts-root"></div>
+      <div class="learn">
+        <button id="learn-button" type="button" class="button-secondary" aria-haspopup="true" aria-expanded="false" aria-controls="learn-menu">Learn
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+        <ul id="learn-menu" class="learn-menu" role="menu" aria-labelledby="learn-button" hidden>
+          <li role="none"><button id="checklist-open" type="button" role="menuitem" class="menu-item">Before you buy</button></li>
+          <li role="none"><button id="accounts-open" type="button" role="menuitem" class="menu-item">Learn about accounts</button></li>
+          <li role="none"><button id="sentiment-open" type="button" role="menuitem" class="menu-item" hidden>Sentiment</button></li>
+        </ul>
+      </div>
       <button id="theme-toggle" type="button" class="button-secondary">Theme: System</button>
       <button id="profile-chip" type="button" class="chip">Set your profile</button>
-      <div id="alerts-root"></div>
-      <button id="checklist-open" type="button" class="button-secondary">Before you buy</button>
-      <button id="accounts-open" type="button" class="button-secondary">Learn about accounts</button>
-      <button id="sentiment-open" type="button" class="button-secondary" hidden>Sentiment Explorer</button>
     </div>
   </header>
-
-  <nav class="tabs" aria-label="Sections">
-    <button type="button" class="tab" data-tab="explore" aria-pressed="true">Explore</button>
-    <button type="button" class="tab" data-tab="lab" aria-pressed="false">AI Comparison Lab</button>
-    <button type="button" class="tab" data-tab="sign" aria-pressed="false">Understand Before You Sign</button>
-    <button type="button" class="tab" data-tab="brokers" aria-pressed="false">Compare Brokerages</button>
-    <button type="button" class="tab" data-tab="paper" aria-pressed="false">Practice Trading</button>
-  </nav>
 
   <main class="layout" id="explore-view">
     <aside class="card col-watchlist" aria-labelledby="watchlist-title">

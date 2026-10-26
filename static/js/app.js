@@ -35,6 +35,41 @@
     b.addEventListener("click", function () { showTab(b.dataset.tab); });
   });
 
+  // Learn menu: Before you buy, Learn about accounts, Sentiment. Arrow keys move, Escape closes.
+  var learnButton = document.getElementById("learn-button");
+  var learnMenu = document.getElementById("learn-menu");
+  if (learnButton && learnMenu) {
+    var items = function () {
+      return Array.prototype.filter.call(learnMenu.querySelectorAll('[role="menuitem"]'), function (b) { return !b.hidden; });
+    };
+    var setOpen = function (open) {
+      learnMenu.hidden = !open;
+      learnButton.setAttribute("aria-expanded", String(open));
+      if (open && items()[0]) items()[0].focus();
+    };
+    learnButton.addEventListener("click", function () { setOpen(learnMenu.hidden); });
+    learnMenu.addEventListener("click", function (e) { if (e.target.closest('[role="menuitem"]')) setOpen(false); });
+    learnMenu.addEventListener("keydown", function (e) {
+      var list = items();
+      var i = list.indexOf(document.activeElement);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        list[(i + (e.key === "ArrowDown" ? 1 : -1) + list.length) % list.length].focus();
+      } else if (e.key === "Home" || e.key === "End") {
+        e.preventDefault();
+        list[e.key === "Home" ? 0 : list.length - 1].focus();
+      } else if (e.key === "Escape") {
+        setOpen(false);
+        learnButton.focus();
+      } else if (e.key === "Tab") {
+        setOpen(false);
+      }
+    });
+    document.addEventListener("click", function (e) {
+      if (!learnMenu.hidden && !e.target.closest(".learn")) setOpen(false);
+    });
+  }
+
   var checklistButton = document.getElementById("checklist-open");
   if (checklistButton) {
     checklistButton.addEventListener("click", function () {

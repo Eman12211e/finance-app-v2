@@ -94,3 +94,33 @@ def test_no_template_css_or_js_loads_from_a_third_party_host():
         loads = re.findall(r'(?:src|@import|url)\s*[=(]\s*["\']?([^"\')\s]+)', text)
         bad = [u for u in loads if EXTERNAL.search(u)]
         assert not bad, (parts, bad)
+
+
+def header():
+    html = read("templates", "index.html")
+    return html[html.index('<header class="app-header">'):html.index("</header>")]
+
+
+def test_header_has_brand_five_icon_tabs_one_learn_menu_and_profile():
+    h = header()
+    assert h.index('class="brand"') < h.index('class="tabs"') < h.index('id="learn-button"') < h.index('id="profile-chip"')
+    assert h.count('class="tab-icon"') == 5 and h.count('<svg class="tab-icon"') == 5  # inline SVG, no icon library
+    menu = h[h.index('id="learn-menu"'):h.index("</ul>", h.index('id="learn-menu"'))]
+    for item_id, label in (("checklist-open", "Before you buy"), ("accounts-open", "Learn about accounts"), ("sentiment-open", "Sentiment")):
+        assert f'id="{item_id}"' in menu and f">{label}</button>" in menu
+    assert 'aria-haspopup="true"' in h and 'aria-expanded="false"' in h and 'role="menu"' in menu
+
+
+def test_phone_labels_are_part_of_each_tab_name():
+    # WCAG label-in-name: the short label shown on phones must appear in the full accessible name
+    h = header()
+    import re as _re
+    for full, short in _re.findall(r'<span class="tab-label">([^<]+)</span><span class="tab-short" aria-hidden="true">([^<]+)</span>', h):
+        assert short in full, (short, full)
+
+
+def test_learn_menu_is_keyboard_operable():
+    js = read("static", "js", "app.js")
+    for key in ('"ArrowDown"', '"ArrowUp"', '"Home"', '"End"', '"Escape"', '"Tab"'):
+        assert key in js
+    assert "learnButton.focus();" in js

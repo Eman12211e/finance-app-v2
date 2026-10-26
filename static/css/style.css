@@ -86,20 +86,63 @@ button { cursor: pointer; }
 }
 .muted { color: var(--muted); }
 
-/* ---- header ---- */
+/* ---- header: brand, five tabs, Learn menu, alerts, theme, profile ---- */
 .app-header {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4);
+  padding: var(--s-3) var(--s-5); background: var(--surface); border-bottom: 1px solid var(--border);
 }
-.brand { font-size: 1.4rem; margin: 0; }
-.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.brand { font: 700 var(--t-20)/1.2 var(--font-display); letter-spacing: -.01em; margin: 0; white-space: nowrap; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-left: auto; }
+
+.tabs { display: flex; gap: var(--s-1); }
+.tab {
+  display: inline-flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border: 0;
+  border-radius: var(--r-8); background: none; color: var(--muted); font-weight: 600; font-size: var(--t-14); white-space: nowrap;
+}
+.tab:hover { color: var(--text); background: var(--surface-2); }
+.tab[aria-pressed="true"], .tab[aria-selected="true"] { color: var(--text); background: var(--surface-2); box-shadow: inset 0 -3px 0 var(--accent); }
+.tab-icon { width: 18px; height: 18px; flex: none; }
+.tab-short { display: none; }
 
 .chip, .button-secondary, .button-primary {
-  border-radius: 999px; padding: 6px 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: var(--r-8); padding: var(--s-1) var(--s-3); border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); font-weight: 600; font-size: var(--t-14);
 }
 .chip { background: var(--surface-2); border-color: transparent; }
 .button-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.button-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .button-secondary:hover, .chip:hover { border-color: var(--accent); }
+#learn-button { display: inline-flex; align-items: center; gap: var(--s-1); }
+
+.learn { position: relative; }
+.learn-menu {
+  position: absolute; right: 0; top: calc(100% + var(--s-1)); z-index: 60; min-width: 220px; margin: 0; padding: var(--s-1);
+  list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-12); box-shadow: var(--shadow-2);
+}
+.learn-menu[hidden], .learn-menu button[hidden] { display: none; }
+.menu-item {
+  display: block; width: 100%; text-align: left; padding: var(--s-2) var(--s-3); border: 0; border-radius: var(--r-8);
+  background: none; color: var(--text); font-size: var(--t-14);
+}
+.menu-item:hover, .menu-item:focus-visible { background: var(--surface-2); }
+
+@media (max-width: 1180px) {
+  /* the five full names no longer fit in one row: icons only, names kept for screen readers */
+  .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (max-width: 640px) {
+  /* phones: the tabs become a bottom bar with short visible labels */
+  body { padding-bottom: 64px; }
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 0; padding: var(--s-1) 0 var(--s-2); background: var(--surface); border-top: 1px solid var(--border);
+  }
+  .tab { flex-direction: column; gap: 2px; padding: var(--s-1) 0; font-size: 11px; border-radius: 0; }
+  .tab[aria-pressed="true"], .tab[aria-selected="true"] { background: none; box-shadow: inset 0 3px 0 var(--accent); color: var(--accent); }
+  .tab-short { display: block; }
+  #disclaimer-footer { bottom: 64px; }
+  .app-header { padding: var(--s-3); }
+}
 
 /* ---- layout ---- */
 .layout {
@@ -120,7 +163,6 @@ button { cursor: pointer; }
 }
 @media (max-width: 720px) {
   .layout { grid-template-columns: minmax(0, 1fr); padding: 12px; }
-  .app-header { padding: 12px; }
   .card { padding: 16px; }
 }
 
@@ -182,7 +224,6 @@ button { cursor: pointer; }
 @media (max-width: 720px) { #accounts-root .acct-dialog { padding: 16px; } }
 
 /* ---- sentiment explorer modal (optional feature) ---- */
-.header-actions button[hidden] { display: none; }
 #sentiment-root .sent-backdrop {
   position: fixed; inset: 0; z-index: 55; padding: 16px;
   display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .45);

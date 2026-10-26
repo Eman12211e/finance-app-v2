@@ -131,6 +131,7 @@ def test_transformers_is_never_imported_in_normal_runs(client):
 
 def test_page_has_hidden_button_container_and_script(client):
     html = client.get("/").get_data(as_text=True)
-    assert '<button id="sentiment-open" type="button" class="button-secondary" hidden>Sentiment Explorer</button>' in html
+    menu = html[html.index('id="learn-menu"'):html.index("</ul>", html.index('id="learn-menu"'))]
+    assert '<button id="sentiment-open" type="button" role="menuitem" class="menu-item" hidden>Sentiment</button>' in menu
     assert 'id="sentiment-root"' in html
     assert html.index("/static/js/accounts.js") < html.index("/static/js/sentiment.js") < html.index("/static/js/app.js")

@@ -419,5 +419,8 @@ def test_comparison_stacks_on_phones_without_horizontal_scroll():
     assert ".br-cell-firm { display: block; }" in css and "overflow-x" not in css.split("/* ---- Compare Brokerages ---- */")[1]
 
 
-def test_tab_bar_wraps_so_all_four_tabs_fit_on_phones():
-    assert ".tabs { display: flex; flex-wrap: wrap;" in read("static", "css", "features.css")
+def test_all_tabs_fit_on_phones_as_a_bottom_bar():
+    css = read("static", "css", "style.css")
+    phone = css[css.index("@media (max-width: 640px)"):]
+    assert "position: fixed; left: 0; right: 0; bottom: 0;" in phone
+    assert "grid-template-columns: repeat(5, 1fr);" in phone
