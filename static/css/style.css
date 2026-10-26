@@ -29,6 +29,22 @@
   color-scheme: light;
 }
 
+/* Dark theme: follows the system unless the header toggle chose light or dark (html[data-theme]). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --bg: #0f1518; --surface: #172024; --surface-2: #1f2a2f; --text: #e6ecea; --muted: #9eaca8; --border: #2e3c41;
+  --accent: #9aa6ff; --accent-hover: #b6bfff; --on-accent: #0f1518; --up: #5ccb86; --down: #ff8a80; --warning: #e7b85a;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4); --shadow-2: 0 8px 28px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1518; --surface: #172024; --surface-2: #1f2a2f; --text: #e6ecea; --muted: #9eaca8; --border: #2e3c41;
+  --accent: #9aa6ff; --accent-hover: #b6bfff; --on-accent: #0f1518; --up: #5ccb86; --down: #ff8a80; --warning: #e7b85a;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, .4); --shadow-2: 0 8px 28px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
 
 body {
