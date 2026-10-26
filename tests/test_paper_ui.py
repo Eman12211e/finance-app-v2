@@ -29,7 +29,7 @@ def test_page_has_the_practice_trading_tab_and_scripts_in_order(client):
 
 def test_only_session_and_order_numbers_are_ever_sent_to_the_server():
     calls = re.findall(r'call\("(\w+)", \{([^}]*)\}', js())
-    assert {c[0] for c in calls} == {"new", "view", "preview", "confirm", "cancel", "advance"}
+    assert {c[0] for c in calls} == {"new", "view", "market", "preview", "confirm", "cancel", "advance"}
     for _, body in calls:
         keys = set(re.findall(r"(\w+):", body))
         assert keys <= {"scenario", "state", "order", "order_id", "expected_day"}, keys
@@ -109,7 +109,8 @@ def test_layout_rules_cover_390px_phones_and_1280px_desktops(client):
     assert "@media (max-width: 640px)" in style and "grid-template-columns: repeat(5, 1fr)" in style  # 390: bottom bar
     assert "@media (min-width: 641px) and (max-width: 1400px)" in style  # 1280: tabs on their own row
     practice = features.split("/* ---- Practice Trading ---- */")[1]
-    assert ".pt-start select { max-width: 100%; }" in practice
+    assert "grid-template-columns: 240px minmax(0, 1fr) 320px;" in practice  # 1280: three regions
+    assert ".pt-ticket.pt-open {" in practice and ".pt-trade-bar { display: block;" in practice  # 390: bottom sheet
     for css in (style, features):
         for value in re.findall(r"(?<![-\w])(?:min-)?width:\s*(\d+)px\s*[;}]", css):  # declarations, not media queries
             assert int(value) <= 358, value  # nothing fixed wider than a 390px screen minus 16px gutters
@@ -187,3 +188,68 @@ def test_synthetic_a_stays_byte_compatible_and_existing_sessions_still_load():
     assert view["scenario"]["id"] == "synthetic-a"
     assert view["portfolio"]["cash_cents"] == 1_000_000 - 5 * m["bars"]["SAMPLE-A"][1]["o"]
     assert "view ? view.scenario.id : scenarioId" in js()  # Reset keeps a saved session's market
+
+
+# ---- P2.5 step 3: the rebuilt Practice Trading workspace (behaviour checked in a headless browser before release) ----
+
+def test_workspace_is_built_once_and_actions_redraw_only_their_regions():
+    code = js()
+    assert code.count('root.textContent = ""') == 4  # workspace, start, damaged and loading screens only
+    assert code.count("buildWorkspace()") == 2  # its definition and one call, from load()
+    assert "function render(" not in code
+    for region in ("strip", "watch", "chart", "positions", "pending", "history"):
+        assert f"RENDER.{region} = function" in code, region
+    assert "data-key" in code and "focusKey" in code  # focus returns to the same control after a redraw
+
+
+def test_three_regions_chart_placeholder_and_header_day_controls():
+    code, t = js(), text()
+    assert "layout.appendChild(regions.watch);" in code and "layout.appendChild(regions.ticket);" in code
+    assert "reserved for the interactive chart coming in P3" in t
+    assert '"Next day", 1], ["Next 5 days", 5]' in code and '"role", "progressbar"' in code
+    assert '"aria-valuetext", "Day " + (day.index + 1) + " of " + total' in code
+
+
+def test_order_ticket_controls_are_accessible():
+    code = js()
+    assert '"role", "combobox"' in code and '"role", "listbox"' in code and "aria-activedescendant" in code
+    assert '"aria-label", "Order side"' in code and '"aria-pressed"' in code
+    assert '"One share fewer"' in code and '"One share more"' in code and '"Max"' in code
+    assert 'shares.inputMode = "numeric"' in code
+    # Max mirrors the engine's preview checks (cash after pending buys; held minus pending sells)
+    assert "view.portfolio.cash_cents - reserved" in code and "held - selling" in code
+
+
+def test_preview_confirm_and_back_swap_the_ticket_body_in_place():
+    code, t = js(), text()
+    for title in ("Check your practice order", "Order queued", "Practice order"):
+        assert f'"{title}"' in t, title
+    assert 'ui.mode = "review";' in code and 'ui.mode = "queued";' in code
+    assert "Back keeps ticker, side and shares; nothing was sent" in code
+
+
+def test_fills_are_announced_and_rows_flash():
+    code = js()
+    assert 'regions.toasts.setAttribute("role", "status")' in code
+    assert 'regions.toasts.setAttribute("aria-atomic", "false")' in code
+    assert "setTimeout(function () { t.remove(); }, 5000);" in code and '"Dismiss notification"' in code
+    css = read("static", "css", "features.css")
+    assert "@keyframes pt-flash" in css and "@media (prefers-reduced-motion: reduce)" in css
+
+
+def test_phone_trade_sheet_is_a_modal_dialog_closed_by_escape():
+    code = js()
+    assert 'PHONE = window.matchMedia("(max-width: 720px)")' in code
+    assert 't.setAttribute("role", "dialog")' in code and 't.setAttribute("aria-modal", "true")' in code
+    assert 'if (e.key === "Escape") {\n      closeSheet();' in code and '"Close trade sheet"' in code
+    assert "keep Tab inside the open sheet" in code
+
+
+def test_positions_history_sectors_and_simulated_labels():
+    code, t = js(), text()
+    assert '["Ticker", "Shares", "Avg cost", "Last", "Market value", "Unrealized"]' in code
+    assert 'el("details", "card pt-history")' in code and '"All tickers"' in code
+    assert "info(s).sector" in code and '"pt-sector"' in code  # synthetic-b groups the watchlist by sector
+    assert code.count("sim()") >= 4  # strip, watchlist, positions, ticket
+    css = read("static", "css", "features.css")
+    assert r'.pt-up::before { content: "\25B2' in css and r'.pt-down::before { content: "\25BC' in css  # not colour alone

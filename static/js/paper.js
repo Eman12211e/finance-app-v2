@@ -1,23 +1,42 @@
 // Practice Trading tab in #paper-root: a simulated, synthetic-price trading practice built on /api/paper.
 // The signed session lives in localStorage; journal notes live in localStorage too and are never sent to the server.
 // Nothing here is a real price, order, account or recommendation.
+// The workspace is built once per loaded session; each action then redraws only the regions it changed.
 (function () {
   "use strict";
 
   var SESSION_KEY = "paper-session-v1";
   var JOURNAL_KEY = "paper-journal-v1";
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var MAX_SHARES = 100000;  // the engine's limit per order
+  var PHONE = window.matchMedia("(max-width: 720px)");
   var root = null;
   var view = null;       // last verified view from the server
+  var market = null;     // bars up to the current day, for the watchlist; the server never sends later bars
   var busy = false;      // one request at a time: double clicks and overlapping replies cannot race
-  var draft = null;      // the previewed order awaiting Confirm or Cancel, with its fixed order id
+  var draft = null;      // the previewed order awaiting Confirm or Back, with its fixed order id
   var started = false;
   var scenarioId = "synthetic-b";  // market for a new session; the start screen can change it, Reset keeps the current one
+  var regions = null;    // live containers of the workspace, or null on the start and damaged screens
+  var ui = freshUi();
+
+  function freshUi() {
+    return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
+             historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false };
+  }
 
   function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
     if (text !== undefined && text !== null) node.textContent = text;
     return node;
+  }
+
+  function button(cls, text, onClick) {
+    var b = el("button", cls, text);
+    b.type = "button";
+    if (onClick) b.addEventListener("click", onClick);
+    return b;
   }
 
   function money(cents) {
@@ -29,6 +48,32 @@
 
   function signed(cents) {
     return (cents > 0 ? "+" : "") + money(cents);
+  }
+
+  // gain or loss: sign, arrow (CSS) and colour together, never colour alone
+  function pl(value, text) {
+    return el("span", value > 0 ? "pt-up" : value < 0 ? "pt-down" : null, text === undefined ? signed(value) : text);
+  }
+
+  function sim(text) {
+    return el("span", "pt-sim", text || "Simulated");
+  }
+
+  function niceDate(iso) {
+    return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US",
+      { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  }
+
+  function info(symbol) {
+    return view.scenario.symbols[symbol] || {};
+  }
+
+  function closeOf(symbol) {
+    return view.quotes[symbol].close_cents;
+  }
+
+  function describe(o) {
+    return (o.side === "buy" ? "Buy " : "Sell ") + o.shares + " " + o.symbol;
   }
 
   // ---- browser storage (may be blocked or cleared; every access is guarded) ----
@@ -79,24 +124,40 @@
         // another tab changed the saved session: reload it instead of acting on a stale copy
         setMessage("Your practice session changed in another tab, so it was reloaded. Check it and try again.", true);
         draft = null;
-        call("view", { state: stored }, accept);
+        ui.mode = "edit";
+        call("view", { state: stored }, load);
         return;
       }
     }
-    busy = true;
-    render();
+    setBusy(true);
     window.Api.paperPost(path, body).then(function (env) {
-      busy = false;
+      setBusy(false);
       if (env.ok) {
         onOk(env.data);
       } else if (env.error.code === "INVALID_STATE") {
         showDamaged(env.error.message);
-        return;
       } else {
         setMessage(env.error.message, true);
       }
-      render();
     });
+  }
+
+  // A disabled button drops focus to the page, so the focused control is remembered while busy and refocused after.
+  var focusKey = null;
+
+  function setBusy(on) {
+    busy = on;
+    if (!root) return;
+    var active = document.activeElement;
+    if (on && root.contains(active) && active.dataset.key) focusKey = active.dataset.key;
+    root.setAttribute("aria-busy", on ? "true" : "false");
+    root.querySelectorAll("[data-busy]").forEach(function (b) {
+      b.disabled = busy || (b.dataset.busy === "open" && !!view && view.day.ended);
+    });
+    if (!on && focusKey && (!document.activeElement || document.activeElement === document.body)) {
+      var again = root.querySelector('[data-key="' + focusKey + '"]');
+      if (again && !again.disabled) again.focus();
+    }
   }
 
   function accept(data) {
@@ -104,27 +165,56 @@
     writeSession(data.state);
   }
 
+  function load(data) {
+    accept(data);
+    if (!ui.symbol || !view.quotes[ui.symbol]) ui.symbol = Object.keys(view.quotes)[0];
+    buildWorkspace();
+    loadMarket();
+  }
+
+  function loadMarket() {
+    call("market", { state: view.state }, function (data) {
+      market = data;
+      refresh(["watch"]);
+    });
+  }
+
   // ---- actions ----
 
   function startNew() {
     call("new", { scenario: view ? view.scenario.id : scenarioId }, function (data) {
       clearAll();
-      accept(data);
       draft = null;
+      market = null;
+      ui = freshUi();
       setMessage("A new practice session started with $10,000.00 of fictional cash.", false);
+      load(data);
     });
   }
 
-  function previewOrder(form) {
-    var shares = Number(form.querySelector('input[name="pt-shares"]').value);
-    var order = {
-      symbol: form.querySelector("select").value,
-      side: form.querySelector('input[name="pt-side"]:checked').value,
-      shares: Number.isInteger(shares) ? shares : form.querySelector('input[name="pt-shares"]').value,
-    };
+  function previewOrder() {
+    var typed = regions.form.input.value.trim().toUpperCase();
+    if (typed !== ui.symbol) {
+      if (!view.quotes[typed]) {
+        ui.problem = "Pick a ticker from the list.";
+        updateTicketFigures();
+        regions.form.input.focus();
+        return;
+      }
+      selectSymbol(typed);
+    }
+    var shares = Number(ui.shares);
+    var order = { symbol: ui.symbol, side: ui.side, shares: Number.isInteger(shares) ? shares : ui.shares };
     call("preview", { state: view.state, order: order }, function (data) {
       draft = data.ok ? { id: newOrderId(), order: order, preview: data } : null;
-      setMessage(data.ok ? "" : data.problems.map(function (p) { return p.message; }).join(" "), !data.ok);
+      ui.problem = data.ok ? "" : data.problems.map(function (p) { return p.message; }).join(" ");
+      if (data.ok) {
+        ui.mode = "review";
+        renderTicket("pt-ticket-title");  // the preview replaces the ticket body in place
+      } else {
+        updateTicketFigures();
+        regions.form.shares.focus();
+      }
     });
   }
 
@@ -136,8 +226,12 @@
       accept(data);
       saveJournalNote(d.id, why, risks);  // stored locally only; the request above never contains it
       draft = null;
-      setMessage(data.duplicate ? "That order was already queued, so it was not added twice."
-        : "Order queued. It fills at the next simulated day's opening price.", false);
+      ui.mode = "queued";
+      ui.queuedId = d.id;
+      ui.queuedText = data.duplicate ? "That order was already queued, so it was not added twice."
+        : describe(order) + " will fill at the next simulated open. Press Next day to see it fill.";
+      renderTicket("pt-ticket-title");
+      refresh(["pending"]);
     });
   }
 
@@ -145,49 +239,121 @@
     call("cancel", { state: view.state, order_id: orderId }, function (data) {
       accept(data);
       setMessage("Order cancelled.", false);
+      if (ui.queuedId === orderId && ui.mode === "queued") {
+        ui.mode = "edit";
+        renderTicket("pt-ticket-title");
+      }
+      refresh(["pending", "history", "ticket"]);
     });
   }
 
   function advance(days) {
     var remaining = days;
+    var waiting = view.orders.filter(function (o) { return o.status === "pending"; }).map(function (o) { return o.id; });
     function next() {
-      if (remaining <= 0 || !view || view.day.ended) return;
+      if (remaining <= 0 || !view || view.day.ended) {
+        finish();
+        return;
+      }
       remaining -= 1;
       call("advance", { state: view.state, expected_day: view.day.index }, function (data) {
         accept(data);
-        draft = null;
         setMessage("", false);
-        if (remaining > 0 && !data.day.ended) setTimeout(next, 0);
+        if (ui.mode !== "edit") {
+          draft = null;  // a preview was priced at a close that is no longer today's
+          ui.mode = "edit";
+          renderTicket();
+        }
+        refresh(["strip", "positions", "pending", "history", "ticket"]);
+        setTimeout(next, 0);
       });
+    }
+    function finish() {
+      var fills = {};
+      view.portfolio.transactions.forEach(function (t) { fills[t.order_id] = t; });
+      var filled = {};
+      view.orders.forEach(function (o) {
+        if (waiting.indexOf(o.id) === -1 || o.status === "pending") return;
+        var t = fills[o.id];
+        if (t) {
+          filled[o.symbol] = true;
+          toast((o.side === "buy" ? "Bought " : "Sold ") + o.shares + " " + o.symbol + " at " + money(t.price_cents),
+            "Simulated fill at the " + niceDate(t.date) + " open. " + (o.side === "buy" ? "Cost " : "Proceeds ")
+            + money(t.amount_cents) + (t.realized_pl_cents !== null ? ". Realized " + signed(t.realized_pl_cents) : "") + ".");
+        } else {
+          toast(describe(o) + " was " + o.status, o.reason || "", true);
+        }
+      });
+      flashRows(Object.keys(filled));
+      loadMarket();
     }
     next();
   }
 
-  // ---- rendering ----
+  function selectSymbol(symbol) {
+    ui.symbol = symbol;
+    ui.problem = "";
+    if (ui.mode === "edit" && regions.form) {
+      regions.form.input.value = symbol;
+      updateTicketFigures();
+    } else {
+      draft = null;
+      ui.mode = "edit";
+      renderTicket();
+    }
+    root.querySelectorAll(".pt-watch-item").forEach(function (b) {
+      b.setAttribute("aria-current", b.dataset.symbol === symbol ? "true" : "false");
+    });
+    refresh(["chart"]);
+  }
+
+  // from the watchlist or the positions table: on phones this opens the trade sheet
+  function pickToTrade(symbol) {
+    selectSymbol(symbol);
+    if (PHONE.matches) openSheet("pt-shares");
+  }
+
+  // ---- messages, toasts and row feedback ----
 
   var message = { text: "", error: false };
 
   function setMessage(text, error) {
     message = { text: text, error: error };
+    if (regions) showMessage();
   }
 
-  function showDamaged(detail) {
-    view = null;
-    draft = null;
-    root.textContent = "";
-    root.appendChild(banner());
-    var box = el("div", "card pt-damaged");
-    box.setAttribute("role", "alert");
-    box.appendChild(el("h2", null, "Your saved practice session could not be opened"));
-    box.appendChild(el("p", null, detail || "The saved session is damaged or was changed."));
-    box.appendChild(el("p", null, "It has not been replaced. You can start over, which deletes the saved practice "
-      + "session and journal notes from this browser."));
-    var again = el("button", "button-primary", "Start a new practice session");
-    again.type = "button";
-    again.addEventListener("click", startNew);
-    box.appendChild(again);
-    root.appendChild(box);
+  function showMessage() {
+    var box = regions.message;
+    box.textContent = "";
+    if (!message.text) return;
+    var m = el("p", message.error ? "pt-message error-text" : "pt-message", message.text);
+    if (message.error) m.setAttribute("role", "alert");
+    box.appendChild(m);
   }
+
+  function toast(title, detail, bad) {
+    var t = el("div", "pt-toast" + (bad ? " pt-toast-bad" : ""));
+    var p = el("p");
+    p.appendChild(el("strong", null, title));
+    if (detail) p.appendChild(el("span", "pt-small", detail));
+    t.appendChild(p);
+    var close = button("pt-toast-close", "×", function () { t.remove(); });
+    close.setAttribute("aria-label", "Dismiss notification");
+    t.appendChild(close);
+    regions.toasts.appendChild(t);
+    setTimeout(function () { t.remove(); }, 5000);
+  }
+
+  function flashRows(symbols) {
+    symbols.forEach(function (s) {
+      var row = regions.positions.querySelector('tr[data-symbol="' + s + '"]');
+      if (!row) return;
+      row.classList.add("pt-flash");
+      setTimeout(function () { row.classList.remove("pt-flash"); }, 2000);
+    });
+  }
+
+  // ---- the workspace ----
 
   function banner() {
     var b = el("div", "pt-banner");
@@ -198,221 +364,421 @@
     return b;
   }
 
-  function stat(label, value, cls) {
-    var box = el("div", "pt-stat");
-    box.appendChild(el("p", "pt-stat-label", label));
-    box.appendChild(el("p", "pt-stat-value" + (cls ? " " + cls : ""), value));
+  function region(tag, cls, labelId) {
+    var node = el(tag, cls);
+    if (labelId) node.setAttribute("aria-labelledby", labelId);
+    return node;
+  }
+
+  function buildWorkspace() {
+    closeSheet(true);
+    root.textContent = "";
+    root.appendChild(banner());
+    var title = el("h2", "visually-hidden", "Practice Trading");
+    title.id = "paper-title";
+    root.appendChild(title);
+    regions = {
+      message: el("div", "pt-message-box"),
+      watch: region("aside", "card pt-watch"),
+      strip: region("section", "card pt-strip", "pt-strip-title"),
+      chart: region("section", "pt-chart", "pt-chart-title"),
+      positions: region("section", "card pt-positions", "pt-positions-title"),
+      pending: region("section", "card pt-pending", "pt-pending-title"),
+      history: region("div", "pt-history-box"),
+      ticket: region("aside", "card pt-ticket", "pt-ticket-title"),
+      toasts: el("div", "pt-toasts"),
+      form: null,
+    };
+    regions.message.setAttribute("aria-live", "polite");
+    regions.watch.setAttribute("aria-label", "Practice tickers");
+    regions.ticket.id = "pt-ticket";
+    regions.toasts.setAttribute("role", "status");
+    regions.toasts.setAttribute("aria-atomic", "false");  // announce each new fill, not every toast again
+    regions.ticket.addEventListener("keydown", sheetKeys);
+    root.appendChild(regions.message);
+
+    var layout = el("div", "pt-layout");
+    var centre = el("div", "pt-centre");
+    [regions.strip, regions.chart, regions.positions, regions.pending, regions.history, learnMore()].forEach(function (n) {
+      centre.appendChild(n);
+    });
+    layout.appendChild(regions.watch);
+    layout.appendChild(centre);
+    layout.appendChild(regions.ticket);
+    root.appendChild(layout);
+
+    regions.tradeBar = button("button-primary pt-trade-bar", "Trade", function () { openSheet(); });
+    regions.tradeBar.setAttribute("aria-haspopup", "dialog");
+    regions.tradeBar.setAttribute("aria-controls", "pt-ticket");
+    regions.tradeBar.setAttribute("aria-expanded", "false");
+    regions.scrim = el("div", "pt-scrim");
+    regions.scrim.hidden = true;
+    regions.scrim.addEventListener("click", function () { closeSheet(); });
+    root.appendChild(regions.tradeBar);
+    root.appendChild(regions.scrim);
+    root.appendChild(regions.toasts);
+
+    showMessage();
+    renderTicket();
+    refresh(["watch", "strip", "chart", "positions", "pending", "history"]);
+    dock();
+  }
+
+  var RENDER = {};
+
+  // Redraws the named regions. Focus inside a redrawn region returns to the same control (data-key), or to the
+  // region's heading if that control is gone, so keyboard users never lose their place.
+  function refresh(names, focusId) {
+    if (!regions) return;
+    names.forEach(function (name) {
+      if (name === "ticket") {
+        if (ui.mode === "edit" && regions.form) updateTicketFigures();
+        else renderTicket();
+        return;
+      }
+      var box = regions[name];
+      var active = document.activeElement;
+      var key = box.contains(active) ? active.getAttribute("data-key") : null;
+      var hadFocus = box.contains(active) && active !== document.body;
+      box.textContent = "";
+      RENDER[name](box);
+      if (hadFocus) {
+        var again = (key && box.querySelector('[data-key="' + key + '"]')) || box.querySelector('[tabindex="-1"]');
+        if (again) again.focus();
+      }
+    });
+    setBusy(busy);
+    if (focusId) {
+      var f = document.getElementById(focusId);
+      if (f) f.focus();
+    }
+  }
+
+  // ---- portfolio header strip: figures, day counter, progress and day controls ----
+
+  function figure(label, value, hero) {
+    var box = el("div", "pt-figure" + (hero ? " pt-hero" : ""));
+    var l = el("span", "pt-figure-label", label);
+    if (hero) {
+      l.appendChild(document.createTextNode(" "));
+      l.appendChild(sim());
+    }
+    box.appendChild(l);
+    var v = el("span", "pt-figure-value");
+    if (typeof value === "string") v.textContent = value;
+    else value.forEach(function (n, k) {
+      if (k) v.appendChild(document.createTextNode(" / "));
+      v.appendChild(n);
+    });
+    box.appendChild(v);
     return box;
   }
 
-  function plClass(cents) {
-    return cents > 0 ? "change-up" : cents < 0 ? "change-down" : "";
-  }
+  RENDER.strip = function (box) {
+    var p = view.portfolio, day = view.day, total = view.scenario.days;
+    var h = el("h3", "visually-hidden", "Your simulated account");
+    h.id = "pt-strip-title";
+    h.tabIndex = -1;
+    box.appendChild(h);
+    var top = el("div", "pt-strip-top");
+    top.appendChild(figure("Portfolio value", money(p.portfolio_value_cents), true));
+    top.appendChild(figure("Fictional cash", money(p.cash_cents)));
+    top.appendChild(figure("Total since $10,000 start", [pl(p.total_pl_cents)]));
+    top.appendChild(figure("Realized / unrealized", [pl(p.realized_pl_cents), pl(p.unrealized_pl_cents)]));
 
-  function summaryCard() {
-    var p = view.portfolio;
-    var card = el("section", "card pt-summary");
-    card.setAttribute("aria-label", "Simulated account summary");
-    var day = view.day;
-    card.appendChild(el("p", "pt-day", "Simulated day " + (day.index + 1) + " of " + view.scenario.days + " · " + day.date
-      + (day.ended ? " · scenario ended" : day.is_last ? " · last day" : "")));
-    var grid = el("div", "pt-stats");
-    grid.appendChild(stat("Fictional cash available", money(p.cash_cents)));
-    grid.appendChild(stat("Simulated portfolio value", money(p.portfolio_value_cents)));
-    grid.appendChild(stat("Realized gain/loss", signed(p.realized_pl_cents), plClass(p.realized_pl_cents)));
-    grid.appendChild(stat("Unrealized gain/loss", signed(p.unrealized_pl_cents), plClass(p.unrealized_pl_cents)));
-    grid.appendChild(stat("Total vs. $10,000 start", signed(p.total_pl_cents), plClass(p.total_pl_cents)));
-    card.appendChild(grid);
-    var controls = el("div", "pt-controls");
-    [["Next day", 1], ["Next 5 days", 5]].forEach(function (c) {
-      var b = el("button", "button-secondary", c[0]);
-      b.type = "button";
-      b.dataset.days = c[1];
-      b.disabled = busy || day.ended;
-      b.addEventListener("click", function () { advance(c[1]); });
-      controls.appendChild(b);
+    var dayBox = el("div", "pt-day");
+    var line = el("p", "pt-day-line");
+    line.appendChild(el("strong", null, "Day " + (day.index + 1) + " of " + total));
+    line.appendChild(el("span", "muted", " " + niceDate(day.date)
+      + (day.ended ? ", scenario ended" : day.is_last ? ", last day" : "")));
+    dayBox.appendChild(line);
+    var bar = el("div", "pt-progress");
+    bar.setAttribute("role", "progressbar");
+    bar.setAttribute("aria-label", "Scenario progress");
+    bar.setAttribute("aria-valuemin", "1");
+    bar.setAttribute("aria-valuemax", String(total));
+    bar.setAttribute("aria-valuenow", String(day.index + 1));
+    bar.setAttribute("aria-valuetext", "Day " + (day.index + 1) + " of " + total);
+    var fillBar = el("span");
+    fillBar.style.width = ((day.index + 1) / total * 100).toFixed(1) + "%";
+    bar.appendChild(fillBar);
+    dayBox.appendChild(bar);
+
+    var controls = el("div", "pt-day-controls");
+    if (day.ended) {
+      controls.appendChild(el("p", "pt-small", "This practice scenario has ended."));
+    } else {
+      [["Next day", 1], ["Next 5 days", 5]].forEach(function (c) {
+        var b = button("button-secondary", c[0], function () { advance(c[1]); });
+        b.dataset.busy = "open";
+        b.dataset.key = "next-" + c[1];
+        controls.appendChild(b);
+      });
+    }
+    var more = button("button-secondary pt-more", day.ended ? "Start again" : "More", null);
+    more.dataset.key = "more";
+    more.setAttribute("aria-expanded", "false");
+    more.setAttribute("aria-controls", "pt-session-menu");
+    if (!day.ended) more.setAttribute("aria-label", "More session actions");
+    var menu = el("div", "pt-session-menu");
+    menu.id = "pt-session-menu";
+    menu.hidden = true;
+    var reset = button("button-secondary pt-reset", "Reset simulation", function () { renderResetConfirm(menu); });
+    reset.dataset.busy = "";
+    reset.dataset.key = "reset";
+    menu.appendChild(reset);
+    more.addEventListener("click", function () {
+      menu.hidden = !menu.hidden;
+      more.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
+      if (!menu.hidden) reset.focus();
     });
-    var reset = el("button", "button-secondary pt-reset", "Reset simulation");
-    reset.type = "button";
-    reset.disabled = busy;
-    reset.addEventListener("click", function () { renderResetConfirm(card); });
-    controls.appendChild(reset);
-    card.appendChild(controls);
-    return card;
-  }
+    menu.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      menu.hidden = true;
+      more.setAttribute("aria-expanded", "false");
+      more.focus();
+    });
+    controls.appendChild(more);
+    dayBox.appendChild(controls);
+    dayBox.appendChild(menu);
+    top.appendChild(dayBox);
+    box.appendChild(top);
+  };
 
-  function renderResetConfirm(card) {
-    if (card.querySelector(".pt-confirm-reset")) return;
+  function renderResetConfirm(menu) {
+    if (menu.querySelector(".pt-confirm-reset")) return;
     var box = el("div", "pt-confirm-reset");
     box.setAttribute("role", "alertdialog");
+    box.setAttribute("aria-label", "Reset the simulation");
     box.appendChild(el("p", null, "Reset the simulation? This deletes your practice session and journal notes from "
       + "this browser and starts again with $10,000.00 of fictional cash. It cannot be undone."));
-    var yes = el("button", "button-primary", "Yes, reset");
-    yes.type = "button";
-    yes.addEventListener("click", startNew);
-    var no = el("button", "button-secondary", "Keep my session");
-    no.type = "button";
-    no.addEventListener("click", function () { box.remove(); });
+    var yes = button("button-primary", "Yes, reset", startNew);
+    yes.dataset.busy = "";
+    var no = button("button-secondary", "Keep my session", function () {
+      box.remove();
+      menu.querySelector(".pt-reset").focus();
+    });
     box.appendChild(yes);
     box.appendChild(no);
-    card.appendChild(box);
+    menu.appendChild(box);
     no.focus();
   }
 
-  function ticket() {
-    var form = el("form", "card pt-ticket");
-    form.setAttribute("aria-label", "Practice order");
-    form.appendChild(el("h3", null, "Practice order"));
-    var symLabel = el("label", "field", "Fictional ticker ");
-    var select = el("select");
+  // ---- chart placeholder (P3 fills this area) ----
+
+  RENDER.chart = function (box) {
+    var i = info(ui.symbol);
+    var h = el("h3", null, ui.symbol + " price chart");
+    h.id = "pt-chart-title";
+    box.appendChild(h);
+    box.appendChild(el("p", "pt-small", (i.name || ui.symbol) + (i.sector ? ", " + i.sector + " sector" : "")));
+    box.appendChild(el("p", "pt-small", "This space is reserved for the interactive chart coming in P3: candlesticks, "
+      + "volume and your trade markers."));
+  };
+
+  // ---- watchlist ----
+
+  function marketIsCurrent() {
+    return market && market.dates.length === view.day.index + 1;
+  }
+
+  function sparkline(bars) {
+    var closes = bars.slice(-30).map(function (b) { return b.c; });
+    var lo = Math.min.apply(null, closes), hi = Math.max.apply(null, closes), span = hi - lo || 1;
+    var svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 24");
+    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.setAttribute("class", "pt-spark-box");
+    var line = document.createElementNS(SVG_NS, "polyline");
+    line.setAttribute("points", closes.map(function (c, k) {
+      return (k * 100 / Math.max(closes.length - 1, 1)).toFixed(1) + "," + (22 - (c - lo) / span * 20).toFixed(1);
+    }).join(" "));
+    line.setAttribute("class", "pt-spark " + (closes[closes.length - 1] >= closes[0] ? "pt-rise" : "pt-fall"));
+    svg.appendChild(line);
+    return svg;
+  }
+
+  function watchItem(symbol) {
+    var i = info(symbol);
+    var b = button("pt-watch-item", null, function () { pickToTrade(symbol); });
+    b.dataset.symbol = symbol;
+    b.dataset.key = "watch-" + symbol;
+    b.setAttribute("aria-current", symbol === ui.symbol ? "true" : "false");
+    b.appendChild(el("strong", null, symbol));
+    b.appendChild(el("span", "pt-num", money(closeOf(symbol))));
+    b.appendChild(el("span", "pt-tiny muted", i.name || ""));
+    if (marketIsCurrent() && view.day.index > 0) {
+      var bars = market.bars[symbol];
+      var change = bars[bars.length - 1].c / bars[bars.length - 2].c - 1;
+      var text = (change > 0 ? "+" : "") + (change * 100).toFixed(1) + "%";
+      b.appendChild(pl(Math.round(change * 10000), text));
+    } else {
+      b.appendChild(el("span", "pt-tiny muted", view.day.index === 0 ? "First day" : ""));
+    }
+    if (marketIsCurrent()) b.appendChild(sparkline(market.bars[symbol]));
+    return b;
+  }
+
+  RENDER.watch = function (box) {
+    var details = el("details", "pt-watch-box");
+    details.open = ui.watchOpen;
+    details.addEventListener("toggle", function () { ui.watchOpen = details.open; });
+    var summary = el("summary");
+    summary.dataset.key = "watch-summary";
+    var h = el("h2", null, "Practice tickers ");
+    h.appendChild(sim());
+    summary.appendChild(h);
+    details.appendChild(summary);
+    var groups = [];  // [sector or "", [symbols]] in scenario order
     Object.keys(view.quotes).forEach(function (s) {
-      var o = el("option", null, s + " · " + money(view.quotes[s].close_cents) + " simulated close");
-      o.value = s;
-      select.appendChild(o);
+      var sector = info(s).sector || "";
+      var g = groups.filter(function (x) { return x[0] === sector; })[0];
+      if (!g) groups.push(g = [sector, []]);
+      g[1].push(s);
     });
-    if (draft) select.value = draft.order.symbol;
-    symLabel.appendChild(select);
-    form.appendChild(symLabel);
-    var sides = el("fieldset", "pt-sides");
-    sides.appendChild(el("legend", null, "Buy or sell"));
-    ["buy", "sell"].forEach(function (side) {
-      var l = el("label");
-      var r = el("input");
-      r.type = "radio";
-      r.name = "pt-side";
-      r.value = side;
-      r.checked = draft ? draft.order.side === side : side === "buy";
-      l.appendChild(r);
-      l.appendChild(document.createTextNode(" " + side.charAt(0).toUpperCase() + side.slice(1)));
-      sides.appendChild(l);
+    groups.forEach(function (g) {
+      if (g[0]) details.appendChild(el("h3", "pt-sector", g[0]));
+      var list = el("ul", "pt-watchlist");
+      g[1].forEach(function (s) {
+        var li = el("li");
+        li.appendChild(watchItem(s));
+        list.appendChild(li);
+      });
+      details.appendChild(list);
     });
-    form.appendChild(sides);
-    var qty = el("label", "field", "Whole shares ");
-    var input = el("input");
-    input.type = "number";
-    input.name = "pt-shares";
-    input.min = "1";
-    input.step = "1";
-    input.max = "100000";
-    input.inputMode = "numeric";
-    input.value = draft ? draft.order.shares : "1";
-    qty.appendChild(input);
-    form.appendChild(qty);
-    form.appendChild(el("p", "pt-small", "Market orders fill at the next simulated day's opening price, which can "
-      + "differ from the preview. Cash only: no borrowing, short selling or options."));
-    var preview = el("button", "button-primary", "Preview order");
-    preview.type = "submit";
-    preview.disabled = busy || view.day.ended;
-    form.appendChild(preview);
-    form.addEventListener("submit", function (e) { e.preventDefault(); previewOrder(form); });
-    if (draft) form.appendChild(confirmPanel());
-    return form;
-  }
+    details.appendChild(el("p", "pt-tiny muted", "Simulated closing prices. Change is since the previous simulated day. "
+      + "Select a ticker to trade it."));
+    box.appendChild(details);
+  };
 
-  function confirmPanel() {
-    var p = draft.preview;
-    var box = el("div", "pt-preview");
-    box.setAttribute("aria-live", "polite");
-    box.appendChild(el("h4", null, "Check before you confirm"));
-    box.appendChild(el("p", null, (p.side === "buy" ? "Buy " : "Sell ") + p.shares + " " + p.symbol + ": estimated "
-      + (p.side === "buy" ? "cost " : "proceeds ") + money(p.estimated_amount_cents) + " at today's simulated close of "
-      + money(p.reference_close_cents) + " per share."));
-    box.appendChild(el("p", "pt-small", p.fill_note));
-    if (p.warning) box.appendChild(el("p", "error-text", p.warning));
-    var journal = el("fieldset", "pt-journal");
-    journal.appendChild(el("legend", null, "Practice journal (optional)"));
-    journal.appendChild(el("p", "pt-small", "Saved only in this browser and never sent anywhere. Do not include "
-      + "personal or account information."));
-    var why = el("textarea");
-    why.maxLength = 280;
-    why.rows = 2;
-    why.setAttribute("aria-label", "Why are you making this trade?");
-    why.placeholder = "Why are you making this trade?";
-    var risks = el("textarea");
-    risks.maxLength = 280;
-    risks.rows = 2;
-    risks.setAttribute("aria-label", "What could go wrong?");
-    risks.placeholder = "What could go wrong?";
-    journal.appendChild(why);
-    journal.appendChild(risks);
-    box.appendChild(journal);
-    var actions = el("div", "pt-actions");
-    var confirm = el("button", "button-primary pt-confirm", "Confirm practice order");
-    confirm.type = "button";
-    confirm.disabled = busy;
-    confirm.addEventListener("click", function () { confirmOrder(why.value.trim(), risks.value.trim()); });
-    var cancel = el("button", "button-secondary", "Cancel");
-    cancel.type = "button";
-    cancel.addEventListener("click", function () { draft = null; setMessage("Order not placed.", false); render(); });
-    actions.appendChild(confirm);
-    actions.appendChild(cancel);
-    box.appendChild(actions);
-    return box;
-  }
+  // ---- positions, pending orders, history ----
 
-  function holdings() {
-    var card = el("section", "card pt-holdings");
-    card.appendChild(el("h3", null, "Simulated holdings"));
+  RENDER.positions = function (box) {
+    var h = el("h3", null, "Positions ");
+    h.id = "pt-positions-title";
+    h.tabIndex = -1;
+    h.appendChild(sim());
+    box.appendChild(h);
     var positions = view.portfolio.positions;
     if (!positions.length) {
-      card.appendChild(el("p", "muted", "No holdings yet."));
-      return card;
+      box.appendChild(el("p", "muted", "No holdings yet. Choose a ticker, preview an order and confirm it to start."));
+      return;
     }
-    var list = el("ul", "pt-list");
-    positions.forEach(function (p) {
-      var li = el("li", "pt-item");
-      li.appendChild(el("p", "pt-item-title", p.symbol + " · " + p.shares + " shares"));
-      li.appendChild(el("p", null, "Average cost " + money(p.average_cost_cents) + " · simulated close "
-        + money(p.close_cents) + " · value " + money(p.market_value_cents)));
-      li.appendChild(el("p", plClass(p.unrealized_pl_cents), "Unrealized " + signed(p.unrealized_pl_cents)));
-      list.appendChild(li);
+    var table = el("table", "pt-table");
+    table.setAttribute("aria-labelledby", "pt-positions-title");
+    var head = el("tr");
+    ["Ticker", "Shares", "Avg cost", "Last", "Market value", "Unrealized"].forEach(function (c) {
+      var th = el("th", null, c);
+      th.scope = "col";
+      head.appendChild(th);
     });
-    card.appendChild(list);
-    return card;
-  }
+    var thead = el("thead");
+    thead.appendChild(head);
+    table.appendChild(thead);
+    var body = el("tbody");
+    positions.forEach(function (p) {
+      var tr = el("tr");
+      tr.dataset.symbol = p.symbol;
+      tr.addEventListener("click", function (e) { if (!e.target.closest("button")) pickToTrade(p.symbol); });
+      var first = el("td");
+      first.dataset.label = "Ticker";
+      var pick = button("pt-link", p.symbol, function () { pickToTrade(p.symbol); });
+      pick.dataset.key = "pos-" + p.symbol;
+      pick.setAttribute("aria-label", "Trade " + p.symbol);
+      first.appendChild(pick);
+      if (info(p.symbol).sector) first.appendChild(el("span", "pt-tiny muted", info(p.symbol).sector));
+      tr.appendChild(first);
+      [["Shares", String(p.shares)], ["Avg cost", money(p.average_cost_cents)], ["Last", money(p.close_cents)],
+       ["Market value", money(p.market_value_cents)]].forEach(function (c) {
+        var td = el("td", null, c[1]);
+        td.dataset.label = c[0];
+        tr.appendChild(td);
+      });
+      var last = el("td");
+      last.dataset.label = "Unrealized";
+      last.appendChild(pl(p.unrealized_pl_cents));
+      tr.appendChild(last);
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    box.appendChild(table);
+    box.appendChild(el("p", "pt-tiny muted", "Last is the latest simulated close. Select a ticker to trade it."));
+  };
 
-  function pendingOrders() {
-    var card = el("section", "card pt-pending");
-    card.appendChild(el("h3", null, "Pending practice orders"));
+  RENDER.pending = function (box) {
+    var h = el("h3", null, "Pending orders");
+    h.id = "pt-pending-title";
+    h.tabIndex = -1;
+    box.appendChild(h);
     var pending = view.orders.filter(function (o) { return o.status === "pending"; });
     if (!pending.length) {
-      card.appendChild(el("p", "muted", "None. Orders you confirm wait here until the next simulated open."));
-      return card;
+      box.appendChild(el("p", "muted", "None. Orders you confirm wait here until the next simulated open."));
+      return;
     }
     var list = el("ul", "pt-list");
     pending.forEach(function (o) {
       var li = el("li", "pt-item");
-      li.appendChild(el("p", "pt-item-title", o.side.toUpperCase() + " " + o.shares + " " + o.symbol));
-      var b = el("button", "button-secondary", "Cancel order");
-      b.type = "button";
-      b.disabled = busy;
-      b.addEventListener("click", function () { cancelOrder(o.id); });
+      li.appendChild(el("p", "pt-item-title", describe(o)));
+      li.appendChild(el("p", "pt-small", "Fills at the next simulated open."));
+      var b = button("button-secondary", "Cancel order", function () { cancelOrder(o.id); });
+      b.dataset.busy = "";
+      b.dataset.key = "cancel-" + o.id;
+      b.setAttribute("aria-label", "Cancel order: " + describe(o));
       li.appendChild(b);
       list.appendChild(li);
     });
-    card.appendChild(list);
-    return card;
-  }
+    box.appendChild(list);
+  };
 
-  function history() {
-    var card = el("section", "card pt-history");
-    card.appendChild(el("h3", null, "Practice history"));
+  RENDER.history = function (box) {
     var journal = readJournal();
     var fills = {};
     view.portfolio.transactions.forEach(function (t) { fills[t.order_id] = t; });
     var done = view.orders.filter(function (o) { return o.status !== "pending"; }).reverse();
+    var details = el("details", "card pt-history");
+    details.open = ui.historyOpen;
+    details.addEventListener("toggle", function () { ui.historyOpen = details.open; });
+    var summary = el("summary", null, "History (" + done.length + ")");
+    summary.dataset.key = "history-summary";
+    details.appendChild(summary);
+    box.appendChild(details);
     if (!done.length) {
-      card.appendChild(el("p", "muted", "No filled, rejected or cancelled orders yet."));
-      return card;
+      details.appendChild(el("p", "muted", "No filled, rejected or cancelled orders yet."));
+      return;
     }
-    var list = el("ul", "pt-list");
-    done.forEach(function (o) {
-      var li = el("li", "pt-item pt-" + o.status);
+    var symbols = done.map(function (o) { return o.symbol; }).filter(function (s, k, all) { return all.indexOf(s) === k; });
+    if (symbols.indexOf(ui.historyFilter) === -1) ui.historyFilter = "";
+    var filter = el("label", "pt-small pt-filter", "Show ");
+    var select = el("select");
+    select.dataset.key = "history-filter";
+    [""].concat(symbols).forEach(function (s) {
+      var o = el("option", null, s || "All tickers");
+      o.value = s;
+      select.appendChild(o);
+    });
+    select.value = ui.historyFilter;
+    select.addEventListener("change", function () { ui.historyFilter = select.value; refresh(["history"]); });
+    filter.appendChild(select);
+    details.appendChild(filter);
+    var list = el("ul", "pt-history-list");
+    done.filter(function (o) { return !ui.historyFilter || o.symbol === ui.historyFilter; }).forEach(function (o) {
+      var li = el("li", "pt-" + o.status);
       var t = fills[o.id];
-      li.appendChild(el("p", "pt-item-title", o.side.toUpperCase() + " " + o.shares + " " + o.symbol + " · " + o.status));
+      var line = el("p");
       if (t) {
-        li.appendChild(el("p", null, "Filled " + t.date + " at " + money(t.price_cents) + " (simulated open) · "
-          + money(t.amount_cents) + (t.realized_pl_cents !== null ? " · realized " + signed(t.realized_pl_cents) : "")));
+        line.appendChild(el("strong", null, (o.side === "buy" ? "Bought " : "Sold ") + o.shares + " " + o.symbol));
+        line.appendChild(document.createTextNode(" at " + money(t.price_cents) + ", simulated fill on " + niceDate(t.date)
+          + ". " + (o.side === "buy" ? "Cost " : "Proceeds ") + money(t.amount_cents) + "."));
+      } else {
+        line.appendChild(el("strong", null, describe(o) + " " + o.status));
+      }
+      li.appendChild(line);
+      if (t && t.realized_pl_cents !== null) {
+        var r = el("p", "pt-small", "Realized ");
+        r.appendChild(pl(t.realized_pl_cents));
+        li.appendChild(r);
       }
       if (o.reason) li.appendChild(el("p", "pt-small", o.reason));
       var note = journal[o.id];
@@ -422,28 +788,26 @@
       }
       list.appendChild(li);
     });
-    card.appendChild(list);
-    return card;
-  }
+    details.appendChild(list);
+  };
 
   function learnMore() {
     var card = el("section", "card pt-learn");
-    card.appendChild(el("h3", null, "Learn more"));
+    card.setAttribute("aria-labelledby", "pt-learn-title");
+    var h = el("h3", null, "Learn more");
+    h.id = "pt-learn-title";
+    card.appendChild(h);
     var links = el("div", "pt-links");
-    var cash = el("button", "button-secondary", "Accounts 101: Cash brokerage");
-    cash.type = "button";
-    cash.addEventListener("click", function () { if (window.Accounts) window.Accounts.open("Cash brokerage"); });
-    links.appendChild(cash);
+    links.appendChild(button("button-secondary", "Accounts 101: Cash brokerage", function () {
+      if (window.Accounts) window.Accounts.open("Cash brokerage");
+    }));
     [["Paying for trades on time", "brokerage-agreement", "ba-settlement"],
      ["Why this practice has no margin", "margin-agreement", "ma-lose-more"]].forEach(function (g) {
-      var b = el("button", "button-secondary", g[0]);
-      b.type = "button";
-      b.addEventListener("click", function () {
+      links.appendChild(button("button-secondary", g[0], function () {
         var tab = document.querySelector('[data-tab="sign"]');
         if (tab) tab.click();
         if (window.Sign && window.Sign.openAt) window.Sign.openAt(g[1], g[2]);
-      });
-      links.appendChild(b);
+      }));
     });
     card.appendChild(links);
     card.appendChild(el("p", "pt-small", "Your practice session and journal are kept in this browser's storage. "
@@ -451,69 +815,505 @@
     return card;
   }
 
-  function render() {
-    if (!root || !view) return;
+  // ---- order ticket: edit, review (after Preview) and queued (after Confirm), swapped in place ----
+
+  function renderTicket(focusId) {
+    var box = regions.ticket;
+    var hadFocus = box.contains(document.activeElement);
+    regions.form = null;
+    box.textContent = "";
+    var head = el("div", "pt-ticket-head");
+    var h = el("h2", null, ui.mode === "review" ? "Check your practice order"
+      : ui.mode === "queued" ? "Order queued" : "Practice order");
+    h.id = "pt-ticket-title";
+    h.tabIndex = -1;
+    head.appendChild(h);
+    head.appendChild(sim());
+    var close = button("pt-sheet-close", "×", function () { closeSheet(); });
+    close.setAttribute("aria-label", "Close trade sheet");
+    head.appendChild(close);
+    box.appendChild(head);
+    box.appendChild(ui.mode === "review" ? reviewPanel() : ui.mode === "queued" ? queuedPanel() : editForm());
+    setBusy(busy);
+    var target = focusId ? document.getElementById(focusId) : hadFocus ? h : null;
+    if (target) target.focus();
+  }
+
+  function field(labelText, id) {
+    var l = el("label", "pt-label", labelText);
+    l.htmlFor = id;
+    return l;
+  }
+
+  function editForm() {
+    var form = el("form", "pt-form");
+    form.noValidate = true;
+    form.addEventListener("submit", function (e) { e.preventDefault(); previewOrder(); });
+
+    var combo = el("div", "pt-combo");
+    combo.appendChild(field("Ticker", "pt-ticker"));
+    var input = el("input");
+    input.id = "pt-ticker";
+    input.type = "text";
+    input.value = ui.symbol;
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-controls", "pt-ticker-list");
+    input.setAttribute("aria-describedby", "pt-ticker-info");
+    var list = el("ul", "pt-combo-list");
+    list.id = "pt-ticker-list";
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-label", "Practice tickers");
+    list.hidden = true;
+    var tickerInfo = el("p", "pt-tiny muted");
+    tickerInfo.id = "pt-ticker-info";
+    combo.appendChild(input);
+    combo.appendChild(list);
+    combo.appendChild(tickerInfo);
+    form.appendChild(combo);
+    setupCombo(input, list);
+
+    var sides = el("div", "pt-segmented");
+    sides.setAttribute("role", "group");
+    sides.setAttribute("aria-label", "Order side");
+    ["buy", "sell"].forEach(function (side) {
+      var b = button(null, side === "buy" ? "Buy" : "Sell", function () {
+        ui.side = side;
+        ui.problem = "";
+        updateTicketFigures();
+      });
+      b.dataset.side = side;
+      sides.appendChild(b);
+    });
+    form.appendChild(sides);
+
+    var qty = el("div", "pt-qty");
+    qty.appendChild(field("Shares", "pt-shares"));
+    var stepper = el("div", "pt-stepper");
+    var shares = el("input");
+    shares.id = "pt-shares";
+    shares.type = "text";
+    shares.inputMode = "numeric";
+    shares.autocomplete = "off";
+    shares.value = ui.shares;
+    shares.setAttribute("aria-describedby", "pt-shares-help pt-ticket-problem");
+    shares.addEventListener("input", function () {
+      ui.shares = shares.value.trim();
+      ui.problem = "";
+      updateTicketFigures();
+    });
+    function step(by) {
+      var n = /^\d+$/.test(ui.shares) ? Number(ui.shares) : 0;
+      ui.shares = String(Math.min(Math.max(n + by, 1), MAX_SHARES));
+      shares.value = ui.shares;
+      ui.problem = "";
+      updateTicketFigures();
+    }
+    var minus = button("pt-step", "−", function () { step(-1); });
+    minus.setAttribute("aria-label", "One share fewer");
+    var plus = button("pt-step", "+", function () { step(1); });
+    plus.setAttribute("aria-label", "One share more");
+    var max = button("button-secondary pt-max", "Max", function () {
+      ui.shares = String(limits().max);
+      shares.value = ui.shares;
+      ui.problem = "";
+      updateTicketFigures();
+    });
+    max.setAttribute("aria-describedby", "pt-shares-help");
+    stepper.appendChild(minus);
+    stepper.appendChild(shares);
+    stepper.appendChild(plus);
+    stepper.appendChild(max);
+    qty.appendChild(stepper);
+    var help = el("p", "pt-tiny muted");
+    help.id = "pt-shares-help";
+    qty.appendChild(help);
+    form.appendChild(qty);
+
+    var estimate = el("div", "pt-estimate");
+    var estLabel = el("span", "pt-small");
+    var estValue = el("strong");
+    estimate.appendChild(estLabel);
+    estimate.appendChild(estValue);
+    form.appendChild(estimate);
+    var problem = el("p", "pt-error-line");
+    problem.id = "pt-ticket-problem";
+    problem.setAttribute("aria-live", "polite");
+    form.appendChild(problem);
+    form.appendChild(el("p", "pt-small", "Market orders fill at the next simulated day's opening price, which can "
+      + "differ from the preview. Cash only: no borrowing, short selling or options."));
+    var preview = el("button", "button-primary pt-block", "Preview order");
+    preview.type = "submit";
+    preview.dataset.busy = "open";
+    preview.dataset.key = "preview";
+    form.appendChild(preview);
+
+    regions.form = { input: input, info: tickerInfo, sides: sides, shares: shares, help: help, max: max,
+                     estLabel: estLabel, estValue: estValue, problem: problem };
+    updateTicketFigures();
+    return form;
+  }
+
+  // What the engine would allow right now, mirroring its preview checks: cash after pending buys at today's
+  // closes, or shares held minus pending sells. Preview stays the authority.
+  function limits() {
+    var pending = view.orders.filter(function (o) { return o.status === "pending"; });
+    if (ui.side === "buy") {
+      var reserved = pending.filter(function (o) { return o.side === "buy"; })
+        .reduce(function (sum, o) { return sum + o.shares * closeOf(o.symbol); }, 0);
+      var available = Math.max(view.portfolio.cash_cents - reserved, 0);
+      return { available: available, max: Math.min(Math.floor(available / closeOf(ui.symbol)), MAX_SHARES) };
+    }
+    var held = view.portfolio.positions.filter(function (p) { return p.symbol === ui.symbol; })
+      .reduce(function (sum, p) { return sum + p.shares; }, 0);
+    var selling = pending.filter(function (o) { return o.side === "sell" && o.symbol === ui.symbol; })
+      .reduce(function (sum, o) { return sum + o.shares; }, 0);
+    return { max: Math.max(held - selling, 0) };
+  }
+
+  function updateTicketFigures() {
+    var f = regions && regions.form;
+    if (!f) return;
+    var symbol = ui.symbol, i = info(symbol), lim = limits(), buy = ui.side === "buy";
+    f.info.textContent = (i.name || symbol) + (i.sector ? ", " + i.sector : "") + ". Simulated close "
+      + money(closeOf(symbol)) + ".";
+    f.sides.querySelectorAll("button").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.side === ui.side ? "true" : "false");
+    });
+    var whole = /^\d+$/.test(ui.shares) && Number(ui.shares) >= 1;
+    var amount = whole ? Number(ui.shares) * closeOf(symbol) : null;
+    f.estLabel.textContent = buy ? "Estimated cost" : "Estimated proceeds";
+    f.estValue.textContent = amount === null ? "Enter shares" : money(amount);
+    f.help.textContent = "Whole shares only. " + (buy
+      ? "Up to " + lim.max.toLocaleString("en-US") + " at today's simulated close, after pending buys."
+      : "You can sell up to " + lim.max.toLocaleString("en-US") + " " + symbol + ", counting pending sells.");
+    f.max.disabled = lim.max < 1;
+    var problem = ui.problem;
+    if (!problem && ui.shares !== "" && !whole) problem = "Enter a whole number of shares, like 1 or 10.";
+    if (!problem && whole && buy && amount > lim.available) {
+      problem = "That costs about " + money(amount) + "; you have " + money(lim.available) + " available after pending buys.";
+    }
+    if (!problem && whole && !buy && Number(ui.shares) > lim.max) {
+      problem = "You can sell at most " + lim.max + " shares of " + symbol + ", counting pending sells.";
+    }
+    f.problem.textContent = problem;
+    f.problem.hidden = !problem;
+    f.shares.setAttribute("aria-invalid", problem ? "true" : "false");
+  }
+
+  // Searchable ticker picker (ARIA combobox with a listbox): type to filter by ticker, name or sector, arrows to move,
+  // Enter to choose, Escape to close.
+  function setupCombo(input, list) {
+    var matches = [], active = -1;
+    function matching(q) {
+      q = q.trim().toLowerCase();
+      return Object.keys(view.quotes).filter(function (s) {
+        var i = info(s);
+        return !q || (s + " " + (i.name || "") + " " + (i.sector || "")).toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    function open(q) {
+      matches = matching(q);
+      list.textContent = "";
+      matches.forEach(function (s) {
+        var i = info(s);
+        var li = el("li", "pt-option");
+        li.id = "pt-opt-" + s;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", s === ui.symbol ? "true" : "false");
+        li.appendChild(el("strong", null, s));
+        li.appendChild(el("span", "pt-tiny muted", (i.name || "") + (i.sector ? ", " + i.sector : "")));
+        li.addEventListener("mousedown", function (e) { e.preventDefault(); });  // keep focus in the input
+        li.addEventListener("click", function () { choose(s); });
+        list.appendChild(li);
+      });
+      if (!matches.length) {
+        var none = el("li", "pt-option pt-tiny muted", "No practice ticker matches.");
+        none.setAttribute("role", "option");
+        none.setAttribute("aria-disabled", "true");
+        list.appendChild(none);
+      }
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    }
+    function close() {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+      active = -1;
+    }
+    function highlight() {
+      [].forEach.call(list.children, function (li, k) { li.classList.toggle("pt-active", k === active); });
+      if (active >= 0) {
+        input.setAttribute("aria-activedescendant", "pt-opt-" + matches[active]);
+        list.children[active].scrollIntoView({ block: "nearest" });
+      }
+    }
+    function choose(s) {
+      close();
+      input.value = s;
+      selectSymbol(s);
+    }
+    input.addEventListener("input", function () {
+      open(input.value);
+      active = matches.length ? 0 : -1;
+      highlight();
+    });
+    input.addEventListener("click", function () {
+      if (list.hidden) open("");
+      else close();
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (list.hidden) open("");
+        if (!matches.length) return;
+        active = e.key === "ArrowDown" ? Math.min(active + 1, matches.length - 1) : Math.max(active - 1, 0);
+        highlight();
+      } else if (e.key === "Enter" && !list.hidden && active >= 0) {
+        e.preventDefault();  // choose the option; Enter with the list closed submits the ticket
+        choose(matches[active]);
+      } else if (e.key === "Escape" && !list.hidden) {
+        e.preventDefault();
+        e.stopPropagation();  // close the list, not the trade sheet
+        close();
+      }
+    });
+    input.addEventListener("blur", function () {
+      close();
+      var typed = input.value.trim().toUpperCase();
+      if (view.quotes[typed]) {
+        if (typed !== ui.symbol) selectSymbol(typed);
+        input.value = typed;
+      } else if (!typed) {
+        input.value = ui.symbol;
+      }
+    });
+  }
+
+  function reviewPanel() {
+    var p = draft.preview, buy = p.side === "buy";
+    var wrap = el("div", "pt-form");
+    var box = el("div", "pt-review");
+    box.appendChild(el("p", "pt-review-what", describe(p)));
+    var dl = el("dl");
+    [["Today's simulated close", money(p.reference_close_cents)],
+     [buy ? "Estimated cost" : "Estimated proceeds", money(p.estimated_amount_cents)],
+     ["Cash after it fills, estimated", money(view.portfolio.cash_cents + (buy ? -1 : 1) * p.estimated_amount_cents)],
+     ["Fills at", "Next simulated day's open"]].forEach(function (row) {
+      dl.appendChild(el("dt", null, row[0]));
+      dl.appendChild(el("dd", null, row[1]));
+    });
+    box.appendChild(dl);
+    box.appendChild(el("p", "pt-small", p.fill_note));
+    if (p.warning) box.appendChild(el("p", "pt-error-line", p.warning));
+    wrap.appendChild(box);
+
+    var journal = el("fieldset", "pt-journal");
+    journal.appendChild(el("legend", null, "Practice journal (optional)"));
+    var why = el("textarea");
+    why.id = "pt-why";
+    why.maxLength = 280;
+    why.rows = 2;
+    var risks = el("textarea");
+    risks.id = "pt-risks";
+    risks.maxLength = 280;
+    risks.rows = 2;
+    journal.appendChild(field("Why are you making this trade?", "pt-why"));
+    journal.appendChild(why);
+    journal.appendChild(field("What could go wrong?", "pt-risks"));
+    journal.appendChild(risks);
+    journal.appendChild(el("p", "pt-tiny muted", "Saved only in this browser and never sent anywhere. Do not include "
+      + "personal or account information."));
+    wrap.appendChild(journal);
+
+    var actions = el("div", "pt-actions");
+    var confirm = button("button-primary pt-confirm", "Confirm practice order", function () {
+      confirmOrder(why.value.trim(), risks.value.trim());
+    });
+    confirm.dataset.busy = "open";
+    actions.appendChild(confirm);
+    actions.appendChild(button("button-secondary", "Back", function () {
+      draft = null;  // Back keeps ticker, side and shares; nothing was sent
+      ui.mode = "edit";
+      renderTicket("pt-shares");
+    }));
+    wrap.appendChild(actions);
+    return wrap;
+  }
+
+  function queuedPanel() {
+    var wrap = el("div", "pt-form");
+    var status = el("p", null, ui.queuedText);
+    status.setAttribute("role", "status");
+    wrap.appendChild(status);
+    var actions = el("div", "pt-actions");
+    var stillPending = view.orders.some(function (o) { return o.id === ui.queuedId && o.status === "pending"; });
+    if (stillPending) {
+      var cancel = button("button-secondary", "Cancel this order", function () { cancelOrder(ui.queuedId); });
+      cancel.dataset.busy = "";
+      actions.appendChild(cancel);
+    }
+    actions.appendChild(button("button-primary", "New order", function () {
+      ui.mode = "edit";
+      renderTicket("pt-ticker");
+    }));
+    wrap.appendChild(actions);
+    return wrap;
+  }
+
+  // ---- phone: the ticket becomes a bottom sheet opened by the Trade button ----
+
+  function openSheet(focusId) {
+    if (!PHONE.matches || ui.sheetOpen) {
+      if (focusId && document.getElementById(focusId)) document.getElementById(focusId).focus();
+      return;
+    }
+    ui.sheetOpen = true;
+    var t = regions.ticket;
+    t.classList.add("pt-open");
+    t.setAttribute("role", "dialog");
+    t.setAttribute("aria-modal", "true");
+    regions.scrim.hidden = false;
+    regions.tradeBar.setAttribute("aria-expanded", "true");
+    document.body.classList.add("pt-sheet-open");
+    var target = focusId ? document.getElementById(focusId) : t.querySelector("#pt-ticker, button.button-primary");
+    (target || t.querySelector("h2")).focus();
+  }
+
+  function closeSheet(silent) {
+    if (!ui.sheetOpen || !regions) return;
+    ui.sheetOpen = false;
+    var t = regions.ticket;
+    t.classList.remove("pt-open");
+    t.removeAttribute("role");
+    t.removeAttribute("aria-modal");
+    regions.scrim.hidden = true;
+    regions.tradeBar.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("pt-sheet-open");
+    if (!silent) regions.tradeBar.focus();
+  }
+
+  function sheetKeys(e) {
+    if (!ui.sheetOpen) return;
+    if (e.key === "Escape") {
+      closeSheet();
+      return;
+    }
+    if (e.key !== "Tab") return;  // keep Tab inside the open sheet
+    var items = [].filter.call(regions.ticket.querySelectorAll("button, input, textarea, select"), function (n) {
+      return !n.disabled && n.offsetParent !== null;
+    });
+    if (!items.length) return;
+    var first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  // the Trade bar and toasts sit above the fixed bottom tabs and the sticky disclaimer footer
+  function dock() {
+    if (!root) return;
+    var footer = document.getElementById("disclaimer-footer"), tabs = document.querySelector(".tabs"), h = 0;
+    if (tabs && getComputedStyle(tabs).position === "fixed") h += tabs.offsetHeight;
+    if (footer && getComputedStyle(footer).position === "sticky") h += footer.offsetHeight;
+    root.style.setProperty("--pt-dock", h + "px");
+  }
+
+  // ---- start and damaged screens ----
+
+  function showDamaged(detail) {
+    closeSheet(true);
+    view = null;
+    draft = null;
+    regions = null;
     root.textContent = "";
     root.appendChild(banner());
-    var title = el("h2", "pt-title", "Practice Trading");
-    title.id = "paper-title";
-    root.appendChild(title);
-    if (message.text) {
-      var m = el("p", message.error ? "pt-message error-text" : "pt-message");
-      m.setAttribute("role", message.error ? "alert" : "status");
-      m.textContent = message.text;
-      root.appendChild(m);
-    }
-    root.appendChild(summaryCard());
-    var layout = el("div", "pt-layout");
-    var left = el("div", "pt-col");
-    left.appendChild(ticket());
-    left.appendChild(learnMore());
-    var right = el("div", "pt-col");
-    right.appendChild(holdings());
-    right.appendChild(pendingOrders());
-    right.appendChild(history());
-    layout.appendChild(left);
-    layout.appendChild(right);
-    root.appendChild(layout);
+    var box = el("div", "card pt-damaged");
+    box.setAttribute("role", "alert");
+    box.appendChild(el("h2", null, "Your saved practice session could not be opened"));
+    box.appendChild(el("p", null, detail || "The saved session is damaged or was changed."));
+    box.appendChild(el("p", null, "It has not been replaced. You can start over, which deletes the saved practice "
+      + "session and journal notes from this browser."));
+    box.appendChild(button("button-primary", "Start a new practice session", startNew));
+    root.appendChild(box);
   }
 
   function renderStart() {
+    regions = null;
     root.textContent = "";
     root.appendChild(banner());
-    var box = el("div", "card pt-start");
-    var title = el("h2", null, "Practice Trading");
+    var wrap = el("div", "pt-empty");
+    var box = el("section", "card pt-start");
+    box.setAttribute("aria-labelledby", "paper-title");
+    box.appendChild(sim("Simulated practice"));
+    var title = el("h2", null, "Practice trading with money that isn't real");
     title.id = "paper-title";
     box.appendChild(title);
-    box.appendChild(el("p", null, "Practice placing buy and sell orders with $10,000.00 of fictional cash in a "
-      + "synthetic market. Step through simulated days and see how your choices play out, without risking real money."));
-    var pick = el("label", "field", "Practice market ");
-    var select = el("select");
-    select.id = "pt-scenario";
-    select.addEventListener("change", function () { scenarioId = select.value; });
-    pick.appendChild(select);
+    box.appendChild(el("p", null, "You get $10,000.00 of fictional cash and a made-up market to try buying and selling, "
+      + "one simulated day at a time, without risking real money."));
+    var pick = el("fieldset", "pt-markets");
+    pick.appendChild(el("legend", null, "Practice market"));
     pick.hidden = true;  // shown once the list arrives; without it the default market is used
     box.appendChild(pick);
     window.Api.getPaperScenarios().then(function (env) {
       if (!env.ok) return;
       env.data.scenarios.forEach(function (s) {
-        var o = el("option", null, s.label + " · " + s.days + " simulated days");
-        o.value = s.id;
-        select.appendChild(o);
+        var label = el("label", "pt-market");
+        var radio = el("input");
+        radio.type = "radio";
+        radio.name = "pt-market";
+        radio.value = s.id;
+        radio.checked = s.id === scenarioId;
+        radio.addEventListener("change", function () { scenarioId = s.id; });
+        var symbols = Object.keys(s.symbols);
+        var sectors = symbols.map(function (k) { return s.symbols[k].sector; })
+          .filter(function (x, k, all) { return x && all.indexOf(x) === k; });
+        var text = el("span", "pt-market-text");
+        text.appendChild(el("strong", null, s.label));
+        text.appendChild(el("span", "pt-small muted", symbols.length + " fictional companies"
+          + (sectors.length ? " in " + sectors.length + " sectors" : "") + ", " + s.days + " simulated days"));
+        label.appendChild(radio);
+        label.appendChild(text);
+        pick.appendChild(label);
       });
-      select.value = scenarioId;
       pick.hidden = false;
     });
-    var go = el("button", "button-primary", "Start a practice session");
-    go.type = "button";
-    go.addEventListener("click", startNew);
-    box.appendChild(go);
-    root.appendChild(box);
+    box.appendChild(button("button-primary pt-start-button", "Start practicing with $10,000", startNew));
+    wrap.appendChild(box);
+
+    var how = el("section", "pt-how");
+    how.setAttribute("aria-labelledby", "pt-how-title");
+    var h = el("h3", null, "How this works");
+    h.id = "pt-how-title";
+    how.appendChild(h);
+    var steps = el("ol", "pt-steps");
+    [["Pick a ticker", "Choose one of the fictional practice companies."],
+     ["Preview and confirm", "See the estimated cost first. Nothing happens until you confirm."],
+     ["Advance a day", "Your order fills at the next day's opening price. Then see how it went."]].forEach(function (s) {
+      var li = el("li");
+      li.appendChild(el("strong", null, s[0]));
+      li.appendChild(el("span", "pt-small muted", s[1]));
+      steps.appendChild(li);
+    });
+    how.appendChild(steps);
+    wrap.appendChild(how);
+    wrap.appendChild(el("p", "pt-small muted", "Prices are generated by a computer program and are not real. Fees, "
+      + "spreads and slippage are not modelled. Your practice is saved in this browser only; clearing site data removes it."));
+    root.appendChild(wrap);
   }
 
   function show() {
     if (!root || started) return;
     started = true;
+    dock();
     var saved = readSession();
     if (saved === null) {
       renderStart();
@@ -522,9 +1322,15 @@
     } else {
       root.textContent = "";
       root.appendChild(el("p", "muted", "Loading your practice session…"));
-      call("view", { state: saved }, accept);
+      call("view", { state: saved }, load);
     }
   }
+
+  PHONE.addEventListener("change", function () {
+    if (!PHONE.matches) closeSheet(true);
+    dock();
+  });
+  window.addEventListener("resize", dock);
 
   window.Paper = {
     init: function () { root = document.getElementById("paper-root"); },
