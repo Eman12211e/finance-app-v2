@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 03: Practice Trading, phone</title>
+<link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+<div class="review" role="region" aria-label="Mockup review controls">
+  <strong>Mockup 03: Practice Trading at 390 px</strong>
+  <span>Theme:</span>
+  <label><input type="radio" name="theme" id="theme-system" checked> System</label>
+  <label><input type="radio" name="theme" id="theme-light"> Light</label>
+  <label><input type="radio" name="theme" id="theme-dark"> Dark</label>
+  <a href="index.html">All mockups</a>
+</div>
+
+<div class="phones">
+  <!-- sheet closed -->
+  <div class="phone-wrap">
+    <p class="small"><b>Trade sheet closed</b></p>
+    <div class="phone" role="img" aria-label="Phone layout with the trade sheet closed">
+      <div class="phone-header">
+        <span class="brand" style="font-size: var(--t-16)">Money Basics</span>
+        <span style="display: flex; gap: var(--s-2)">
+          <button class="menu-button" type="button">Learn</button>
+          <button class="icon-btn" type="button" aria-label="More session actions">⋯</button>
+        </span>
+      </div>
+      <div class="phone-body">
+        <p class="tiny muted"><span class="sim">Simulated</span> Synthetic prices, not real markets.</p>
+        <section class="panel strip paper-edge">
+          <div class="strip-top">
+            <div class="figure hero"><span class="label">Portfolio value</span><span class="value">$9,998.51</span></div>
+            <div class="figure"><span class="label">Cash</span><span class="value">$8,751.39</span></div>
+            <div class="figure"><span class="label">Since start</span><span class="value down">−$1.49</span></div>
+            <div class="day">
+              <span class="small"><b>Day 14 of 120</b> <span class="muted">Jan 21, 2025</span></span>
+              <div class="progress"><span style="width: 11.7%"></span></div>
+              <div class="day-controls"><button class="btn btn-quiet" type="button" style="flex: 1">Next day</button><button class="btn btn-quiet" type="button" style="flex: 1">Next 5 days</button></div>
+            </div>
+          </div>
+        </section>
+        <section class="chart" style="aspect-ratio: 16 / 10"><b class="small">Chart arrives in P3</b></section>
+        <div class="mini-table">
+          <div class="mini-row"><b>SAMPLE-A</b><span class="num">$418.32</span><span class="muted">8 shares, avg $50.82</span><span class="num up">+$11.76</span></div>
+          <div class="mini-row"><b>SAMPLE-B</b><span class="num">$828.80</span><span class="muted">7 shares, avg $121.10</span><span class="num down">−$18.90</span></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block trade-bar" type="button" aria-haspopup="dialog">Trade</button>
+      <nav class="bottom-nav" aria-label="Main">
+        <a class="tab" role="tab" aria-selected="false" href="#explore"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>Explore</a>
+        <a class="tab" role="tab" aria-selected="false" href="#lab" aria-label="AI Comparison Lab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="2"/></svg>AI Lab</a>
+        <a class="tab" role="tab" aria-selected="false" href="#sign" aria-label="Understand Before You Sign"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z" fill="none" stroke="currentColor" stroke-width="2"/></svg>Sign</a>
+        <a class="tab" role="tab" aria-selected="false" href="#brokers" aria-label="Compare Brokerages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V8" fill="none" stroke="currentColor" stroke-width="2"/></svg>Brokers</a>
+        <a class="tab" role="tab" aria-selected="true" href="#practice" aria-label="Practice Trading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 3 8-8" fill="none" stroke="currentColor" stroke-width="2"/></svg>Practice</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- sheet open -->
+  <div class="phone-wrap">
+    <p class="small"><b>Trade sheet open</b> (Escape or the close button closes it)</p>
+    <div class="phone" role="img" aria-label="Phone layout with the trade sheet open">
+      <div class="phone-header"><span class="brand" style="font-size: var(--t-16)">Money Basics</span><span></span></div>
+      <div class="phone-body"><section class="panel strip paper-edge"><div class="figure hero"><span class="label">Portfolio value</span><span class="value">$9,998.51</span></div></section></div>
+      <div></div>
+      <div class="scrim"></div>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="grabber"></div>
+        <div class="sheet-head"><h2 id="sheet-title" style="font-size: var(--t-20)">Practice order</h2>
+          <span style="display: flex; gap: var(--s-2); align-items: center"><span class="sim">Simulated</span><button class="icon-btn" type="button" aria-label="Close trade sheet">×</button></span></div>
+        <div class="combo"><label class="field-label" for="p-ticker">Ticker</label><input id="p-ticker" type="search" value="SAMPLE-A" role="combobox" aria-expanded="false"></div>
+        <div class="segmented" role="group" aria-label="Order side"><button type="button" aria-pressed="true">Buy</button><button type="button" aria-pressed="false">Sell</button></div>
+        <div><label class="field-label" for="p-shares">Shares</label>
+          <div class="stepper"><button class="icon-btn" type="button" aria-label="One share fewer">−</button><input id="p-shares" inputmode="numeric" value="10"><button class="icon-btn" type="button" aria-label="One share more">+</button><button class="btn btn-quiet" type="button">Max</button></div></div>
+        <div class="estimate"><span class="small">Estimated cost</span><b>$522.90</b></div>
+        <p class="fill-note">Fills at the next simulated day's opening price, which can differ.</p>
+        <button class="btn btn-primary btn-block" type="button">Preview order</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

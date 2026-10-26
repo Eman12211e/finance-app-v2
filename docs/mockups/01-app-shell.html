@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 01: App shell</title>
+<link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+<div class="review" role="region" aria-label="Mockup review controls">
+  <strong>Mockup 01: app shell and navigation</strong>
+  <span>Theme:</span>
+  <label><input type="radio" name="theme" id="theme-system" checked> System</label>
+  <label><input type="radio" name="theme" id="theme-light"> Light</label>
+  <label><input type="radio" name="theme" id="theme-dark"> Dark</label>
+  <a href="index.html">All mockups</a>
+</div>
+
+<a class="skip" href="#panel-practice">Skip to content</a>
+<header class="shell-header">
+  <div class="brand">Money Basics</div>
+  <nav aria-label="Main">
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <a class="tab" role="tab" id="tab-explore" href="#explore" aria-selected="false" tabindex="-1">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>
+        <span>Explore</span></a>
+      <a class="tab" role="tab" id="tab-lab" href="#lab" aria-selected="false" tabindex="-1">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>AI Comparison Lab</span></a>
+      <a class="tab" role="tab" id="tab-sign" href="#sign" aria-selected="false" tabindex="-1">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z M14 3v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 14l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Understand Before You Sign</span></a>
+      <a class="tab" role="tab" id="tab-brokers" href="#brokers" aria-selected="false" tabindex="-1">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Compare Brokerages</span></a>
+      <a class="tab" role="tab" id="tab-practice" href="#practice" aria-selected="true" aria-controls="panel-practice" tabindex="0">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 3 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 7h5v5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Practice Trading</span></a>
+    </div>
+  </nav>
+  <div class="header-end">
+    <div class="anchor">
+      <button class="menu-button" type="button" aria-haspopup="true" aria-expanded="true" aria-controls="learn-menu">Learn
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      <ul class="menu" id="learn-menu" role="menu" aria-label="Learn">
+        <li role="none"><a role="menuitem" href="#checklist">Before you buy</a></li>
+        <li role="none"><a role="menuitem" href="#accounts">Learn about accounts</a></li>
+        <li role="none"><a role="menuitem" href="#sentiment">Sentiment</a></li>
+      </ul>
+    </div>
+    <button class="chip" type="button" aria-label="Your profile: age 25 to 34, medium risk. Change profile">Your profile</button>
+  </div>
+</header>
+
+<main class="page" id="panel-practice" role="tabpanel" aria-labelledby="tab-practice" tabindex="-1">
+  <section class="panel" style="max-width: 720px">
+    <h1 style="font-size: var(--t-24); margin-bottom: var(--s-3)">What changes in the shell</h1>
+    <ul class="small" style="margin: 0; padding-left: var(--s-5); display: grid; gap: var(--s-2)">
+      <li>One row: brand on the left, five sections in the middle, a single <b>Learn</b> menu and the profile on the right. The three header buttons (Before you buy, Learn about accounts, Sentiment) move into Learn.</li>
+      <li>Each section has an icon and a full name; the selected one is underlined in the accent color <em>and</em> filled, so it does not rely on color.</li>
+      <li>The tabs are a real tablist: only the selected tab is in the Tab order; Left and Right arrows move between tabs, Home and End jump to the first and last. Each tab has a URL (<code>#practice</code>), so links and reloads land on the same section.</li>
+      <li>Under 1180 px the tab names hide and the icons stay (each keeps its name for screen readers); on phones the tabs move to a bottom bar (see mockup 03).</li>
+      <li>A "Skip to content" link appears on the first Tab press.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 04: Order ticket states</title>
+<link rel="stylesheet" href="mockups.css">
+<style>
+  .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 340px)); gap: var(--s-5); padding: var(--s-5); justify-content: center; align-items: start; }
+  .states .ticket { position: static; }
+  .state-label { font-weight: 650; font-size: var(--t-14); margin-bottom: var(--s-2); }
+</style>
+</head>
+<body>
+<div class="review" role="region" aria-label="Mockup review controls">
+  <strong>Mockup 04: order ticket, preview and confirm</strong>
+  <span>Theme:</span>
+  <label><input type="radio" name="theme" id="theme-system" checked> System</label>
+  <label><input type="radio" name="theme" id="theme-light"> Light</label>
+  <label><input type="radio" name="theme" id="theme-dark"> Dark</label>
+  <a href="index.html">All mockups</a>
+</div>
+
+<div class="states">
+  <!-- 1. preview / confirm: the main state for this mockup -->
+  <div>
+    <p class="state-label">After "Preview order": the ticket body is replaced in place</p>
+    <section class="panel ticket" aria-labelledby="t1">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 id="t1">Check your practice order</h2><span class="sim">Simulated</span></div>
+      <div class="review-box">
+        <p><b>Buy 10 SAMPLE-A</b></p>
+        <dl>
+          <dt>Today's simulated close</dt><dd>$52.29</dd>
+          <dt>Estimated cost</dt><dd>$522.90</dd>
+          <dt>Cash after, estimated</dt><dd>$8,228.49</dd>
+          <dt>Fills at</dt><dd>Next day's open</dd>
+        </dl>
+        <p class="fill-note">The order fills at the <b>Jan 22 simulated opening price</b>, which is not known yet. If the price opens higher and your cash no longer covers it, the order is rejected with a reason.</p>
+      </div>
+      <fieldset class="journal" style="border: 1px solid var(--border); border-radius: var(--r-12); padding: var(--s-3); display: grid; gap: var(--s-2)">
+        <legend class="small" style="font-weight: 650">Practice journal (optional)</legend>
+        <label class="small" for="why">Why are you making this trade?</label>
+        <textarea id="why" maxlength="280"></textarea>
+        <label class="small" for="risk">What could go wrong?</label>
+        <textarea id="risk" maxlength="280"></textarea>
+        <p class="tiny muted">Saved only in this browser, never sent anywhere. Do not include personal or account details.</p>
+      </fieldset>
+      <div class="actions">
+        <button class="btn btn-primary" type="button">Confirm practice order</button>
+        <button class="btn btn-quiet" type="button">Back</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- 2. queued -->
+  <div>
+    <p class="state-label">After "Confirm": queued, waiting for the next open</p>
+    <section class="panel ticket" aria-labelledby="t2">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 id="t2">Order queued</h2><span class="sim">Simulated</span></div>
+      <p role="status"><b>Buy 10 SAMPLE-A</b> will fill at the next simulated open. Press <b>Next day</b> to see it fill.</p>
+      <div class="actions"><button class="btn btn-quiet" type="button">Cancel this order</button><button class="btn btn-primary" type="button">New order</button></div>
+    </section>
+    <p class="state-label" style="margin-top: var(--s-5)">After "Next day": the fill is announced</p>
+    <div class="toast" role="status" style="min-width: 0">
+      <p><b>Bought 10 SAMPLE-A at $52.80</b><br><span class="small muted">Simulated fill at the Jan 22 open. Cost $528.00.</span></p>
+      <button class="close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </div>
+
+  <!-- 3. rejected before queueing -->
+  <div>
+    <p class="state-label">Not enough cash: one readable line, nothing queued</p>
+    <section class="panel ticket" aria-labelledby="t3">
+      <div style="display: flex; justify-content: space-between; align-items: center"><h2 id="t3">Practice order</h2><span class="sim">Simulated</span></div>
+      <div class="segmented" role="group" aria-label="Order side"><button type="button" aria-pressed="true">Buy</button><button type="button" aria-pressed="false">Sell</button></div>
+      <div><label class="field-label" for="s3">Shares</label>
+        <div class="stepper"><button class="icon-btn" type="button" aria-label="One share fewer">−</button><input id="s3" inputmode="numeric" value="500" aria-invalid="true" aria-describedby="e3"><button class="icon-btn" type="button" aria-label="One share more">+</button><button class="btn btn-quiet" type="button">Max</button></div>
+        <p id="e3" class="error-line" style="margin-top: var(--s-2)">That costs about $26,145.00; you have $8,751.39 available.</p></div>
+      <button class="btn btn-primary btn-block" type="button">Preview order</button>
+    </section>
+    <p class="state-label" style="margin-top: var(--s-5)">"Back" returns to the filled-in ticket</p>
+    <p class="small muted" style="max-width: 320px">Back keeps the ticker, side and shares, so a beginner can adjust one thing and preview again. Nothing is sent until Confirm.</p>
+  </div>
+</div>
+</body>
+</html>

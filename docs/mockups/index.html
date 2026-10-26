@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P2.5 mockups</title>
+<link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+<div class="review" role="region" aria-label="Mockup review controls">
+  <strong>P2.5 design mockups</strong>
+  <span>Theme:</span>
+  <label><input type="radio" name="theme" id="theme-system" checked> System</label>
+  <label><input type="radio" name="theme" id="theme-light"> Light</label>
+  <label><input type="radio" name="theme" id="theme-dark"> Dark</label>
+</div>
+
+<main class="gallery">
+  <div>
+    <h1>Practice Trading redesign: mockups for review</h1>
+    <p class="muted" style="margin-top: var(--s-2)">Static HTML and CSS only: no JavaScript, no server, no network requests. All figures are placeholders from one
+      consistent simulated session and are labelled as simulated. Fonts render with system fallbacks until Step 2c self-hosts
+      Bricolage Grotesque and Public Sans.</p>
+  </div>
+
+  <section class="panel shot">
+    <h2><a href="01-app-shell.html">01 App shell and navigation</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>Know what the five sections are and move between them.</dd>
+      <dt>Layout hierarchy</dt><dd>Brand, then the five sections (icon and name), then one Learn menu and the profile.</dd>
+      <dt>Visible immediately</dt><dd>All five section names, which one is open, the profile.</dd>
+      <dt>Needs interaction</dt><dd>The Learn menu (Before you buy, Learn about accounts, Sentiment).</dd>
+      <dt>Desktop vs phone</dt><dd>Desktop: one header row. Under 1180 px: icons only (names kept for screen readers). Phone: a five-item bottom bar.</dd>
+      <dt>Keyboard and access</dt><dd>Real tablist; one Tab stop; Left/Right/Home/End move between tabs; each tab has a URL hash; skip link; selected tab marked by underline and fill, not color alone.</dd>
+      <dt>Less confusing because</dt><dd>Three loose header buttons become one Learn menu, so there is one place to navigate and one place to learn.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="02-practice-desktop.html">02 Practice Trading, desktop (1280 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>See where the practice account stands, place a practice order, advance time.</dd>
+      <dt>Layout hierarchy</dt><dd>Left: practice tickers with sparklines. Centre: account strip (value, cash, gain/loss, day controls), then the reserved chart, then positions and history. Right: sticky order ticket.</dd>
+      <dt>Visible immediately</dt><dd>Portfolio value, cash, total and realized/unrealized gain/loss, "Day 14 of 120", Next day, the ticket, positions.</dd>
+      <dt>Needs interaction</dt><dd>Preview and confirm; Reset (in the ⋯ menu); history filter; choosing a ticker.</dd>
+      <dt>Desktop vs phone</dt><dd>Three columns here; on phones everything stacks and the ticket becomes a sheet (03).</dd>
+      <dt>Keyboard and access</dt><dd>Ticket stays in view while scrolling; table has a caption and column headers; fills are announced with role="status" toasts; gains and losses always carry an arrow and a sign.</dd>
+      <dt>Less confusing because</dt><dd>Every money figure sits on the hatched "Simulated" paper; the fill rule is printed under the estimate; the fill toast says what happened in one line.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="03-practice-phone.html">03 Practice Trading, phone (390 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>The same as desktop, one-handed.</dd>
+      <dt>Layout hierarchy</dt><dd>Account strip and day controls first, chart slot, compact position rows, a full-width Trade button above the bottom navigation.</dd>
+      <dt>Visible immediately</dt><dd>Portfolio value, cash, gain/loss, day and Next day, without scrolling.</dd>
+      <dt>Needs interaction</dt><dd>Trade opens a bottom sheet with the full ticket; the ⋯ menu holds Reset.</dd>
+      <dt>Desktop vs phone</dt><dd>Watchlist and history move below positions; the ticket is a sheet instead of a rail.</dd>
+      <dt>Keyboard and access</dt><dd>The sheet is a modal dialog: focus moves into it, Escape or × closes it and returns focus to Trade; touch targets at least 40 px.</dd>
+      <dt>Less confusing because</dt><dd>One obvious Trade action instead of a long scrolling page of controls.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="04-order-ticket-preview.html">04 Order ticket: preview, confirm, queued, rejected</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>Understand exactly what will happen before committing a practice order.</dd>
+      <dt>Layout hierarchy</dt><dd>The preview replaces the ticket body in place: the order in one line, a short summary (close, estimate, cash after, when it fills), the optional journal, then Confirm and Back.</dd>
+      <dt>Visible immediately</dt><dd>What, how many, the estimate and that it fills at the next open.</dd>
+      <dt>Needs interaction</dt><dd>Confirm, Back, the optional journal, cancelling a queued order.</dd>
+      <dt>Desktop vs phone</dt><dd>Identical content; on phones it lives in the sheet.</dd>
+      <dt>Keyboard and access</dt><dd>Enter previews; Confirm is the default action; the error line is tied to the field with aria-describedby and aria-invalid.</dd>
+      <dt>Less confusing because</dt><dd>The words stay the same through the flow (Preview, Confirm practice order, Order queued, Bought …), and the rejection says the amount and the cash available in one line.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="05-empty-state.html">05 First visit, before a session starts</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>Understand what this is and start.</dd>
+      <dt>Layout hierarchy</dt><dd>One card (what it is, one sentence, market choice, one button), then a three-step "how this works".</dd>
+      <dt>Visible immediately</dt><dd>That it is simulated practice with $10,000 that isn't real, and the start button.</dd>
+      <dt>Needs interaction</dt><dd>Choosing a practice market (market B arrives in Step 4).</dd>
+      <dt>Desktop vs phone</dt><dd>The three steps sit in a row on desktop and stack on phones.</dd>
+      <dt>Keyboard and access</dt><dd>The market choice is a radio group; the steps are an ordered list because they are a real sequence.</dd>
+      <dt>Less confusing because</dt><dd>It explains the next-open fill rule before the first order, and that progress is saved in this browser only.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2>Proposed tokens (Step 2a)</h2>
+    <p class="small">Color: bg, surface, surface-2, text, muted, border, accent, accent-hover, up, down, warning (light and dark). Spacing 4 / 8 / 12 / 16 / 24 / 32 / 48. Type 12 / 14 / 16 / 20 / 24 / 32. Radius 8 / 12 / 16. Shadows only on floating elements. Motion 150 ms and 250 ms, only for fills, toasts and the chart crosshair. See <code>mockups.css</code>.</p>
+  </section>
+</main>
+</body>
+</html>
