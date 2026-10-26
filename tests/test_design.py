@@ -51,3 +51,46 @@ def test_theme_choice_is_applied_before_paint_and_storage_is_guarded():
     js = read("static", "js", "theme.js")
     assert js.count("try {") == 2 and "localStorage" in js and "innerHTML" not in js
     assert 'id="theme-toggle"' in html
+
+
+FONTS = {"public-sans": "PublicSans-latin-wght.woff2", "bricolage-grotesque": "BricolageGrotesque-latin-700.woff2"}
+
+
+def test_fonts_are_self_hosted_woff2_with_their_ofl_licence():
+    for folder, name in FONTS.items():
+        base = os.path.join(ROOT, "static", "fonts", folder)
+        with open(os.path.join(base, name), "rb") as f:
+            assert f.read(4) == b"wOF2", name
+        licence = read("static", "fonts", folder, "OFL.txt")
+        assert "SIL Open Font License, Version 1.1" in licence, folder
+        assert f'url("/static/fonts/{folder}/{name}") format("woff2")' in css()
+
+
+def test_css_comments_are_well_formed():
+    # a "*/" inside a comment (for example a path like fonts/*/x) silently ends it and breaks the next rule
+    for f in os.listdir(os.path.join(ROOT, "static", "css")):
+        text = read("static", "css", f)
+        assert re.sub(r"/\*.*?\*/", "", text, flags=re.S).count("*/") == 0, f
+
+
+def test_font_roles_follow_the_approved_split():
+    text = css()
+    assert 'font-family: "Public Sans"; font-style: normal; font-weight: 400 700;' in text
+    assert 'font-family: "Bricolage Grotesque"; font-style: normal; font-weight: 700;' in text
+    assert "--font-display: \"Bricolage Grotesque\"" in text and "--font-text: \"Public Sans\"" in text
+    assert "font-variant-numeric: tabular-nums;" in text[text.index("body {"):text.index("}", text.index("body {"))]
+
+
+EXTERNAL = re.compile(r"https?://(?!127\.0\.0\.1|localhost)|//fonts\.googleapis|//fonts\.gstatic|cdn\.|unpkg|jsdelivr|cdnjs",
+                      re.IGNORECASE)
+
+
+def test_no_template_css_or_js_loads_from_a_third_party_host():
+    files = [("templates", "index.html")] + [("static", "css", f) for f in os.listdir(os.path.join(ROOT, "static", "css"))]
+    files += [("static", "js", f) for f in os.listdir(os.path.join(ROOT, "static", "js")) if f.endswith(".js")]
+    for parts in files:
+        text = read(*parts)
+        # links shown to people (href to official sources) are fine; loading resources from other hosts is not
+        loads = re.findall(r'(?:src|@import|url)\s*[=(]\s*["\']?([^"\')\s]+)', text)
+        bad = [u for u in loads if EXTERNAL.search(u)]
+        assert not bad, (parts, bad)

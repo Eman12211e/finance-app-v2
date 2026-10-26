@@ -1,4 +1,17 @@
 /* Owner: Agent B. Calm, readable, projector-friendly. #alerts-root and #checklist-root contents belong to Agent D. */
+/* Self-hosted fonts (SIL OFL 1.1; each licence is OFL.txt next to its font). Latin subset only; no font CDN at runtime.
+   Public Sans is one variable file covering the weights used (400, 600, 700); Bricolage Grotesque is weight 700. */
+@font-face {
+  font-family: "Public Sans"; font-style: normal; font-weight: 400 700; font-display: swap;
+  src: url("/static/fonts/public-sans/PublicSans-latin-wght.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Bricolage Grotesque"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("/static/fonts/bricolage-grotesque/BricolageGrotesque-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   /* color (light). Dark values: see the dark-theme blocks below. */
   --bg: #f3f5f4;
