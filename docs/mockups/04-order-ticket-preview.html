@@ -8,7 +8,7 @@
 <style>
   .states { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 340px)); gap: var(--s-5); padding: var(--s-5); justify-content: center; align-items: start; }
   .states .ticket { position: static; }
-  .state-label { font-weight: 650; font-size: var(--t-14); margin-bottom: var(--s-2); }
+  .state-label { font-weight: 600; font-size: var(--t-14); margin-bottom: var(--s-2); }
 </style>
 </head>
 <body>
@@ -38,7 +38,7 @@
         <p class="fill-note">The order fills at the <b>Jan 22 simulated opening price</b>, which is not known yet. If the price opens higher and your cash no longer covers it, the order is rejected with a reason.</p>
       </div>
       <fieldset class="journal" style="border: 1px solid var(--border); border-radius: var(--r-12); padding: var(--s-3); display: grid; gap: var(--s-2)">
-        <legend class="small" style="font-weight: 650">Practice journal (optional)</legend>
+        <legend class="small" style="font-weight: 600">Practice journal (optional)</legend>
         <label class="small" for="why">Why are you making this trade?</label>
         <textarea id="why" maxlength="280"></textarea>
         <label class="small" for="risk">What could go wrong?</label>
@@ -74,7 +74,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center"><h2 id="t3">Practice order</h2><span class="sim">Simulated</span></div>
       <div class="segmented" role="group" aria-label="Order side"><button type="button" aria-pressed="true">Buy</button><button type="button" aria-pressed="false">Sell</button></div>
       <div><label class="field-label" for="s3">Shares</label>
-        <div class="stepper"><button class="icon-btn" type="button" aria-label="One share fewer">−</button><input id="s3" inputmode="numeric" value="500" aria-invalid="true" aria-describedby="e3"><button class="icon-btn" type="button" aria-label="One share more">+</button><button class="btn btn-quiet" type="button">Max</button></div>
+        <div class="stepper"><button class="icon-btn" type="button" aria-label="One share fewer">−</button><input id="s3" inputmode="numeric" value="500" aria-invalid="true" aria-describedby="e3"><button class="icon-btn" type="button" aria-label="One share more">+</button></div>
         <p id="e3" class="error-line" style="margin-top: var(--s-2)">That costs about $26,145.00; you have $8,751.39 available.</p></div>
       <button class="btn btn-primary btn-block" type="button">Preview order</button>
     </section>
