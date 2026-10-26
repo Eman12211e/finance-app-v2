@@ -94,6 +94,7 @@ button { cursor: pointer; }
 .brand { font: 700 var(--t-20)/1.2 var(--font-display); letter-spacing: -.01em; margin: 0; white-space: nowrap; }
 .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-left: auto; }
 
+.tabs-nav { display: contents; }
 .tabs { display: flex; gap: var(--s-1); }
 .tab {
   display: inline-flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border: 0;
@@ -126,8 +127,12 @@ button { cursor: pointer; }
 }
 .menu-item:hover, .menu-item:focus-visible { background: var(--surface-2); }
 
-@media (max-width: 1180px) {
-  /* the five full names no longer fit in one row: icons only, names kept for screen readers */
+@media (min-width: 641px) and (max-width: 1400px) {
+  /* not enough width for brand, five named tabs and the actions in one row: tabs get their own full-width row */
+  .tabs { order: 3; flex-basis: 100%; }
+}
+@media (max-width: 920px) {
+  /* five full names no longer fit even on their own row: icons only, names kept for screen readers */
   .tab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 @media (max-width: 640px) {

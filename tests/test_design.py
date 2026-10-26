@@ -124,3 +124,18 @@ def test_learn_menu_is_keyboard_operable():
     for key in ('"ArrowDown"', '"ArrowUp"', '"Home"', '"End"', '"Escape"', '"Tab"'):
         assert key in js
     assert "learnButton.focus();" in js
+
+
+def test_tabs_are_a_real_tablist_with_hash_routing():
+    html = read("templates", "index.html")
+    assert html.count('role="tablist"') == 1 and html.count('role="tab" ') == 5 and html.count('role="tabpanel"') == 5
+    panels = {"explore": "explore-view", "lab": "lab-root", "sign": "sign-root", "brokers": "brokers-root", "paper": "paper-root"}
+    for key, panel in panels.items():
+        assert f'id="tab-{key}" data-tab="{key}" aria-controls="{panel}"' in html, key
+        assert f'id="{panel}"' in html and f'aria-labelledby="tab-{key}"' in html, key
+    assert html.count('aria-selected="true"') == 1 and html.count('tabindex="0"') == 1  # roving tabindex
+    js = read("static", "js", "app.js")
+    assert 'paper: "practice"' in js and "history.pushState" in js and '"popstate"' in js and '"hashchange"' in js
+    for key in ("ArrowRight", "ArrowLeft", "Home", "End"):
+        assert key in js
+    assert "showTab(tabFromHash());" in js

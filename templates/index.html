@@ -28,27 +28,29 @@
 <body>
   <header class="app-header">
     <h1 class="brand">Money Basics</h1>
-    <nav class="tabs" aria-label="Sections">
-      <button type="button" class="tab" data-tab="explore" aria-pressed="true">
+    <nav class="tabs-nav" aria-label="Sections">
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button type="button" class="tab" role="tab" id="tab-explore" data-tab="explore" aria-controls="explore-view" aria-selected="true" tabindex="0">
         <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="currentColor"/></svg>
         <span class="tab-label">Explore</span><span class="tab-short" aria-hidden="true">Explore</span>
       </button>
-      <button type="button" class="tab" data-tab="lab" aria-pressed="false">
+      <button type="button" class="tab" role="tab" id="tab-lab" data-tab="lab" aria-controls="lab-root" aria-selected="false" tabindex="-1">
         <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
         <span class="tab-label">AI Comparison Lab</span><span class="tab-short" aria-hidden="true">Lab</span>
       </button>
-      <button type="button" class="tab" data-tab="sign" aria-pressed="false">
+      <button type="button" class="tab" role="tab" id="tab-sign" data-tab="sign" aria-controls="sign-root" aria-selected="false" tabindex="-1">
         <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 3h8l4 4v14H6z M14 3v4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 14l2 2 4-4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
         <span class="tab-label">Understand Before You Sign</span><span class="tab-short" aria-hidden="true">Sign</span>
       </button>
-      <button type="button" class="tab" data-tab="brokers" aria-pressed="false">
+      <button type="button" class="tab" role="tab" id="tab-brokers" data-tab="brokers" aria-controls="brokers-root" aria-selected="false" tabindex="-1">
         <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20h16M6 20V10M10 20V6M14 20v-8M18 20V8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
         <span class="tab-label">Compare Brokerages</span><span class="tab-short" aria-hidden="true">Brokerages</span>
       </button>
-      <button type="button" class="tab" data-tab="paper" aria-pressed="false">
+      <button type="button" class="tab" role="tab" id="tab-paper" data-tab="paper" aria-controls="paper-root" aria-selected="false" tabindex="-1">
         <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17l5-5 4 3 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15 7h5v5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
         <span class="tab-label">Practice Trading</span><span class="tab-short" aria-hidden="true">Practice</span>
       </button>
+    </div>
     </nav>
     <div class="header-actions">
       <div id="alerts-root"></div>
@@ -66,7 +68,7 @@
     </div>
   </header>
 
-  <main class="layout" id="explore-view">
+  <main class="layout" id="explore-view" role="tabpanel" aria-labelledby="tab-explore">
     <aside class="card col-watchlist" aria-labelledby="watchlist-title">
       <h2 id="watchlist-title">Watchlist</h2>
       <div id="watchlist-root"></div>
@@ -81,10 +83,10 @@
     </aside>
   </main>
 
-  <section id="lab-root" class="lab" aria-labelledby="lab-title" hidden></section>
-  <section id="sign-root" class="sign" aria-labelledby="sign-title" hidden></section>
-  <section id="brokers-root" class="brokers" aria-labelledby="brokers-title" hidden></section>
-  <section id="paper-root" class="paper" aria-labelledby="paper-title" hidden></section>
+  <section id="lab-root" class="lab" role="tabpanel" aria-labelledby="tab-lab" hidden></section>
+  <section id="sign-root" class="sign" role="tabpanel" aria-labelledby="tab-sign" hidden></section>
+  <section id="brokers-root" class="brokers" role="tabpanel" aria-labelledby="tab-brokers" hidden></section>
+  <section id="paper-root" class="paper" role="tabpanel" aria-labelledby="tab-paper" hidden></section>
 
   <div id="checklist-root"></div>
   <div id="accounts-root"></div>
