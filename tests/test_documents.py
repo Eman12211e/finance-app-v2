@@ -267,7 +267,7 @@ def test_checklist_prints_alone_and_layout_stacks_on_phones():
     css = read("static", "css", "features.css")
     assert "@media print" in css and "body.print-checklist #sign-checklist" in css
     assert ".sign-top, .sign-layout, .sign-row { grid-template-columns: minmax(0, 1fr); }" in css
-    assert ".sign-top { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1fr) 360px;" in css
+    assert ".sign-top { display: grid; gap: var(--s-4); grid-template-columns: minmax(0, 1fr) 360px;" in css
 
 
 def test_alert_toast_only_shows_on_explore():
