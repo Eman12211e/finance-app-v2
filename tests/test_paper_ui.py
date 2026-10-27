@@ -253,3 +253,11 @@ def test_positions_history_sectors_and_simulated_labels():
     assert code.count("sim()") >= 4  # strip, watchlist, positions, ticket
     css = read("static", "css", "features.css")
     assert r'.pt-up::before { content: "\25B2' in css and r'.pt-down::before { content: "\25BC' in css  # not colour alone
+
+
+def test_scenario_notice_shown_and_market_can_be_changed_after_confirming():
+    code, t = js(), text()
+    assert 'view.scenario.label + ": " + view.scenario.notice' in code
+    assert '"Change practice market"' in code and '"Yes, change market"' in code
+    assert "Change the practice market? This deletes your practice session and journal notes" in t
+    assert code.count("clearAll();") == 2  # new session, change market: both only after an explicit confirm

@@ -139,3 +139,14 @@ def test_tabs_are_a_real_tablist_with_hash_routing():
     for key in ("ArrowRight", "ArrowLeft", "Home", "End"):
         assert key in js
     assert "showTab(tabFromHash());" in js
+
+
+def test_chat_styles_use_theme_tokens_so_dark_mode_stays_readable():
+    js = read("static", "js", "chat.js")
+    assert not re.search(r"#[0-9a-fA-F]{3,6}\b", js)  # hard-coded light colours made dark-mode chat text invisible
+
+
+def test_phone_footer_rule_comes_after_the_base_rule():
+    css = read("static", "css", "style.css")
+    base = css.index("#disclaimer-footer {\n  position: sticky; bottom: 0;".replace("\n", "\r\n" if "\r\n" in css else "\n"))
+    assert css.index("#disclaimer-footer { bottom: 64px;") > base  # otherwise bottom: 0 hides it behind the phone tabs

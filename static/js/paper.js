@@ -192,6 +192,20 @@
     });
   }
 
+  // after the owner confirms: drop this session and its journal, then pick a market on the start screen
+  function goToStart() {
+    if (busy) return;
+    clearAll();
+    closeSheet(true);
+    view = null;
+    draft = null;
+    market = null;
+    ui = freshUi();
+    message = { text: "", error: false };
+    renderStart();
+    document.getElementById("paper-title").focus();
+  }
+
   function previewOrder() {
     var typed = regions.form.input.value.trim().toUpperCase();
     if (typed !== ui.symbol) {
@@ -377,6 +391,10 @@
     var title = el("h2", "visually-hidden", "Practice Trading");
     title.id = "paper-title";
     root.appendChild(title);
+    var notice = el("p", "pt-notice");
+    notice.appendChild(sim());
+    notice.appendChild(el("span", null, view.scenario.label + ": " + view.scenario.notice));
+    root.appendChild(notice);
     regions = {
       message: el("div", "pt-message-box"),
       watch: region("aside", "card pt-watch"),
@@ -523,10 +541,14 @@
     var menu = el("div", "pt-session-menu");
     menu.id = "pt-session-menu";
     menu.hidden = true;
-    var reset = button("button-secondary pt-reset", "Reset simulation", function () { renderResetConfirm(menu); });
+    var reset = button("button-secondary pt-reset", "Reset simulation", function () { renderResetConfirm(menu, false); });
     reset.dataset.busy = "";
     reset.dataset.key = "reset";
     menu.appendChild(reset);
+    var change = button("button-secondary pt-change", "Change practice market", function () { renderResetConfirm(menu, true); });
+    change.dataset.busy = "";
+    change.dataset.key = "change";
+    menu.appendChild(change);
     more.addEventListener("click", function () {
       menu.hidden = !menu.hidden;
       more.setAttribute("aria-expanded", menu.hidden ? "false" : "true");
@@ -545,18 +567,22 @@
     box.appendChild(top);
   };
 
-  function renderResetConfirm(menu) {
-    if (menu.querySelector(".pt-confirm-reset")) return;
+  function renderResetConfirm(menu, toStart) {
+    var old = menu.querySelector(".pt-confirm-reset");
+    if (old) old.remove();
     var box = el("div", "pt-confirm-reset");
     box.setAttribute("role", "alertdialog");
-    box.setAttribute("aria-label", "Reset the simulation");
-    box.appendChild(el("p", null, "Reset the simulation? This deletes your practice session and journal notes from "
-      + "this browser and starts again with $10,000.00 of fictional cash. It cannot be undone."));
-    var yes = button("button-primary", "Yes, reset", startNew);
+    box.setAttribute("aria-label", toStart ? "Change the practice market" : "Reset the simulation");
+    box.appendChild(el("p", null, toStart
+      ? "Change the practice market? This deletes your practice session and journal notes from this browser and goes "
+        + "back to the start screen, where you can pick a market. It cannot be undone."
+      : "Reset the simulation? This deletes your practice session and journal notes from "
+        + "this browser and starts again with $10,000.00 of fictional cash. It cannot be undone."));
+    var yes = toStart ? button("button-primary", "Yes, change market", goToStart) : button("button-primary", "Yes, reset", startNew);
     yes.dataset.busy = "";
     var no = button("button-secondary", "Keep my session", function () {
       box.remove();
-      menu.querySelector(".pt-reset").focus();
+      menu.querySelector(toStart ? ".pt-change" : ".pt-reset").focus();
     });
     box.appendChild(yes);
     box.appendChild(no);
@@ -1256,6 +1282,7 @@
     box.appendChild(sim("Simulated practice"));
     var title = el("h2", null, "Practice trading with money that isn't real");
     title.id = "paper-title";
+    title.tabIndex = -1;
     box.appendChild(title);
     box.appendChild(el("p", null, "You get $10,000.00 of fictional cash and a made-up market to try buying and selling, "
       + "one simulated day at a time, without risking real money."));

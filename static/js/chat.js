@@ -8,19 +8,19 @@
   var STYLE =
     "#chat-root .chat-list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;margin:8px 0}" +
     "#chat-root .chat-msg{padding:8px 12px;border-radius:10px;max-width:90%;line-height:1.45;white-space:pre-wrap}" +
-    "#chat-root .chat-user{align-self:flex-end;background:#e8eef9}" +
-    "#chat-root .chat-assistant{align-self:flex-start;background:#f3f4f6}" +
-    "#chat-root .chat-system{align-self:center;color:#8a1c1c;font-size:.9em}" +
-    "#chat-root .chat-divider{align-self:center;color:#6b7280;font-size:.85em}" +
+    "#chat-root .chat-user{align-self:flex-end;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}" +
+    "#chat-root .chat-assistant{align-self:flex-start;background:var(--surface-2)}" +
+    "#chat-root .chat-system{align-self:center;color:var(--down);font-size:.9em}" +
+    "#chat-root .chat-divider{align-self:center;color:var(--muted);font-size:.85em}" +
     "#chat-root .chat-starters{display:flex;flex-wrap:wrap;gap:6px}" +
     "#chat-root .chat-starters[hidden]{display:none}" +
-    "#chat-root .chat-starters button,#chat-root .chat-link{border:1px solid #c7cbd1;background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer;font:inherit}" +
-    "#chat-root .chat-link{align-self:flex-start;border:none;background:none;color:#1d4ed8;text-decoration:underline;padding:0}" +
-    "#chat-root textarea{width:100%;box-sizing:border-box;min-height:64px;font:inherit;padding:8px}" +
+    "#chat-root .chat-starters button,#chat-root .chat-link{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:4px 10px;cursor:pointer;font:inherit}" +
+    "#chat-root .chat-link{align-self:flex-start;border:none;background:none;color:var(--accent);text-decoration:underline;padding:0}" +
+    "#chat-root textarea{width:100%;box-sizing:border-box;min-height:64px;font:inherit;padding:8px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-8)}" +
     "#chat-root .chat-row{display:flex;gap:8px;align-items:flex-end}" +
     "#chat-root .chat-row button{flex:none}" +
-    "#chat-root .chat-note{font-size:.85em;color:#6b7280;margin-top:6px}" +
-    "#chat-root :focus-visible{outline:2px solid #1d4ed8;outline-offset:2px}";
+    "#chat-root .chat-note{font-size:.85em;color:var(--muted);margin-top:6px}" +
+    "#chat-root :focus-visible{outline:2px solid var(--accent);outline-offset:2px}";
 
   var history = [];
   var context = null;
@@ -131,7 +131,7 @@
         send(els.input.value);
       }
     });
-    els.send = el("button", null, "Send");
+    els.send = el("button", "button-primary", "Send");
     els.send.type = "button";
     els.send.addEventListener("click", function () { send(els.input.value); });
     row.appendChild(els.input);
