@@ -10,6 +10,8 @@
   var INDICATORS_KEY = "paper-indicators-v1";  // chart overlays chosen in this browser; never part of the session
   var OVERLAYS = [["sma", 20], ["sma", 50], ["ema", 12], ["ema", 26]];  // the approved presets drawn on the price
   var MAX_OVERLAYS = 2;
+  var PANES = [["rsi", 14], ["macd", [12, 26, 9]]];  // the approved presets drawn in panes below the price
+  var MAX_PANES = 2;
   var WEEK_LABELS = { partial: "Partial Week", final_short: "Final Short Week" };
   var SVG_NS = "http://www.w3.org/2000/svg";
   var MAX_SHARES = 100000;  // the engine's limit per order
@@ -25,9 +27,10 @@
   var ui = freshUi();
 
   function freshUi() {
+    var saved = readIndicators();
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
              historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily",
-             overlays: readOverlays(), indMenuOpen: false };
+             overlays: saved.overlays, panes: saved.panes, indMenuOpen: false };
   }
 
   function el(tag, cls, text) {
@@ -621,34 +624,48 @@
   // is ignored.
   var chartData = null;
 
-  function readOverlays() {
+  function presetOf(o, presets) {  // the approved preset {type, period} matches, if any (MACD's period is a list)
+    return presets.filter(function (p) {
+      return o && p[0] === o.type && JSON.stringify(p[1]) === JSON.stringify(o.period);
+    })[0];
+  }
+
+  function readIndicators() {  // saved choices are re-checked: approved presets only, each once, within the limits
+    var out = { overlays: [], panes: [] };
     try {
       var saved = JSON.parse(window.localStorage.getItem(INDICATORS_KEY) || "[]");
-      return (Array.isArray(saved) ? saved : []).filter(function (o, k, all) {
-        return o && OVERLAYS.some(function (p) { return p[0] === o.type && p[1] === o.period; })
-          && all.findIndex(function (x) { return x && x.type === o.type && x.period === o.period; }) === k;
-      }).slice(0, MAX_OVERLAYS).map(function (o) { return { type: o.type, period: o.period }; });
-    } catch (e) {
-      return [];
-    }
+      (Array.isArray(saved) ? saved : []).forEach(function (o) {
+        [[OVERLAYS, out.overlays, MAX_OVERLAYS], [PANES, out.panes, MAX_PANES]].forEach(function (g) {
+          var p = presetOf(o, g[0]);
+          if (p && g[1].length < g[2] && !g[1].some(function (x) { return presetOf(x, [p]); })) {
+            g[1].push({ type: p[0], period: p[1] });
+          }
+        });
+      });
+    } catch (e) { /* unreadable: every indicator starts off */ }
+    return out;
   }
 
-  function writeOverlays() {
-    try { window.localStorage.setItem(INDICATORS_KEY, JSON.stringify(ui.overlays)); } catch (e) { /* storage unavailable */ }
+  function chosen() {
+    return ui.overlays.concat(ui.panes);
   }
 
-  function overlayName(o) {
-    return o.type.toUpperCase() + " " + o.period;
+  function writeIndicators() {
+    try { window.localStorage.setItem(INDICATORS_KEY, JSON.stringify(chosen())); } catch (e) { /* storage unavailable */ }
+  }
+
+  function indicatorName(o) {
+    return o.type.toUpperCase() + " " + (Array.isArray(o.period) ? o.period.join("-") : o.period);
   }
 
   function chartKey() {
-    return [view.scenario.id, ui.symbol, view.day.index, ui.timeframe, JSON.stringify(ui.overlays)].join("|");
+    return [view.scenario.id, ui.symbol, view.day.index, ui.timeframe, JSON.stringify(chosen())].join("|");
   }
 
   function loadChart(key) {
     if (chartData && chartData.key === key) return;
     chartData = { key: key };
-    window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: ui.timeframe, indicators: ui.overlays })
+    window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: ui.timeframe, indicators: chosen() })
       .then(function (env) {
         if (!regions || !view || chartKey() !== key) return;
         chartData = env.ok ? { key: key, data: env.data } : { key: key, error: env.error.message };
@@ -656,10 +673,11 @@
       });
   }
 
-  function toggleOverlay(type, period, on) {
-    ui.overlays = ui.overlays.filter(function (o) { return o.type !== type || o.period !== period; });
-    if (on && ui.overlays.length < MAX_OVERLAYS) ui.overlays.push({ type: type, period: period });
-    writeOverlays();
+  function toggleIndicator(p, on) {
+    var list = presetOf({ type: p[0], period: p[1] }, PANES) ? "panes" : "overlays";
+    ui[list] = ui[list].filter(function (o) { return !presetOf(o, [p]); });
+    if (on && ui[list].length < (list === "panes" ? MAX_PANES : MAX_OVERLAYS)) ui[list].push({ type: p[0], period: p[1] });
+    writeIndicators();
     refresh(["chart"]);
   }
 
@@ -685,44 +703,50 @@
     var bar = el("div", "pt-toolbar");
     bar.setAttribute("role", "toolbar");
     bar.setAttribute("aria-label", "Analysis tools");
-    var btn = button("pt-tool", "Indicators" + (ui.overlays.length ? " (" + ui.overlays.length + ")" : ""), function () {
+    var btn = button("pt-tool", "Indicators" + (chosen().length ? " (" + chosen().length + ")" : ""), function () {
       setMenu(!ui.indMenuOpen, true);
     });
     btn.dataset.key = "ind-button";
     btn.setAttribute("aria-controls", "pt-ind-menu");
     btn.setAttribute("aria-expanded", ui.indMenuOpen ? "true" : "false");
     bar.appendChild(btn);
-    bar.appendChild(el("span", "pt-tool-note", ui.overlays.length + " of " + MAX_OVERLAYS + " lines on the price"));
+    bar.appendChild(el("span", "pt-tool-note", ui.overlays.length + " of " + MAX_OVERLAYS + " lines on the price, "
+      + ui.panes.length + " of " + MAX_PANES + " panes"));
     wrap.appendChild(bar);
 
     var menu = el("div", "pt-ind-menu");
     menu.id = "pt-ind-menu";
     menu.hidden = !ui.indMenuOpen;
     menu.setAttribute("aria-label", "Indicators");
-    var group = el("fieldset", "pt-ind-group");
-    group.appendChild(el("legend", null, "On the price (" + MAX_OVERLAYS + " at most)"));
     var full = ui.overlays.length >= MAX_OVERLAYS;
-    OVERLAYS.forEach(function (p) {
-      var slot = ui.overlays.findIndex(function (o) { return o.type === p[0] && o.period === p[1]; });
-      var row = el("label", "pt-ind-row");
-      var box = el("input");
-      box.type = "checkbox";
-      box.checked = slot !== -1;
-      box.disabled = full && slot === -1;
-      box.dataset.key = "ind-" + p[0] + "-" + p[1];
-      box.setAttribute("aria-describedby", "pt-ind-limit");
-      box.addEventListener("change", function () { toggleOverlay(p[0], p[1], box.checked); });
-      row.appendChild(box);
-      var swatch = el("span", "pt-swatch" + (slot === 1 ? " pt-swatch-b" : slot === 0 ? "" : " pt-swatch-off"));
-      swatch.setAttribute("aria-hidden", "true");
-      row.appendChild(swatch);
-      row.appendChild(document.createTextNode(overlayName({ type: p[0], period: p[1] })
-        + (slot === 0 ? " (solid line)" : slot === 1 ? " (dashed line)" : "")));
-      group.appendChild(row);
+    [["On the price (" + MAX_OVERLAYS + " at most)", OVERLAYS, ui.overlays, MAX_OVERLAYS, true],
+     ["Below the chart (" + MAX_PANES + " at most)", PANES, ui.panes, MAX_PANES, false]].forEach(function (g) {
+      var group = el("fieldset", "pt-ind-group");
+      group.appendChild(el("legend", null, g[0]));
+      g[1].forEach(function (p) {
+        var slot = g[2].findIndex(function (o) { return presetOf(o, [p]); });
+        var row = el("label", "pt-ind-row");
+        var box = el("input");
+        box.type = "checkbox";
+        box.checked = slot !== -1;
+        box.disabled = g[2].length >= g[3] && slot === -1;
+        box.dataset.key = "ind-" + p[0] + "-" + [].concat(p[1]).join("-");
+        box.setAttribute("aria-describedby", "pt-ind-limit");
+        box.addEventListener("change", function () { toggleIndicator(p, box.checked); });
+        row.appendChild(box);
+        if (g[4]) {  // price lines show their line style; panes are named on their own scale
+          var swatch = el("span", "pt-swatch" + (slot === 1 ? " pt-swatch-b" : slot === 0 ? "" : " pt-swatch-off"));
+          swatch.setAttribute("aria-hidden", "true");
+          row.appendChild(swatch);
+        }
+        row.appendChild(document.createTextNode(indicatorName({ type: p[0], period: p[1] })
+          + (g[4] && slot === 0 ? " (solid line)" : g[4] && slot === 1 ? " (dashed line)" : "")));
+        group.appendChild(row);
+      });
+      menu.appendChild(group);
     });
-    menu.appendChild(group);
     var limit = el("p", "pt-tiny muted", full ? "Two lines are already on the price. Turn one off to add another."
-      : "Up to two lines on the price. Periods are fixed presets.");
+      : "Up to two lines on the price and two panes below it. Periods are fixed presets.");
     limit.id = "pt-ind-limit";
     menu.appendChild(limit);
     menu.appendChild(el("p", "pt-tiny muted", "Indicator values describe past simulated prices only. They never change "
@@ -758,8 +782,8 @@
     return t.year + "-" + String(t.month).padStart(2, "0") + "-" + String(t.day).padStart(2, "0");
   }
 
-  function lineValue(v) {
-    return v === null || v === undefined ? "Not enough data" : "$" + v.toFixed(2);
+  function lineValue(v, digits, prefix) {  // a value as shown, or "Not enough data" when there is none
+    return v === null || v === undefined ? "Not enough data" : (prefix === undefined ? "$" : prefix) + v.toFixed(digits || 2);
   }
 
   RENDER.chart = function (box) {
@@ -787,7 +811,7 @@
     box.appendChild(el("p", "pt-small", (i.name || symbol) + (i.sector ? ", " + i.sector + " sector" : "")));
     box.appendChild(indicatorTools());
     var legend = el("p", "pt-chart-legend pt-tiny");
-    var canvas = el("div", "pt-chart-canvas");
+    var canvas = el("div", "pt-chart-canvas pt-panes-" + ui.panes.length);
     canvas.setAttribute("aria-hidden", "true");  // the summary below is the text version of the chart
     var lineList = el("ul", "pt-line-legend");
     var summary = el("p", "pt-small pt-chart-summary");
@@ -828,10 +852,11 @@
       rightPriceScale: { borderColor: token("--border"), scaleMargins: { top: 0.08, bottom: 0.25 } },
       timeScale: { borderColor: token("--border"), rightOffset: 2, fixLeftEdge: true, maxBarSpacing: 28 },
       handleScroll: { vertTouchDrag: false },  // a vertical swipe on a phone still scrolls the page
-      localization: { priceFormatter: function (p) { return "$" + p.toFixed(2); } },
     });
+    // each scale formats its own numbers: dollars on the price, 0-100 for RSI, plain for MACD
+    var dollars = { type: "custom", minMove: 0.01, formatter: function (p) { return "$" + p.toFixed(2); } };
     var candles = chart.addSeries(LC.CandlestickSeries, { upColor: up, downColor: down, borderUpColor: up,
-      borderDownColor: down, wickUpColor: up, wickDownColor: down });
+      borderDownColor: down, wickUpColor: up, wickDownColor: down, priceFormat: dollars });
     candles.setData(bars.map(function (b) {
       var point = { time: b.time, open: b.o / 100, high: b.h / 100, low: b.l / 100, close: b.c / 100 };
       if (b.status === "partial") point.color = surface;  // a hollow candle: this week is not finished
@@ -845,17 +870,64 @@
     }));
 
     // overlays: the server's values as they are; the first line solid, the second dashed, each named on the scale
-    var lines = data.indicators.map(function (ind, k) {
-      var values = ind.series[ind.type], name = overlayName(ind), dashed = k === 1;
+    var lines = data.indicators.filter(function (ind) { return presetOf(ind, OVERLAYS); }).map(function (ind, k) {
+      var values = ind.series[ind.type], name = indicatorName(ind), dashed = k === 1;
       var points = [];
       values.forEach(function (v, j) { if (v !== null) points.push({ time: bars[j].time, value: v }); });
       if (points.length) {
         chart.addSeries(LC.LineSeries, { color: token(dashed ? "--ind-b" : "--ind-a"), lineWidth: 2,
           lineStyle: dashed ? LC.LineStyle.Dashed : LC.LineStyle.Solid, title: name, priceLineVisible: false,
-          crosshairMarkerVisible: false }).setData(points);
+          crosshairMarkerVisible: false, priceFormat: dollars }).setData(points);
       }
       return { name: name, values: values, dashed: dashed };
     });
+
+    // panes below the price, in the order chosen; one chart, so time, zoom and crosshair stay in step
+    function pointsOf(values, color) {
+      var out = [];
+      values.forEach(function (v, j) {
+        if (v !== null) out.push(color ? { time: bars[j].time, value: v, color: color(v) } : { time: bars[j].time, value: v });
+      });
+      return out;
+    }
+    var muted = token("--muted");
+    var panes = data.indicators.filter(function (ind) { return presetOf(ind, PANES); }).map(function (ind, k) {
+      var pane = k + 1, name = indicatorName(ind);
+      var lineOptions = { lineWidth: 2, priceLineVisible: false, crosshairMarkerVisible: false, lastValueVisible: true };
+      if (ind.type === "rsi") {
+        var rsi = chart.addSeries(LC.LineSeries, Object.assign({ color: token("--ind-a"), title: name,
+          priceFormat: { type: "custom", minMove: 0.1, formatter: function (v) { return v.toFixed(1); } },
+          autoscaleInfoProvider: function () { return { priceRange: { minValue: 0, maxValue: 100 } }; } }, lineOptions), pane);
+        rsi.setData(pointsOf(ind.series.rsi));
+        [70, 30].forEach(function (level) {  // the educational guides: above 70 and below 30
+          rsi.createPriceLine({ price: level, color: muted, lineWidth: 1, lineStyle: LC.LineStyle.Dashed,
+            axisLabelVisible: true, title: "" });
+        });
+        rsi.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } });
+      } else {
+        var plain = { type: "custom", minMove: 0.01, formatter: function (v) { return v.toFixed(2); } };
+        var hist = chart.addSeries(LC.HistogramSeries, { priceFormat: plain, priceLineVisible: false,
+          lastValueVisible: false }, pane);
+        hist.setData(pointsOf(ind.series.histogram, function (v) { return withAlpha(v >= 0 ? up : down, "73"); }));
+        var line = chart.addSeries(LC.LineSeries, Object.assign({ color: token("--ind-a"), title: "MACD",
+          priceFormat: plain, autoscaleInfoProvider: function (original) {  // the scale always reaches the zero line
+            var r = original();
+            if (r && r.priceRange) {
+              r.priceRange.minValue = Math.min(r.priceRange.minValue, 0);
+              r.priceRange.maxValue = Math.max(r.priceRange.maxValue, 0);
+            }
+            return r;
+          } }, lineOptions), pane);
+        line.setData(pointsOf(ind.series.macd));
+        chart.addSeries(LC.LineSeries, Object.assign({ color: token("--ind-b"), lineStyle: LC.LineStyle.Dashed,
+          title: "Signal", priceFormat: plain }, lineOptions), pane).setData(pointsOf(ind.series.signal));
+        line.createPriceLine({ price: 0, color: muted, lineWidth: 1, lineStyle: LC.LineStyle.Dotted,
+          axisLabelVisible: true, title: "" });  // the zero line
+        line.priceScale().applyOptions({ scaleMargins: { top: 0.12, bottom: 0.12 } });
+      }
+      return { name: name, type: ind.type, series: ind.series };
+    });
+    if (panes.length) chart.panes()[0].setStretchFactor(panes.length === 1 ? 2.4 : 2);  // the price keeps most room
 
     var barTimeFor = function (date) {  // a trade's bar: its day, or the week it falls in
       var hit = bars.filter(function (b) { return b.time <= date; });
@@ -885,8 +957,12 @@
       var text = (weeklyView ? (WEEK_LABELS[b.status] || "Week") + " of " : "") + niceDate(b.time) + ": open "
         + money(b.o) + ", high " + money(b.h) + ", low " + money(b.l) + ", close " + money(b.c) + ", volume "
         + b.v.toLocaleString("en-US") + ".";
+      var partial = b.status === "partial";
       lines.forEach(function (l) {
-        text += " " + l.name + " " + (b.status === "partial" ? "not calculated for a Partial Week" : lineValue(l.values[j])) + ".";
+        text += " " + l.name + " " + (partial ? "not calculated for a Partial Week" : lineValue(l.values[j])) + ".";
+      });
+      panes.forEach(function (pn) {
+        text += " " + pn.name + " " + (partial ? "not calculated for a Partial Week" : paneValue(pn, j)) + ".";
       });
       legend.textContent = text;
     }
@@ -895,6 +971,12 @@
       var j = indexOf[timeKey(p.time)];
       readout(j === undefined ? bars.length - 1 : j);
     });
+
+    function paneValue(pn, j) {
+      if (pn.type === "rsi") return lineValue(pn.series.rsi[j], 1, "");
+      return "MACD " + lineValue(pn.series.macd[j], 2, "") + ", signal " + lineValue(pn.series.signal[j], 2, "")
+        + ", histogram " + lineValue(pn.series.histogram[j], 2, "");
+    }
 
     // each line's latest value: the last completed bar (a Partial Week has none)
     var settled = last.status === "partial" ? bars.length - 2 : bars.length - 1;
@@ -909,7 +991,15 @@
       lineList.appendChild(item);
       return l.name + " (" + (l.dashed ? "dashed" : "solid") + ") " + value;
     });
-    if (!lines.length) lineList.remove();
+    var paneText = panes.map(function (pn) {
+      var value = settled >= 0 ? paneValue(pn, settled) : "Not enough data";
+      var item = el("li");
+      item.appendChild(document.createTextNode(pn.name + " "));
+      item.appendChild(el("strong", null, value));
+      lineList.appendChild(item);
+      return pn.name + (pn.type === "rsi" ? " (0 to 100, guides at 30 and 70) " : ": ") + value;
+    });
+    if (!lines.length && !panes.length) lineList.remove();
 
     var high = Math.max.apply(null, bars.map(function (b) { return b.h; }));
     var low = Math.min.apply(null, bars.map(function (b) { return b.l; }));
@@ -919,6 +1009,8 @@
       + " marked: B for a buy, S for a sell." : "Your trades in " + symbol + " will be marked on the chart.")
       + (lineText.length ? " Lines on the price: " + lineText.join(", ") + "."
         + (weeklyView ? " Weekly lines use completed weeks only." : "") : "")
+      + (paneText.length ? " Panes below the price: " + paneText.join("; ") + "."
+        + (weeklyView && !lineText.length ? " Weekly values use completed weeks only." : "") : "")
       + (lastLabel === "Partial Week" ? " The last bar is a Partial Week: this week so far, which can still change."
         : lastLabel ? " The last bar is the Final Short Week: the scenario's final " + last.days + " trading days." : "")
       + " Scroll or pinch to zoom and drag to move through time.";

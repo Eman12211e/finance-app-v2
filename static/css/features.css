@@ -318,6 +318,8 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-frames button { padding: var(--s-1) var(--s-3); font-size: var(--t-14); }
 .pt-chart-legend { color: var(--muted); min-height: 1.5em; }
 .pt-chart-canvas { position: relative; aspect-ratio: 16 / 9; min-height: 220px; min-width: 0; }
+/* each indicator pane below the price adds height, so the candles keep theirs */
+.pt-chart-canvas.pt-panes-1 { aspect-ratio: 16 / 12; } .pt-chart-canvas.pt-panes-2 { aspect-ratio: 16 / 14.5; }
 
 /* analysis toolbox (P4): the Indicators popover (a bottom sheet on phones) and the overlay lines' names */
 .pt-tools { position: relative; }
@@ -480,6 +482,7 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
   .pt-day-controls .button-secondary { flex: 1; }
   .pt-chart { padding: var(--s-3); }
   .pt-chart-canvas { aspect-ratio: 4 / 3; }
+  .pt-chart-canvas.pt-panes-1 { aspect-ratio: 4 / 4.3; } .pt-chart-canvas.pt-panes-2 { aspect-ratio: 4 / 5.4; }
   /* positions: each row becomes a small card, with labels from data-label */
   .pt-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .pt-table tbody { display: grid; gap: var(--s-2); }

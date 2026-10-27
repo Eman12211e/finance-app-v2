@@ -300,7 +300,7 @@ def test_weekly_chart_uses_server_bars_and_labels_partial_and_final_short_weeks(
     code = js()
     assert "function weekly(" not in code  # the P3 copy of the weekly rules is gone; the server owns them
     assert ("window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: ui.timeframe, "
-            "indicators: ui.overlays })") in code
+            "indicators: chosen() })") in code
     assert "if (!regions || !view || chartKey() !== key) return;" in code  # late replies are ignored
     assert 'partial: "Partial Week", final_short: "Final Short Week"' in code
     assert 'request("/api/analysis/indicators"' in read("static", "js", "api.js")
@@ -311,9 +311,10 @@ def test_weekly_chart_uses_server_bars_and_labels_partial_and_final_short_weeks(
 def test_overlays_are_the_four_approved_presets_two_at_most_and_off_by_default():
     code = js()
     assert 'var OVERLAYS = [["sma", 20], ["sma", 50], ["ema", 12], ["ema", 26]];' in code
-    assert "var MAX_OVERLAYS = 2;" in code and "box.disabled = full && slot === -1;" in code
+    assert "var MAX_OVERLAYS = 2;" in code and "box.disabled = g[2].length >= g[3] && slot === -1;" in code
     assert "Two lines are already on the price. Turn one off to add another." in text()
-    assert "overlays: readOverlays()" in code and ".slice(0, MAX_OVERLAYS)" in code  # saved choices re-checked
+    assert "overlays: saved.overlays, panes: saved.panes" in code  # saved choices re-checked on load
+    assert "if (p && g[1].length < g[2] && !g[1].some(" in code
     assert "window.localStorage.removeItem(INDICATORS_KEY);" in code  # a new session starts with every indicator off
 
 
@@ -321,7 +322,7 @@ def test_overlay_values_come_from_the_server_never_calculated_in_the_browser():
     code = js()
     for name in ("sma", "ema", "rsi", "macd"):
         assert f"function {name}(" not in code, name
-    assert "var values = ind.series[ind.type]" in code and "data.indicators.map(" in code
+    assert "var values = ind.series[ind.type]" in code and "data.indicators.filter(" in code
 
 
 def test_overlay_lines_are_distinct_named_and_explain_missing_values():
@@ -341,3 +342,43 @@ def test_indicators_menu_is_a_keyboard_friendly_popover_or_phone_sheet():
     assert 'menu.setAttribute("aria-modal", "true");' in code  # on phones only
     css = read("static", "css", "features.css")
     assert ".pt-ind-menu[hidden] { display: none; }" in css and ".pt-ind-menu:not([hidden]) + .pt-ind-scrim" in css
+
+
+# ---- P4 step 5: RSI and MACD panes ----
+
+def test_panes_are_the_two_approved_presets_and_both_may_be_on():
+    code, t = js(), text()
+    assert 'var PANES = [["rsi", 14], ["macd", [12, 26, 9]]];' in code and "var MAX_PANES = 2;" in code
+    assert "Below the chart (" in t and "return ui.overlays.concat(ui.panes);" in code
+    assert "JSON.stringify(p[1]) === JSON.stringify(o.period)" in code  # MACD's period is a list
+
+
+def test_rsi_pane_has_a_fixed_scale_and_30_70_guides():
+    code = js()
+    assert "priceRange: { minValue: 0, maxValue: 100 }" in code
+    assert "[70, 30].forEach(function (level) {" in code and "LC.LineStyle.Dashed" in code
+    assert 'formatter: function (v) { return v.toFixed(1); }' in code  # RSI is not dollars
+
+
+def test_macd_pane_has_line_signal_histogram_and_zero_line():
+    code = js()
+    assert "ind.series.histogram" in code and "ind.series.macd" in code and "ind.series.signal" in code
+    assert 'title: "Signal"' in code and "LC.LineStyle.Dotted" in code and "// the zero line" in code
+    assert "r.priceRange.minValue = Math.min(r.priceRange.minValue, 0);" in code  # zero stays on the MACD scale
+
+
+def test_panes_share_the_chart_and_scales_format_their_own_numbers():
+    code = js()
+    assert "var pane = k + 1" in code and "}, lineOptions), pane);" in code  # panes of the same chart
+    assert "localization:" not in code  # no chart-wide "$": each series sets its own format
+    assert 'var dollars = { type: "custom"' in code and "priceFormat: dollars" in code
+    assert '"pt-chart-canvas pt-panes-" + ui.panes.length' in code
+    css = read("static", "css", "features.css")
+    assert ".pt-chart-canvas.pt-panes-2 { aspect-ratio: 16 / 14.5; }" in css
+
+
+def test_pane_values_appear_in_readout_legend_and_summary():
+    code, t = js(), text()
+    assert 'return "MACD " + lineValue(pn.series.macd[j], 2, "") + ", signal "' in code
+    assert '" (0 to 100, guides at 30 and 70) "' in code and "Panes below the price: " in t
+    assert "Weekly values use completed weeks only." in t
