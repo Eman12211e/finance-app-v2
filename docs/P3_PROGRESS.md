@@ -43,3 +43,9 @@ day 161, daily and weekly, 1280 light and 390 dark.
 **For owner review:** zoom resets when the ticker, day or timeframe changes (the chart is rebuilt with its region);
 with a few days of data the bars sit at the left and the chart fills rightward as days pass; no portfolio-value chart
 (the roadmap names it as a gap but not as P3 scope).
+
+## Owner decisions (2026-10-27)
+
+P3 approved and pushed (`origin/dev/v2` at `3086342`). Kept as built: the visible TradingView credit line instead of
+the in-chart logo, zoom resetting when the ticker, day or timeframe changes, and the early-session layout (bars from
+the left). The portfolio-value chart is deferred. P4 brief: `docs/P4_BRIEF.md`.

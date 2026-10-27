@@ -1,0 +1,96 @@
+# P4 — Analysis Toolbox: approved brief
+
+Owner approval: 2026-10-27, all six decisions below. Base: `dev/v2` at `3086342` (P3, pushed).
+Progress and checks are logged in `docs/P4_PROGRESS.md` once implementation starts.
+
+## Scope
+
+SMA, EMA, RSI and MACD on the Practice Trading price chart; horizontal-line and trend-line drawing tools; a plain
+explanation per indicator of what it shows and what its current reading means, worded as education, never as a
+signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no build step.
+
+## Approved decisions
+
+1. Indicator maths in Python (`services/indicators.py`), served by a new signed-session endpoint
+   (`routes/analysis.py`, `POST /api/analysis/indicators`).
+2. Preset periods only: SMA 20 / 50, EMA 12 / 26, RSI 14, MACD 12-26-9. No free-entry periods.
+3. Drawings live only in the browser (localStorage, per session and ticker), are never sent to the server, and are
+   cleared by Reset and Change market.
+4. A mockup gate (Step 1) before any UI code.
+5. At most two overlays on the price pane and two lower indicator panes.
+6. The headless-browser QA script is committed as an optional tool under `scripts/qa/` (Node and Edge; outside pytest).
+
+## Requirements added by the owner
+
+- Indicator calculations never see simulated future prices.
+- Partial weekly periods are defined and tested (definition below).
+- RSI and MACD edge cases are tested, including constant prices and insufficient history.
+- Indicator values are educational only and never feed trading-engine calculations.
+- No additional runtime dependency and no external market-data request.
+- `services/paper_engine.py`, `services/paper_market.py` and `routes/paper.py` are not modified.
+- The TradingView attribution line and all P3 behaviour stay.
+
+## Architecture
+
+- **`services/indicators.py`** (new): pure functions over integer-cent bars.
+  - SMA(n): mean of the last n closes.
+  - EMA(n): seeded with the SMA of the first n closes, then `k = 2 / (n + 1)`.
+  - RSI(14): Wilder's smoothing of average gain and loss. Constant prices (no gains and no losses) give 50; only gains
+    give 100; only losses give 0.
+  - MACD(12, 26, 9): EMA12 − EMA26, signal = EMA9 of MACD, histogram = MACD − signal.
+  - Too little history gives `null` (no value is invented): SMA and EMA need n closes, RSI 15, MACD 26 and its signal
+    34.
+  - Values are display-only floats in dollars, rounded to 4 decimals. They never reach `paper_engine` or balances.
+- **No look-ahead.** The endpoint reads bars only through `paper_engine.market_bars(state)`, which verifies the
+  signed session and stops at the current simulated day. A test checks that every value computed on day *t* equals
+  the same value computed with the whole history up to the scenario's end, cut at *t* (prefix stability).
+- **Weekly bars and partial weeks (proposed; confirm at the mockup gate).**
+  - A weekly bar holds the trading days of one Monday-to-Friday calendar week and is dated by its first trading day
+    (the P3 chart already does this; the server becomes the only implementation and the JavaScript copy is removed).
+  - The scenario's first week (Thu 2 and Fri 3 Jan 2025) is short but complete: those are all of its trading days.
+  - The week containing today is **in progress** unless today is a Friday or the scenario's last day. It is shown as
+    "this week so far" and flagged `"partial": true`. Its candle and indicator values may change as days pass;
+    completed weeks never change.
+  - Tests: weekly bars equal aggregates of the daily bars up to today; the partial flag is set exactly when the last
+    week is unfinished; completed weekly bars and their indicator values are identical on every later day.
+- **`routes/analysis.py`** (new blueprint, registered in `app.py`). Body:
+  `{state, symbol, timeframe: "daily"|"weekly", indicators: [{type, period}]}`. Validates the indicator types and preset
+  periods, the symbol and the limits (two overlays, two panes), and answers in the usual envelope. Invalid sessions
+  return `INVALID_STATE`, as in `/api/paper`. Documented in `docs/API_CONTRACT.md`.
+- **Drawings** in localStorage (`paper-drawings-v1`), anchored by date and price so they show on Daily and Weekly.
+- **Explanations** in `data/indicator_guide.json`, written now for owner review, labelled "Our plain summary". A test
+  rejects advice wording ("you should", "buy now", "sell now", "guaranteed", "sure thing").
+
+## UI (Practice Trading chart area only)
+
+Toolbar under the chart heading: Indicators (checkboxes with preset periods), Draw (Horizontal line, Trend line),
+Clear drawings. SMA and EMA as overlays; RSI pane with 30 / 70 guides; MACD pane with MACD, signal and histogram. The
+crosshair readout gains indicator values. An explanation card per active indicator below the chart. Keyboard
+alternatives for drawing (a horizontal line at a typed price; a trend line between two chosen dates' closes) and a
+"Your drawings" list with remove buttons. The text summary names the active indicators. Phones: the same controls,
+wrapped. Mockups: `docs/mockups/06`–`08`.
+
+## Dependencies
+
+None new. Lightweight Charts 5.2.1 (vendored in P3) provides line and histogram series, panes, price lines and series
+primitives for trend lines.
+
+## Testing
+
+pytest: maths (worked examples, constant / rising / falling series, insufficient history, prefix stability, weekly
+aggregation and partial weeks), endpoint (validation, limits, tampered session, nothing past today, no network),
+static page checks (wiring, accessibility attributes, drawings never in a request body, no advice wording). Headless
+Edge via `scripts/qa/`: toggle each indicator and compare readouts with the endpoint, draw and remove by mouse and
+keyboard, drawings survive reload and Reset clears them, all tabs × 1280 / 390 × light / dark, every P2.5 and P3 flow.
+
+## Sequence (one local commit per step; no push without approval)
+
+0. This brief; P3 decisions recorded.
+1. Mockups (desktop, phone, panes, drawing, explanation cards). **Gate: owner approval.**
+2. `services/indicators.py` and tests.
+3. `routes/analysis.py`, tests, API contract; the chart uses the server's weekly bars.
+4. Toolbar, SMA / EMA overlays, readout values.
+5. RSI and MACD panes.
+6. Explanation cards and guide content. **Gate: owner content review.**
+7. Drawing tools, keyboard alternatives, drawings list, browser storage.
+8. Full QA, `scripts/qa/`, docs. **Gate: P4 review.**
