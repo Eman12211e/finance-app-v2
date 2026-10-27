@@ -48,9 +48,12 @@ signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no bu
 - **Weekly data rules (owner-approved 2026-10-27).**
   1. A weekly bar holds the trading days of one Monday-to-Friday calendar week and is dated by its first trading day
      (the P3 chart already does this; the server becomes the only implementation and the JavaScript copy is removed).
-  2. A week is **completed** once its last trading day has closed: its Friday is on or before today, or, for the
-     scenario's final week, today is the scenario's last day. The scenario's short first week (Thu 2 and Fri 3 Jan
-     2025) is completed: those are all of its trading days.
+  2. A week is **completed** once its last trading day has closed: its Friday is on or before today. The scenario's
+     short first week (Thu 2 and Fri 3 Jan 2025) is completed: those are all of its trading days. The scenario's
+     final week is shorter (synthetic-b ends on Wed 17 Dec 2025). It stays a Partial Week until the final simulated
+     day is reached; on that day it becomes completed, is included in the weekly calculations and is labelled
+     **Final Short Week** (it has fewer trading days than a full week). API status per weekly bar: `"complete"`,
+     `"partial"` or `"final_short"`.
   3. Weekly SMA, EMA, RSI and MACD are calculated from **completed weeks only**. The unfinished week never enters a
      weekly indicator, so weekly indicator values change only when a week completes.
   4. The unfinished week may appear on the price chart as a candle built from its days up to today, labelled
@@ -62,7 +65,9 @@ signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no bu
   - Tests, for each of SMA, EMA, RSI and MACD: weekly values use completed weeks only and are unchanged by the
     partial week's days; weekly values change only on the day a week completes; "Not enough data" (null) below the
     required number of completed weeks; weekly bars equal aggregates of the daily bars up to today; the partial flag
-    is set exactly when the last week is unfinished; the scenario's first and last weeks follow rule 2.
+    is set exactly when the last week is unfinished; the scenario's first and last weeks follow rule 2; the final
+    week changes from Partial Week (the day before the last day) to Final Short Week (the last day), and only then
+    enters the weekly indicators.
 - **`routes/analysis.py`** (new blueprint, registered in `app.py`). Body:
   `{state, symbol, timeframe: "daily"|"weekly", indicators: [{type, period}]}`. Validates the indicator types and preset
   periods, the symbol and the limits (two overlays, two panes), and answers in the usual envelope. Invalid sessions
@@ -71,11 +76,25 @@ signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no bu
 - **Explanations** in `data/indicator_guide.json`, written now for owner review, labelled "Our plain summary". A test
   rejects advice wording ("you should", "buy now", "sell now", "guaranteed", "sure thing").
 
+## Mockup-gate decisions (owner-approved 2026-10-27)
+
+1. Indicator colours stay as mocked (indigo solid, magenta dashed), with line styles and on-chart names so colour is
+   never the only cue.
+2. Each explanation card shows the short current reading by default; a Learn more control reveals what it shows, how
+   people read it and what to watch out for.
+3. All indicators start switched off.
+4. Drawing as mocked: by mouse or touch a trend line snaps to the nearest bar's date with the price following the
+   pointer; by keyboard a trend line joins two chosen days' closes and a horizontal line uses a typed price.
+5. "What is this?" opens an indicator's explanation without switching the indicator on.
+6. The scenario's final short week becomes completed only on the final simulated day and is labelled Final Short
+   Week (weekly rule 2).
+
 ## UI (Practice Trading chart area only)
 
 Toolbar under the chart heading: Indicators (checkboxes with preset periods), Draw (Horizontal line, Trend line),
 Clear drawings. SMA and EMA as overlays; RSI pane with 30 / 70 guides; MACD pane with MACD, signal and histogram. The
-crosshair readout gains indicator values. An explanation card per active indicator below the chart. Keyboard
+crosshair readout gains indicator values. An explanation card per active indicator below the chart (current
+reading, then Learn more). Keyboard
 alternatives for drawing (a horizontal line at a typed price; a trend line between two chosen dates' closes) and a
 "Your drawings" list with remove buttons. The text summary names the active indicators. Phones: the same controls,
 wrapped. Mockups: `docs/mockups/06`–`08`.
