@@ -150,3 +150,16 @@ def test_phone_footer_rule_comes_after_the_base_rule():
     css = read("static", "css", "style.css")
     base = css.index("#disclaimer-footer {\n  position: sticky; bottom: 0;".replace("\n", "\r\n" if "\r\n" in css else "\n"))
     assert css.index("#disclaimer-footer { bottom: 64px;") > base  # otherwise bottom: 0 hides it behind the phone tabs
+
+
+def test_chart_library_is_vendored_unmodified_with_its_licence():
+    import hashlib
+    folder = os.path.join(ROOT, "static", "vendor", "lightweight-charts")
+    with open(os.path.join(folder, "lightweight-charts.standalone.production.js"), "rb") as f:
+        code = f.read()
+    assert hashlib.sha256(code).hexdigest() == "e21cc5caa0226ef30bd8549c50b9ef926615f2a4ee6b4e486353477a55f598cf"
+    assert b"TradingView Lightweight Charts\xe2\x84\xa2 v5.2.1" in code[:200]
+    assert b"fetch(" not in code and b"XMLHttpRequest" not in code  # renders only; never loads anything
+    assert "Apache License" in read("static", "vendor", "lightweight-charts", "LICENSE")
+    notice = read("static", "vendor", "lightweight-charts", "NOTICE")
+    assert "Copyright (c) 2026 TradingView, Inc. https://www.tradingview.com/" in notice and "fancy-canvas" in notice

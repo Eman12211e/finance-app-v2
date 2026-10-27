@@ -135,6 +135,9 @@ profit/loss from that log, so balances sent by a browser are never trusted. Set 
 random key is created at `data/paper_state.key` (gitignored) on first use and reused after restarts; changing or
 deleting the key ends existing practice sessions.
 
+Third-party code: the practice price chart (P3) uses TradingView Lightweight Charts 5.2.1, vendored unmodified in
+`static/vendor/lightweight-charts/` with its Apache-2.0 LICENSE and NOTICE. Nothing is loaded from a CDN.
+
 ## Optional: Sentiment Explorer (local FinBERT)
 
 Off by default. It classifies fixed, fictional example statements with the Hugging Face model

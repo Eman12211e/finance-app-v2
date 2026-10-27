@@ -1,0 +1,12 @@
+TradingView Lightweight Charts(TM) v5.2.1
+Copyright (c) 2026 TradingView, Inc. https://www.tradingview.com/
+Licensed under the Apache License 2.0 (see LICENSE in this folder).
+
+The chart shows TradingView's attribution logo (the library's attributionLogo option, on by default), which links
+to https://www.tradingview.com/ as the licence asks.
+
+The standalone bundle includes fancy-canvas 2.1.0 (MIT licence, by TradingView's smakarov@tradingview.com).
+
+Vendored unmodified from the npm package lightweight-charts@5.2.1
+(sha512-IVwoK1RLFiLPubaKIjNbtjWLnpPMqiABSrTay6whmNa8L1+19292VtHJ+BWyPUuLCwF0tcQlhEWd1CLB2a1nsQ==).
+lightweight-charts.standalone.production.js sha256 e21cc5caa0226ef30bd8549c50b9ef926615f2a4ee6b4e486353477a55f598cf

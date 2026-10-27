@@ -1,0 +1,2 @@
+# vendored third-party files stay byte-for-byte as published (their hashes are pinned in tests)
+static/vendor/** -text

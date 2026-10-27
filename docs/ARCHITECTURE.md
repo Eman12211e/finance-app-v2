@@ -41,6 +41,9 @@ Compare Brokerages · Practice Trading (synthetic-market simulator). Contracts a
 **Out of scope:** login, database, deployment, charts, news, real notifications, yfinance at runtime.
 **V2:** also out of scope: real trading and brokerage connections. Charts are planned for Practice Trading (P3)
 only after the owner approves the chart library; it must be self-hosted.
+**V2 (P3, owner-approved 2026-10-27):** TradingView Lightweight Charts 5.2.1 is vendored unmodified in
+`static/vendor/lightweight-charts/` (Apache-2.0, with LICENSE and NOTICE; hash pinned in `tests/test_design.py`).
+It is the only vendored runtime library; update it only by replacing the file and the pinned hash together.
 
 ---
 
