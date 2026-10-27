@@ -7,6 +7,10 @@
 
   var SESSION_KEY = "paper-session-v1";
   var JOURNAL_KEY = "paper-journal-v1";
+  var INDICATORS_KEY = "paper-indicators-v1";  // chart overlays chosen in this browser; never part of the session
+  var OVERLAYS = [["sma", 20], ["sma", 50], ["ema", 12], ["ema", 26]];  // the approved presets drawn on the price
+  var MAX_OVERLAYS = 2;
+  var WEEK_LABELS = { partial: "Partial Week", final_short: "Final Short Week" };
   var SVG_NS = "http://www.w3.org/2000/svg";
   var MAX_SHARES = 100000;  // the engine's limit per order
   var PHONE = window.matchMedia("(max-width: 720px)");
@@ -22,7 +26,8 @@
 
   function freshUi() {
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
-             historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily" };
+             historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily",
+             overlays: readOverlays(), indMenuOpen: false };
   }
 
   function el(tag, cls, text) {
@@ -106,6 +111,7 @@
     try {
       window.localStorage.removeItem(SESSION_KEY);
       window.localStorage.removeItem(JOURNAL_KEY);
+      window.localStorage.removeItem(INDICATORS_KEY);  // a new session starts with every indicator off
     } catch (e) { /* storage unavailable */ }
   }
 
@@ -175,7 +181,7 @@
   function loadMarket() {
     call("market", { state: view.state }, function (data) {
       market = data;
-      refresh(["watch", "chart"]);
+      refresh(["watch"]);
     });
   }
 
@@ -299,6 +305,7 @@
         }
       });
       flashRows(Object.keys(filled));
+      refresh(["chart"]);  // a new day: new bars and indicator values for the chart
       loadMarket();
     }
     next();
@@ -608,29 +615,151 @@
     return /^#[0-9a-f]{6}$/i.test(color) ? color + alpha : color;
   }
 
-  // Weekly bars come from the server (/api/analysis/indicators), which owns the completed-week rules. They are fetched
-  // once per market, ticker and day; a reply for an earlier ticker or day is ignored.
-  var weeklyData = null;
-  var WEEK_LABELS = { partial: "Partial Week", final_short: "Final Short Week" };
+  // Chart data (bars and indicator values) come from the server (/api/analysis/indicators), which owns the indicator
+  // maths and the completed-week rules; nothing is calculated here. One reply per market, ticker, day, timeframe and
+  // overlay set, kept so a theme change redraws without asking again; a reply that arrives after any of them changed
+  // is ignored.
+  var chartData = null;
 
-  function weeklyKey() {
-    return view.scenario.id + "|" + ui.symbol + "|" + view.day.index;
+  function readOverlays() {
+    try {
+      var saved = JSON.parse(window.localStorage.getItem(INDICATORS_KEY) || "[]");
+      return (Array.isArray(saved) ? saved : []).filter(function (o, k, all) {
+        return o && OVERLAYS.some(function (p) { return p[0] === o.type && p[1] === o.period; })
+          && all.findIndex(function (x) { return x && x.type === o.type && x.period === o.period; }) === k;
+      }).slice(0, MAX_OVERLAYS).map(function (o) { return { type: o.type, period: o.period }; });
+    } catch (e) {
+      return [];
+    }
   }
 
-  function loadWeekly(key) {
-    if (weeklyData && weeklyData.key === key) return;
-    weeklyData = { key: key, loading: true };
-    window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: "weekly", indicators: [] })
+  function writeOverlays() {
+    try { window.localStorage.setItem(INDICATORS_KEY, JSON.stringify(ui.overlays)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function overlayName(o) {
+    return o.type.toUpperCase() + " " + o.period;
+  }
+
+  function chartKey() {
+    return [view.scenario.id, ui.symbol, view.day.index, ui.timeframe, JSON.stringify(ui.overlays)].join("|");
+  }
+
+  function loadChart(key) {
+    if (chartData && chartData.key === key) return;
+    chartData = { key: key };
+    window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: ui.timeframe, indicators: ui.overlays })
       .then(function (env) {
-        if (!regions || !view || weeklyKey() !== key) return;
-        weeklyData = env.ok ? { key: key, bars: env.data.bars } : { key: key, error: env.error.message };
+        if (!regions || !view || chartKey() !== key) return;
+        chartData = env.ok ? { key: key, data: env.data } : { key: key, error: env.error.message };
         refresh(["chart"]);
       });
+  }
+
+  function toggleOverlay(type, period, on) {
+    ui.overlays = ui.overlays.filter(function (o) { return o.type !== type || o.period !== period; });
+    if (on && ui.overlays.length < MAX_OVERLAYS) ui.overlays.push({ type: type, period: period });
+    writeOverlays();
+    refresh(["chart"]);
+  }
+
+  function setMenu(open, focusButton) {
+    ui.indMenuOpen = open;
+    var menu = document.getElementById("pt-ind-menu"), btn = root.querySelector('[data-key="ind-button"]');
+    if (!menu || !btn) return;
+    menu.hidden = !open;
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (PHONE.matches && open) {
+      menu.setAttribute("role", "dialog");
+      menu.setAttribute("aria-modal", "true");
+    } else {
+      menu.removeAttribute("role");
+      menu.removeAttribute("aria-modal");
+    }
+    if (open) menu.querySelector("input:not([disabled]), button").focus();
+    else if (focusButton) btn.focus();
+  }
+
+  function indicatorTools() {
+    var wrap = el("div", "pt-tools");
+    var bar = el("div", "pt-toolbar");
+    bar.setAttribute("role", "toolbar");
+    bar.setAttribute("aria-label", "Analysis tools");
+    var btn = button("pt-tool", "Indicators" + (ui.overlays.length ? " (" + ui.overlays.length + ")" : ""), function () {
+      setMenu(!ui.indMenuOpen, true);
+    });
+    btn.dataset.key = "ind-button";
+    btn.setAttribute("aria-controls", "pt-ind-menu");
+    btn.setAttribute("aria-expanded", ui.indMenuOpen ? "true" : "false");
+    bar.appendChild(btn);
+    bar.appendChild(el("span", "pt-tool-note", ui.overlays.length + " of " + MAX_OVERLAYS + " lines on the price"));
+    wrap.appendChild(bar);
+
+    var menu = el("div", "pt-ind-menu");
+    menu.id = "pt-ind-menu";
+    menu.hidden = !ui.indMenuOpen;
+    menu.setAttribute("aria-label", "Indicators");
+    var group = el("fieldset", "pt-ind-group");
+    group.appendChild(el("legend", null, "On the price (" + MAX_OVERLAYS + " at most)"));
+    var full = ui.overlays.length >= MAX_OVERLAYS;
+    OVERLAYS.forEach(function (p) {
+      var slot = ui.overlays.findIndex(function (o) { return o.type === p[0] && o.period === p[1]; });
+      var row = el("label", "pt-ind-row");
+      var box = el("input");
+      box.type = "checkbox";
+      box.checked = slot !== -1;
+      box.disabled = full && slot === -1;
+      box.dataset.key = "ind-" + p[0] + "-" + p[1];
+      box.setAttribute("aria-describedby", "pt-ind-limit");
+      box.addEventListener("change", function () { toggleOverlay(p[0], p[1], box.checked); });
+      row.appendChild(box);
+      var swatch = el("span", "pt-swatch" + (slot === 1 ? " pt-swatch-b" : slot === 0 ? "" : " pt-swatch-off"));
+      swatch.setAttribute("aria-hidden", "true");
+      row.appendChild(swatch);
+      row.appendChild(document.createTextNode(overlayName({ type: p[0], period: p[1] })
+        + (slot === 0 ? " (solid line)" : slot === 1 ? " (dashed line)" : "")));
+      group.appendChild(row);
+    });
+    menu.appendChild(group);
+    var limit = el("p", "pt-tiny muted", full ? "Two lines are already on the price. Turn one off to add another."
+      : "Up to two lines on the price. Periods are fixed presets.");
+    limit.id = "pt-ind-limit";
+    menu.appendChild(limit);
+    menu.appendChild(el("p", "pt-tiny muted", "Indicator values describe past simulated prices only. They never change "
+      + "your cash, orders or fills, and they are not a recommendation."));
+    var done = button("button-secondary pt-ind-done", "Done", function () { setMenu(false, true); });
+    done.dataset.key = "ind-done";
+    menu.appendChild(done);
+    menu.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setMenu(false, true);
+      } else if (e.key === "Tab" && PHONE.matches) {  // the phone sheet keeps Tab inside it
+        var items = [].filter.call(menu.querySelectorAll("input, button"), function (n) { return !n.disabled; });
+        var first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    });
+    wrap.appendChild(menu);
+    var scrim = el("div", "pt-ind-scrim");
+    scrim.addEventListener("click", function () { setMenu(false, true); });
+    wrap.appendChild(scrim);
+    return wrap;
   }
 
   function timeKey(t) {  // crosshair times come back as strings or {year, month, day}
     if (typeof t === "string" || !t) return t;
     return t.year + "-" + String(t.month).padStart(2, "0") + "-" + String(t.day).padStart(2, "0");
+  }
+
+  function lineValue(v) {
+    return v === null || v === undefined ? "Not enough data" : "$" + v.toFixed(2);
   }
 
   RENDER.chart = function (box) {
@@ -656,12 +785,15 @@
     head.appendChild(frames);
     box.appendChild(head);
     box.appendChild(el("p", "pt-small", (i.name || symbol) + (i.sector ? ", " + i.sector + " sector" : "")));
+    box.appendChild(indicatorTools());
     var legend = el("p", "pt-chart-legend pt-tiny");
     var canvas = el("div", "pt-chart-canvas");
     canvas.setAttribute("aria-hidden", "true");  // the summary below is the text version of the chart
+    var lineList = el("ul", "pt-line-legend");
     var summary = el("p", "pt-small pt-chart-summary");
     box.appendChild(legend);
     box.appendChild(canvas);
+    box.appendChild(lineList);
     box.appendChild(summary);
     var credit = el("p", "pt-tiny muted", "Chart by ");
     var link = el("a", null, "TradingView Lightweight Charts™");
@@ -672,25 +804,25 @@
     credit.appendChild(document.createTextNode(", © 2026 TradingView, Inc. Prices shown are simulated."));
     box.appendChild(credit);
     var LC = window.LightweightCharts;
-    if (!LC || !marketIsCurrent()) {
-      summary.textContent = LC ? "Loading simulated prices…"
-        : "The chart could not load. Your prices and trades are still in the positions table and history.";
+    if (!LC) {
+      summary.textContent = "The chart could not load. Your prices and trades are still in the positions table and history.";
+      return;
+    }
+    if (!chartData || chartData.key !== chartKey() || !(chartData.data || chartData.error)) {
+      summary.textContent = "Loading simulated prices…";
+      loadChart(chartKey());
+      return;
+    }
+    if (chartData.error) {
+      summary.textContent = "The chart could not load: " + chartData.error;
       return;
     }
 
-    if (weeklyView && (!weeklyData || weeklyData.key !== weeklyKey() || !weeklyData.bars)) {
-      var failed = weeklyData && weeklyData.key === weeklyKey() && weeklyData.error;
-      summary.textContent = failed ? "Weekly prices could not load: " + weeklyData.error : "Loading weekly prices…";
-      if (!failed) loadWeekly(weeklyKey());
-      return;
-    }
-    var bars = weeklyView ? weeklyData.bars : market.bars[symbol].map(function (b, k) {
-      return { time: market.dates[k], o: b.o, h: b.h, l: b.l, c: b.c, v: b.v };
-    });
+    var data = chartData.data, bars = data.bars;
     var up = token("--up"), down = token("--down"), surface = token("--surface");
     chart = LC.createChart(canvas, {
       autoSize: true,
-      layout: { background: { type: "solid", color: token("--surface") }, textColor: token("--muted"),
+      layout: { background: { type: "solid", color: surface }, textColor: token("--muted"),
                 fontFamily: token("--font-text"), attributionLogo: false },  // the credit line below links instead
       grid: { vertLines: { color: token("--surface-2") }, horzLines: { color: token("--surface-2") } },
       rightPriceScale: { borderColor: token("--border"), scaleMargins: { top: 0.08, bottom: 0.25 } },
@@ -712,6 +844,19 @@
       return { time: b.time, value: b.v, color: withAlpha(b.c >= b.o ? up : down, "59") };
     }));
 
+    // overlays: the server's values as they are; the first line solid, the second dashed, each named on the scale
+    var lines = data.indicators.map(function (ind, k) {
+      var values = ind.series[ind.type], name = overlayName(ind), dashed = k === 1;
+      var points = [];
+      values.forEach(function (v, j) { if (v !== null) points.push({ time: bars[j].time, value: v }); });
+      if (points.length) {
+        chart.addSeries(LC.LineSeries, { color: token(dashed ? "--ind-b" : "--ind-a"), lineWidth: 2,
+          lineStyle: dashed ? LC.LineStyle.Dashed : LC.LineStyle.Solid, title: name, priceLineVisible: false,
+          crosshairMarkerVisible: false }).setData(points);
+      }
+      return { name: name, values: values, dashed: dashed };
+    });
+
     var barTimeFor = function (date) {  // a trade's bar: its day, or the week it falls in
       var hit = bars.filter(function (b) { return b.time <= date; });
       return hit.length ? hit[hit.length - 1].time : date;
@@ -722,10 +867,10 @@
                color: buy ? up : down, text: (buy ? "B " : "S ") + t.shares };
     });
     var trades = marks.length;
-    var lastLabel = WEEK_LABELS[bars[bars.length - 1].status];
+    var last = bars[bars.length - 1];
+    var lastLabel = WEEK_LABELS[last.status];
     if (lastLabel) {
-      marks.push({ time: bars[bars.length - 1].time, position: "aboveBar", shape: "circle", color: token("--muted"),
-                   text: lastLabel });
+      marks.push({ time: last.time, position: "aboveBar", shape: "circle", color: token("--muted"), text: lastLabel });
     }
     marks.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
     LC.createSeriesMarkers(candles, marks);
@@ -733,22 +878,47 @@
     if (bars.length > 90) chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
     else chart.timeScale().fitContent();
 
-    var byTime = {};
-    bars.forEach(function (b) { byTime[b.time] = b; });
-    var last = bars[bars.length - 1];
-    function readout(b) {
-      legend.textContent = (weeklyView ? (WEEK_LABELS[b.status] || "Week") + " of " : "") + niceDate(b.time) + ": open " + money(b.o) + ", high "
-        + money(b.h) + ", low " + money(b.l) + ", close " + money(b.c) + ", volume " + b.v.toLocaleString("en-US") + ".";
+    var indexOf = {};
+    bars.forEach(function (b, j) { indexOf[b.time] = j; });
+    function readout(j) {
+      var b = bars[j];
+      var text = (weeklyView ? (WEEK_LABELS[b.status] || "Week") + " of " : "") + niceDate(b.time) + ": open "
+        + money(b.o) + ", high " + money(b.h) + ", low " + money(b.l) + ", close " + money(b.c) + ", volume "
+        + b.v.toLocaleString("en-US") + ".";
+      lines.forEach(function (l) {
+        text += " " + l.name + " " + (b.status === "partial" ? "not calculated for a Partial Week" : lineValue(l.values[j])) + ".";
+      });
+      legend.textContent = text;
     }
-    readout(last);
-    chart.subscribeCrosshairMove(function (p) { readout(byTime[timeKey(p.time)] || last); });
+    readout(bars.length - 1);
+    chart.subscribeCrosshairMove(function (p) {
+      var j = indexOf[timeKey(p.time)];
+      readout(j === undefined ? bars.length - 1 : j);
+    });
+
+    // each line's latest value: the last completed bar (a Partial Week has none)
+    var settled = last.status === "partial" ? bars.length - 2 : bars.length - 1;
+    var lineText = lines.map(function (l) {
+      var item = el("li");
+      var swatch = el("span", "pt-swatch" + (l.dashed ? " pt-swatch-b" : ""));
+      swatch.setAttribute("aria-hidden", "true");
+      item.appendChild(swatch);
+      var value = settled >= 0 ? lineValue(l.values[settled]) : "Not enough data";
+      item.appendChild(document.createTextNode(l.name + " "));
+      item.appendChild(el("strong", null, value));
+      lineList.appendChild(item);
+      return l.name + " (" + (l.dashed ? "dashed" : "solid") + ") " + value;
+    });
+    if (!lines.length) lineList.remove();
 
     var high = Math.max.apply(null, bars.map(function (b) { return b.h; }));
     var low = Math.min.apply(null, bars.map(function (b) { return b.l; }));
-    summary.textContent = (weeklyView ? "Weekly" : "Daily") + " simulated prices from " + niceDate(market.dates[0])
+    summary.textContent = (weeklyView ? "Weekly" : "Daily") + " simulated prices from " + niceDate(bars[0].time)
       + " to " + niceDate(view.day.date) + ": last close " + money(last.c) + ", highest " + money(high) + ", lowest "
       + money(low) + ". " + (trades ? trades + (trades === 1 ? " of your trades is" : " of your trades are")
       + " marked: B for a buy, S for a sell." : "Your trades in " + symbol + " will be marked on the chart.")
+      + (lineText.length ? " Lines on the price: " + lineText.join(", ") + "."
+        + (weeklyView ? " Weekly lines use completed weeks only." : "") : "")
       + (lastLabel === "Partial Week" ? " The last bar is a Partial Week: this week so far, which can still change."
         : lastLabel ? " The last bar is the Final Short Week: the scenario's final " + last.days + " trading days." : "")
       + " Scroll or pinch to zoom and drag to move through time.";
@@ -1512,6 +1682,9 @@
     dock();
   });
   window.addEventListener("resize", dock);
+  document.addEventListener("click", function (e) {  // the Indicators popover closes on a click elsewhere
+    if (ui.indMenuOpen && regions && !e.target.closest(".pt-tools")) setMenu(false, false);
+  });
   // the chart draws on a canvas with colours read from the theme tokens, so it is redrawn when the theme changes
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { refresh(["chart"]); });
   new MutationObserver(function () { refresh(["chart"]); })

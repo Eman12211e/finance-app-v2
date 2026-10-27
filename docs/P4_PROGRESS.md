@@ -7,7 +7,8 @@ Read this first after any context reset. Brief and decisions: `docs/P4_BRIEF.md`
 | `ea5406b`, `02a0b55`, `71a2ba2` | 0: brief, P3 decisions, weekly rules, mockup-gate decisions |
 | `bb2a53c`, `33b5975` | 1: mockups 06–08 (approved) |
 | `bbc7fb2` | 2: `services/indicators.py` + 39 tests (approved) |
-| this commit | 3: analysis endpoint |
+| `67a3bca` | 3: analysis endpoint (approved) |
+| this commit | 4: SMA and EMA overlays |
 
 ## Step 3 — Analysis endpoint
 
@@ -33,3 +34,33 @@ the rewritten daily-bars line). `check_endpoints.py`: 9 SKIP, exit 0, data file 
 workflows 198/198 (including Daily/Weekly); weekly labels on day 161 (Thursday: "Partial Week of Aug 11, 2025"), day
 162 (Friday: plain "Week of Aug 11, 2025") and day 250 ("Final Short Week of Dec 15, 2025", "final 3 trading days");
 no console errors.
+
+## Step 4 — SMA and EMA overlays
+
+- **Toolbar and menu** (`static/js/paper.js`, `features.css`): an Indicators button (`aria-expanded`, `aria-controls`)
+  under the chart heading opens a popover on desktop and a bottom sheet on phones (`role="dialog"`, `aria-modal`,
+  Tab kept inside, scrim). "On the price (2 at most)": SMA 20, SMA 50, EMA 12, EMA 26 as checkboxes; with two on,
+  the others are disabled and a note says why. Escape, Done or a click elsewhere closes it and returns focus. All off
+  by default.
+- **Data:** one `/api/analysis/indicators` request per market, ticker, day, timeframe and overlay set, for Daily and
+  Weekly alike (bars and series together; the daily chart no longer reads `/api/paper/market`). Replies are cached for
+  theme redraws and ignored if anything changed meanwhile. No indicator maths in JavaScript.
+- **Lines:** the first active overlay is a solid `--ind-a` line, the second a dashed `--ind-b` line; each is named on
+  the price scale. New tokens in `style.css` (light and both dark blocks). Readout: each line's value at the
+  crosshair, "Not enough data", or "not calculated for a Partial Week". A legend under the chart gives each line's
+  latest settled value; the text summary lists the lines with their style and value, and says weekly lines use
+  completed weeks only.
+- **Preferences** in localStorage (`paper-indicators-v1`), re-validated on load (presets only, two at most), cleared by
+  Reset and Change market. Sent only inside chart requests; the trading engine never sees them.
+
+**Found and fixed while testing:** after Step 4 stopped redrawing the chart when the watchlist reloads (to avoid a
+double draw), advancing a day left the chart on the previous day's values. The chart now redraws when a day passes.
+
+**Checks:** pytest 483 passed (+4 static Step 4 checks; two Step 3 assertions updated for the generalised chart
+request). `check_endpoints.py`: 9 SKIP, exit 0, data file restored. Headless Edge (zero-cost demo server): overlay
+checks 36/36 — default off, keyboard menu, the four presets each equal to the API, two-line limit, solid/dashed,
+"Not enough data" (SMA 50 on day 41, weekly SMA 50 on day 161), readout and crosshair values, no bar after today,
+redraw on ticker change, next day and theme toggle, reload keeps and Reset clears the choice, weekly values from
+completed weeks with the Partial Week uncalculated, phone sheet (dialog, Tab trap, Done), no overflow, only local
+requests, no console errors; P2.5/P3 workflows 198/198; visual audit clean on all 20 tab/width/theme screens with two
+overlays on.

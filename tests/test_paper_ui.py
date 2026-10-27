@@ -278,7 +278,7 @@ def test_chart_uses_the_vendored_library_loaded_before_the_tab(client):
 
 def test_chart_only_draws_bars_the_server_sent_for_today_and_marks_your_trades():
     code = js()
-    assert "market.bars[symbol].map(" in code and "if (!LC || !marketIsCurrent())" in code
+    assert "var data = chartData.data, bars = data.bars;" in code  # bars come from the server, cut at today
     assert "view.portfolio.transactions.filter(function (t) { return t.symbol === symbol; })" in code
     assert '"arrowUp"' in code and '"arrowDown"' in code and "LC.createSeriesMarkers(candles, marks)" in code
 
@@ -299,7 +299,45 @@ def test_chart_is_accessible_credited_and_follows_the_theme():
 def test_weekly_chart_uses_server_bars_and_labels_partial_and_final_short_weeks():
     code = js()
     assert "function weekly(" not in code  # the P3 copy of the weekly rules is gone; the server owns them
-    assert 'window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: "weekly", indicators: [] })' in code
-    assert "if (!regions || !view || weeklyKey() !== key) return;" in code  # late replies are ignored
+    assert ("window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: ui.timeframe, "
+            "indicators: ui.overlays })") in code
+    assert "if (!regions || !view || chartKey() !== key) return;" in code  # late replies are ignored
     assert 'partial: "Partial Week", final_short: "Final Short Week"' in code
     assert 'request("/api/analysis/indicators"' in read("static", "js", "api.js")
+
+
+# ---- P4 step 4: SMA and EMA overlays ----
+
+def test_overlays_are_the_four_approved_presets_two_at_most_and_off_by_default():
+    code = js()
+    assert 'var OVERLAYS = [["sma", 20], ["sma", 50], ["ema", 12], ["ema", 26]];' in code
+    assert "var MAX_OVERLAYS = 2;" in code and "box.disabled = full && slot === -1;" in code
+    assert "Two lines are already on the price. Turn one off to add another." in text()
+    assert "overlays: readOverlays()" in code and ".slice(0, MAX_OVERLAYS)" in code  # saved choices re-checked
+    assert "window.localStorage.removeItem(INDICATORS_KEY);" in code  # a new session starts with every indicator off
+
+
+def test_overlay_values_come_from_the_server_never_calculated_in_the_browser():
+    code = js()
+    for name in ("sma", "ema", "rsi", "macd"):
+        assert f"function {name}(" not in code, name
+    assert "var values = ind.series[ind.type]" in code and "data.indicators.map(" in code
+
+
+def test_overlay_lines_are_distinct_named_and_explain_missing_values():
+    code, t = js(), text()
+    assert "LC.LineStyle.Dashed : LC.LineStyle.Solid" in code and "title: name" in code
+    assert 'token(dashed ? "--ind-b" : "--ind-a")' in code
+    assert 'return v === null || v === undefined ? "Not enough data"' in code
+    assert "not calculated for a Partial Week" in t and "Weekly lines use completed weeks only." in t
+    css = read("static", "css", "style.css")
+    assert css.count("--ind-b: #f08acb;") == 2 and "--ind-b: #a3367f;" in css  # light and both dark blocks
+
+
+def test_indicators_menu_is_a_keyboard_friendly_popover_or_phone_sheet():
+    code = js()
+    assert 'btn.setAttribute("aria-controls", "pt-ind-menu");' in code and '"aria-expanded"' in code
+    assert re.search(r'if \(e\.key === "Escape"\) \{\s+e\.stopPropagation\(\);\s+setMenu\(false, true\);', code)
+    assert 'menu.setAttribute("aria-modal", "true");' in code  # on phones only
+    css = read("static", "css", "features.css")
+    assert ".pt-ind-menu[hidden] { display: none; }" in css and ".pt-ind-menu:not([hidden]) + .pt-ind-scrim" in css
