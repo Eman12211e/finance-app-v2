@@ -23,7 +23,8 @@ signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no bu
 ## Requirements added by the owner
 
 - Indicator calculations never see simulated future prices.
-- Partial weekly periods are defined and tested (definition below).
+- Weekly indicators use completed weeks only; the unfinished week is shown on the price chart as a Partial Week;
+  too little history shows "Not enough data" (rules below, documented and tested for SMA, EMA, RSI and MACD).
 - RSI and MACD edge cases are tested, including constant prices and insufficient history.
 - Indicator values are educational only and never feed trading-engine calculations.
 - No additional runtime dependency and no external market-data request.
@@ -38,21 +39,30 @@ signal. Synthetic data, zero-cost mode, offline tests, vanilla JavaScript, no bu
   - RSI(14): Wilder's smoothing of average gain and loss. Constant prices (no gains and no losses) give 50; only gains
     give 100; only losses give 0.
   - MACD(12, 26, 9): EMA12 − EMA26, signal = EMA9 of MACD, histogram = MACD − signal.
-  - Too little history gives `null` (no value is invented): SMA and EMA need n closes, RSI 15, MACD 26 and its signal
-    34.
+  - Too little history gives `null`, shown as "Not enough data" (no value is invented): SMA and EMA need n closes,
+    RSI 15, MACD 26 and its signal 34 (daily closes, or completed weeks on the weekly view).
   - Values are display-only floats in dollars, rounded to 4 decimals. They never reach `paper_engine` or balances.
 - **No look-ahead.** The endpoint reads bars only through `paper_engine.market_bars(state)`, which verifies the
   signed session and stops at the current simulated day. A test checks that every value computed on day *t* equals
   the same value computed with the whole history up to the scenario's end, cut at *t* (prefix stability).
-- **Weekly bars and partial weeks (proposed; confirm at the mockup gate).**
-  - A weekly bar holds the trading days of one Monday-to-Friday calendar week and is dated by its first trading day
-    (the P3 chart already does this; the server becomes the only implementation and the JavaScript copy is removed).
-  - The scenario's first week (Thu 2 and Fri 3 Jan 2025) is short but complete: those are all of its trading days.
-  - The week containing today is **in progress** unless today is a Friday or the scenario's last day. It is shown as
-    "this week so far" and flagged `"partial": true`. Its candle and indicator values may change as days pass;
-    completed weeks never change.
-  - Tests: weekly bars equal aggregates of the daily bars up to today; the partial flag is set exactly when the last
-    week is unfinished; completed weekly bars and their indicator values are identical on every later day.
+- **Weekly data rules (owner-approved 2026-10-27).**
+  1. A weekly bar holds the trading days of one Monday-to-Friday calendar week and is dated by its first trading day
+     (the P3 chart already does this; the server becomes the only implementation and the JavaScript copy is removed).
+  2. A week is **completed** once its last trading day has closed: its Friday is on or before today, or, for the
+     scenario's final week, today is the scenario's last day. The scenario's short first week (Thu 2 and Fri 3 Jan
+     2025) is completed: those are all of its trading days.
+  3. Weekly SMA, EMA, RSI and MACD are calculated from **completed weeks only**. The unfinished week never enters a
+     weekly indicator, so weekly indicator values change only when a week completes.
+  4. The unfinished week may appear on the price chart as a candle built from its days up to today, labelled
+     **Partial Week** (in the chart, the readout and the summary) and flagged `"partial": true` in the API.
+  5. No calculation, daily or weekly, uses a price after the current session day.
+  6. When completed history is too short, the indicator shows **"Not enough data"** and draws nothing; no value is
+     estimated. Example: on day 161 (Thu 14 Aug 2025) there are 32 completed weeks, so weekly SMA 20, EMA 12, RSI 14
+     and the MACD line have values, but the MACD signal line (needs 9 MACD values, 34 weeks) is "Not enough data".
+  - Tests, for each of SMA, EMA, RSI and MACD: weekly values use completed weeks only and are unchanged by the
+    partial week's days; weekly values change only on the day a week completes; "Not enough data" (null) below the
+    required number of completed weeks; weekly bars equal aggregates of the daily bars up to today; the partial flag
+    is set exactly when the last week is unfinished; the scenario's first and last weeks follow rule 2.
 - **`routes/analysis.py`** (new blueprint, registered in `app.py`). Body:
   `{state, symbol, timeframe: "daily"|"weekly", indicators: [{type, period}]}`. Validates the indicator types and preset
   periods, the symbol and the limits (two overlays, two panes), and answers in the usual envelope. Invalid sessions
@@ -85,8 +95,9 @@ keyboard, drawings survive reload and Reset clears them, all tabs × 1280 / 390 
 
 ## Sequence (one local commit per step; no push without approval)
 
-0. This brief; P3 decisions recorded.
-1. Mockups (desktop, phone, panes, drawing, explanation cards). **Gate: owner approval.**
+0. This brief; P3 decisions recorded (`ea5406b`; weekly rules amended in a follow-up commit).
+1. Mockups (desktop, phone, panes, drawing, explanation cards) (`bb2a53c`, updated for the weekly rules).
+   **Gate: owner approval.**
 2. `services/indicators.py` and tests.
 3. `routes/analysis.py`, tests, API contract; the chart uses the server's weekly bars.
 4. Toolbar, SMA / EMA overlays, readout values.
