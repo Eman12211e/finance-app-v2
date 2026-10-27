@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup 08: Analysis toolbox states</title>
+<link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+<div class="review" role="region" aria-label="Mockup review controls">
+  <strong>Mockup 08: toolbox states and edge cases</strong>
+  <span>Theme:</span>
+  <label><input type="radio" name="theme" id="theme-system" checked> System</label>
+  <label><input type="radio" name="theme" id="theme-light"> Light</label>
+  <label><input type="radio" name="theme" id="theme-dark"> Dark</label>
+  <span class="muted">Placeholders from one engine-computed session on synthetic market B (day 161 of 250).</span>
+  <a href="index.html">All mockups</a>
+</div>
+<main class="state-grid" aria-label="Toolbox states">
+  <div>
+    <p class="state-note">Indicators menu (desktop popover) at the limit</p>
+    <div class="ind-menu" role="group" aria-label="Indicators at the limit" style="position: static">
+      <h3>On the price (2 of 2 in use)</h3>
+      <label class="ind-row"><input type="checkbox" checked> <span><i class="swatch" aria-hidden="true"></i> SMA</span><select aria-label="SMA period at limit"><option>20 days</option></select><span></span></label>
+      <label class="ind-row"><input type="checkbox" checked> <span><i class="swatch b" aria-hidden="true"></i> EMA</span><select aria-label="EMA period at limit"><option>12 days</option></select><span></span></label>
+      <label class="ind-row off"><input type="checkbox" disabled aria-describedby="lim-1"> <span>SMA 50</span><span></span><span></span></label>
+      <p class="limit" id="lim-1">Two lines are already on the price. Turn one off to add another.</p>
+    </div>
+  </div>
+  <div>
+    <p class="state-note">Drawing a trend line with the mouse (step 2 of 2)</p>
+    <div class="mode-banner" role="status"><span>Trend line: click the second point. Press Esc to cancel.</span><button class="btn btn-quiet" type="button">Cancel</button></div>
+    <p class="small muted" style="margin-top: var(--s-2)">The toolbar button stays pressed while drawing. The line snaps to the nearest bar's date; the price follows the pointer. Each drawing is added to "Your drawings", where it can be removed.</p>
+  </div>
+  <div>
+    <p class="state-note">Keyboard trend line: a readable error</p>
+    <fieldset class="draw-form"><legend>Add a trend line</legend>
+      <div class="row"><label>From<select id="s-from"><option>Aug 14, 2025 close</option></select></label><label>to<select id="s-to" aria-invalid="true" aria-describedby="s-err"><option>Jun 5, 2025 close</option></select></label></div>
+      <p class="error-line" id="s-err">Choose an end date after the start date.</p>
+    </fieldset>
+  </div>
+  <section class="panel explain" aria-labelledby="st-rsi-high">
+    <div class="explain-head"><h2 id="st-rsi-high" style="font-size: var(--t-16)">RSI 14</h2><span class="sim">Simulated</span></div>
+    <p class="now">On May 2, 2025, RSI was 77.8: above 70, a level some people call "overbought". Recent gains have been much larger than recent losses.</p>
+    <p class="edu-note">This is not a prediction. Prices can keep rising while RSI stays above 70.</p>
+  </section>
+  <section class="panel explain waiting" aria-labelledby="st-wait">
+    <div class="explain-head"><h2 id="st-wait" style="font-size: var(--t-16)">RSI 14 and MACD</h2><span class="sim">Simulated</span></div>
+    <p class="now">Not enough history yet. RSI 14 needs 15 days of closing prices and MACD needs 26 (34 for its signal line). This session has 8 so far.</p>
+    <p class="edu-note">Nothing is drawn until there is enough data; no value is guessed.</p>
+  </section>
+  <section class="panel explain" aria-labelledby="st-flat">
+    <div class="explain-head"><h2 id="st-flat" style="font-size: var(--t-16)">Flat prices (edge case)</h2><span class="sim">Simulated</span></div>
+    <p class="now">If prices do not move for 14 days, RSI is 50 (no gains and no losses) and MACD, its signal line and the bars are all 0.</p>
+    <p class="edu-note">The current markets never stay flat; this wording exists for the tested edge case.</p>
+  </section>
+  <section class="panel explain" aria-labelledby="st-week">
+    <div class="explain-head"><h2 id="st-week" style="font-size: var(--t-16)">Weekly view, week in progress</h2><span class="sim">Simulated</span></div>
+    <p class="readout">Week of Aug 11, 2025 (this week so far, Mon to Thu): open $186.40, high $202.76, low $184.62, close $199.96.</p>
+    <p class="now">Weekly values include this week so far. The last bar and its indicator values can change until the week's last simulated day; earlier weeks never change.</p>
+  </section>
+  <section class="panel" aria-labelledby="st-empty" style="display: grid; gap: var(--s-2)">
+    <h2 id="st-empty" style="font-size: var(--t-16); margin: 0">Your drawings</h2>
+    <p class="small muted">No drawings on SYN-TEC1 yet. Use Horizontal line or Trend line above the chart, or add one with the keyboard.</p>
+  </section>
+</main>
+</body>
+</html>

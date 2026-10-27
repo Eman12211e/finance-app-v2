@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>P2.5 mockups</title>
+<title>Practice Trading mockups</title>
 <link rel="stylesheet" href="mockups.css">
 </head>
 <body>
 <div class="review" role="region" aria-label="Mockup review controls">
-  <strong>P2.5 design mockups</strong>
+  <strong>P2.5 and P4 design mockups</strong>
   <span>Theme:</span>
   <label><input type="radio" name="theme" id="theme-system" checked> System</label>
   <label><input type="radio" name="theme" id="theme-light"> Light</label>
@@ -85,6 +85,36 @@
       <dt>Desktop vs phone</dt><dd>The three steps sit in a row on desktop and stack on phones.</dd>
       <dt>Keyboard and access</dt><dd>The market choice is a radio group; the steps are an ordered list because they are a real sequence.</dd>
       <dt>Less confusing because</dt><dd>It explains the next-open fill rule before the first order, and that progress is saved in this browser only.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="06-toolbox-desktop.html">06 P4 Analysis toolbox, desktop (1280 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>Add a few well-known indicators to the price chart, mark levels, and understand what each indicator says in plain words.</dd>
+      <dt>Layout hierarchy</dt><dd>Chart card: heading and Daily/Weekly, then the toolbar (Indicators, Horizontal line, Trend line, Clear drawings), the readout, the chart with RSI and MACD panes, the legend, the text summary and the TradingView credit. Below it: one explanation card per active indicator, then "Your drawings".</dd>
+      <dt>Visible immediately</dt><dd>The chart with up to two lines on the price and two panes, each line named on the chart and in the legend; the current reading of each indicator in words.</dd>
+      <dt>Needs interaction</dt><dd>Choosing indicators and preset periods (Indicators menu); drawing; removing drawings.</dd>
+      <dt>Desktop vs phone</dt><dd>Same controls; the toolbar wraps and the Indicators menu becomes a sheet on phones (07).</dd>
+      <dt>Keyboard and access</dt><dd>Toolbar buttons use aria-pressed / aria-expanded; drawings can be added from a keyboard form and removed from a list; the summary is the chart's text version; lines differ by style (solid, dashed) and carry names, not colour alone.</dd>
+      <dt>Less confusing because</dt><dd>Every indicator explains its current value in one sentence, with what it shows, how people read it and what to watch out for, and says that it is education, not a recommendation.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="07-toolbox-phone.html">07 P4 Analysis toolbox, phone (390 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>The same on a phone.</dd>
+      <dt>Layout hierarchy</dt><dd>Chart card with the wrapped toolbar and panes; the Indicators sheet; drawing banner, drawings list, keyboard form and an explanation card.</dd>
+      <dt>Keyboard and access</dt><dd>The sheet is a modal dialog (Done or Escape closes it); "What is this?" jumps to the indicator's card; targets at least 32 px.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="08-toolbox-states.html">08 P4 toolbox states and edge cases</a></h2>
+    <dl>
+      <dt>Shown</dt><dd>The Indicators menu at its limit, the drawing-mode banner, a keyboard-form error, RSI above 70, not enough history, flat prices, a weekly view with the week in progress, and an empty drawings list.</dd>
+      <dt>For approval</dt><dd>The wording of each state, the indicator colours and line styles, and the partial-week rule in docs/P4_BRIEF.md.</dd>
     </dl>
   </section>
 

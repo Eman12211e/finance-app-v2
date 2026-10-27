@@ -250,3 +250,97 @@ details.history summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-
   .steps { grid-template-columns: 1fr; }
   .shot dl { grid-template-columns: 1fr; }
 }
+
+/* ---- P4 analysis toolbox (proposal for the mockup gate) ----
+   Two indicator line colours, kept apart from gain green, loss red, the accent's buttons and "Simulated" amber.
+   Never colour alone: the first line is solid, the second dashed, and every line carries its name. */
+:root { --ind-a: var(--accent); --ind-b: #a3367f; }
+@media (prefers-color-scheme: dark) { :root:not(:has(#theme-light:checked)) { --ind-b: #f08acb; } }
+:root:has(#theme-dark:checked) { --ind-b: #f08acb; }
+
+.chart-card { display: grid; gap: var(--s-3); }
+.chart-head { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; justify-content: space-between; }
+.chart-head h2 { display: inline-flex; gap: var(--s-2); align-items: center; margin: 0; }
+.seg-small { display: inline-grid; grid-template-columns: auto auto; border: 1px solid var(--border); border-radius: var(--r-8); padding: 2px; }
+.seg-small button { border: 0; background: none; border-radius: 6px; padding: var(--s-1) var(--s-3); font-size: var(--t-14); font-weight: 600; color: var(--muted); }
+.seg-small button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
+.seg-small button[aria-pressed="true"]::before { content: "\2713\00A0"; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; padding: var(--s-2) 0; border-block: 1px solid var(--border); }
+.tool { display: inline-flex; align-items: center; gap: var(--s-2); border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  border-radius: var(--r-8); padding: var(--s-1) var(--s-3); font-size: var(--t-14); font-weight: 600; min-height: 32px; }
+.tool svg { width: 16px; height: 16px; flex: none; }
+.tool[aria-pressed="true"], .tool[aria-expanded="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.tool-sep { width: 1px; align-self: stretch; background: var(--border); }
+.tool-note { margin-left: auto; font-size: var(--t-12); color: var(--muted); }
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); font-size: var(--t-12); color: var(--muted); }
+.legend span { display: inline-flex; gap: var(--s-1); align-items: center; }
+.legend b { color: var(--text); font-weight: 600; }
+.swatch { flex: none; display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--ind-a); }
+.swatch.b { border-top: 2px dashed var(--ind-b); }
+.swatch.hist { width: 10px; height: 10px; border: 0; background: linear-gradient(90deg, var(--up) 50%, var(--down) 50%); opacity: .6; }
+.swatch.draw { border-top: 2px solid var(--text); }
+
+.chart-svg { width: 100%; height: auto; display: block; font: 600 11px/1 var(--font-text); }
+.chart-svg .grid { stroke: var(--surface-2); }
+.chart-svg .axis { fill: var(--muted); font-weight: 400; }
+.chart-svg .candle line { stroke-width: 1; }
+.chart-svg .candle.up line { stroke: var(--up); } .chart-svg .candle.up rect { fill: var(--up); }
+.chart-svg .candle.down line { stroke: var(--down); } .chart-svg .candle.down rect { fill: var(--down); }
+.chart-svg .vol-up { fill: var(--up); opacity: .3; } .chart-svg .vol-down { fill: var(--down); opacity: .3; }
+.chart-svg .ind-a { fill: none; stroke: var(--ind-a); stroke-width: 2; }
+.chart-svg .ind-b { fill: none; stroke: var(--ind-b); stroke-width: 2; stroke-dasharray: 6 4; }
+.chart-svg .line-tag { font-weight: 700; } .chart-svg .tag-a { fill: var(--ind-a); } .chart-svg .tag-b { fill: var(--ind-b); }
+.chart-svg .mark text { font-size: 10px; font-weight: 700; }
+/* a halo in the card colour keeps names and labels readable where they cross candles and lines */
+.chart-svg .line-tag, .chart-svg .mark text, .chart-svg .pane-title { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.chart-svg .up-fill { fill: var(--up); } .chart-svg .down-fill { fill: var(--down); }
+.chart-svg .draw { stroke: var(--text); stroke-width: 1.5; } .chart-svg .draw-h { stroke-dasharray: 2 4; }
+.chart-svg .handle { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+.chart-svg .draw-label-bg { fill: var(--text); } .chart-svg .draw-label { fill: var(--surface); }
+.chart-svg .last-bg { fill: var(--up); } .chart-svg .last-bg-a { fill: var(--ind-a); } .chart-svg .last-label { fill: var(--surface); }
+.chart-svg .rsi-band { fill: var(--ind-a); opacity: .07; } .chart-svg .pane-bg { fill: none; }
+.chart-svg .guide { stroke: var(--muted); stroke-dasharray: 3 4; stroke-width: 1; }
+.chart-svg .pane-title { fill: var(--muted); font-weight: 700; } .chart-svg .pane-sep { stroke: var(--border); }
+.readout { font-size: var(--t-12); color: var(--muted); }
+.credit { font-size: var(--t-12); color: var(--muted); }
+
+/* the Indicators menu */
+.ind-menu { position: absolute; z-index: 6; width: 340px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-12); box-shadow: var(--shadow-2); padding: var(--s-3); display: grid; gap: var(--s-2); }
+.ind-menu h3 { font-size: var(--t-12); color: var(--muted); font-family: var(--font-text); font-weight: 600; margin-top: var(--s-1); }
+.ind-menu[hidden] { display: none; }
+.ind-row { display: grid; grid-template-columns: auto 1fr auto auto; gap: var(--s-2); align-items: center; padding: var(--s-1) 0; font-size: var(--t-14); }
+.ind-row select { padding: 2px var(--s-2); border: 1px solid var(--border); border-radius: var(--r-8); background: var(--surface); color: var(--text); font-size: var(--t-14); }
+.ind-row .learn { font-size: var(--t-12); display: inline-flex; align-items: center; min-height: 24px; }
+.ind-row.off { color: var(--muted); }
+.limit { font-size: var(--t-12); color: var(--muted); border-top: 1px solid var(--border); padding-top: var(--s-2); }
+
+/* drawing */
+.mode-banner { display: flex; gap: var(--s-3); align-items: center; justify-content: space-between; padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--accent); border-radius: var(--r-8); background: var(--surface-2); font-size: var(--t-14); }
+.draw-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.draw-list li { display: flex; gap: var(--s-3); align-items: center; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-8); font-size: var(--t-14); }
+.draw-list li button { margin-left: auto; }
+.draw-form { border: 1px solid var(--border); border-radius: var(--r-12); padding: var(--s-3); display: grid; gap: var(--s-2); margin: 0; }
+.draw-form legend { font-size: var(--t-14); font-weight: 600; }
+.draw-form .row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }
+.draw-form label { display: grid; gap: 2px; font-size: var(--t-12); color: var(--muted); }
+.draw-form input, .draw-form select { padding: var(--s-1) var(--s-2); border: 1px solid var(--border); border-radius: var(--r-8); background: var(--surface); color: var(--text); font-size: var(--t-14); min-height: 32px; }
+
+/* explanation cards */
+.explain-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+.explain { display: grid; gap: var(--s-2); align-content: start; }
+.explain-head { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.explain-head h3 { font-size: var(--t-16); margin-right: auto; display: inline-flex; gap: var(--s-2); align-items: center; }
+.explain .now { font-size: var(--t-16); }
+.explain dl { display: grid; gap: var(--s-1); margin: 0; font-size: var(--t-14); }
+.explain dt { font-weight: 600; }
+.explain dd { margin: 0 0 var(--s-1); color: var(--muted); }
+.summary-tag { font-size: var(--t-12); font-weight: 600; color: var(--accent); }
+.edu-note { font-size: var(--t-12); color: var(--muted); border-top: 1px solid var(--border); padding-top: var(--s-2); }
+.explain.waiting { border-style: dashed; }
+.state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--s-5); padding: var(--s-5); align-items: start; max-width: 1280px; margin: 0 auto; }
+.state-note { font-size: var(--t-12); color: var(--muted); font-weight: 600; margin-bottom: var(--s-2); }
+@media (max-width: 720px) { .explain-grid { grid-template-columns: 1fr; } }
