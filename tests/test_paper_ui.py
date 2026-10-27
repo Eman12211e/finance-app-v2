@@ -205,7 +205,7 @@ def test_workspace_is_built_once_and_actions_redraw_only_their_regions():
 def test_three_regions_chart_placeholder_and_header_day_controls():
     code, t = js(), text()
     assert "layout.appendChild(regions.watch);" in code and "layout.appendChild(regions.ticket);" in code
-    assert "reserved for the interactive chart coming in P3" in t
+    assert "RENDER.chart = function" in code and "Chart timeframe" in t
     assert '"Next day", 1], ["Next 5 days", 5]' in code and '"role", "progressbar"' in code
     assert '"aria-valuetext", "Day " + (day.index + 1) + " of " + total' in code
 
@@ -261,3 +261,32 @@ def test_scenario_notice_shown_and_market_can_be_changed_after_confirming():
     assert '"Change practice market"' in code and '"Yes, change market"' in code
     assert "Change the practice market? This deletes your practice session and journal notes" in t
     assert code.count("clearAll();") == 2  # new session, change market: both only after an explicit confirm
+
+
+# ---- P3: price chart (behaviour, weekly bars and both themes checked in a headless browser before release) ----
+
+def test_chart_uses_the_vendored_library_loaded_before_the_tab(client):
+    html = client.get("/").get_data(as_text=True)
+    vendor = "/static/vendor/lightweight-charts/lightweight-charts.standalone.production.js"
+    assert html.index(vendor) < html.index("/static/js/paper.js")
+    code = js()
+    assert "window.LightweightCharts" in code and "LC.CandlestickSeries" in code and "LC.HistogramSeries" in code
+    assert "The chart could not load." in text()  # the tab still works if the script is missing
+
+
+def test_chart_only_draws_bars_the_server_sent_for_today_and_marks_your_trades():
+    code = js()
+    assert "var daily = market.bars[symbol];" in code and "if (!LC || !marketIsCurrent())" in code
+    assert "view.portfolio.transactions.filter(function (t) { return t.symbol === symbol; })" in code
+    assert '"arrowUp"' in code and '"arrowDown"' in code and "LC.createSeriesMarkers(candles, marks)" in code
+
+
+def test_chart_is_accessible_credited_and_follows_the_theme():
+    code, t = js(), text()
+    assert 'canvas.setAttribute("aria-hidden", "true");' in code and "summary.textContent" in code
+    assert "Scroll or pinch to zoom and drag to move through time." in t
+    assert "attributionLogo: false" in code and 'link.href = "https://www.tradingview.com/";' in code
+    assert 'link.rel = "noopener noreferrer";' in code
+    assert 'attributeFilter: ["data-theme"]' in code and "prefers-color-scheme: dark" in code
+    assert "vertTouchDrag: false" in code  # phones can still scroll past the chart
+    assert '[["daily", "Daily"], ["weekly", "Weekly"]]' in code

@@ -309,12 +309,15 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-confirm-reset { padding: 10px 12px; border: 2px solid var(--down); border-radius: var(--r-8); display: grid; gap: var(--s-2); justify-items: start; }
 .pt-confirm-reset p { margin: 0; }
 
-/* chart placeholder: the 16:9 area P3 fills */
-.pt-chart {
-  aspect-ratio: 16 / 9; border: 2px dashed var(--border); border-radius: var(--r-16); background: var(--surface);
-  display: grid; place-content: center; text-align: center; gap: var(--s-2); padding: var(--s-5); color: var(--muted);
-}
-.pt-chart h3 { color: var(--text); font-size: var(--t-20); }
+/* price chart: candlesticks and volume in a 16:9 canvas; the summary line is its text version */
+.pt-chart { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-12); min-width: 0; }
+.pt-chart p { margin: 0; }
+.pt-chart-head { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; justify-content: space-between; }
+.pt-chart-head h3 { display: inline-flex; gap: var(--s-2); align-items: center; }
+.pt-frames { grid-template-columns: auto auto; padding: 2px; }
+.pt-frames button { padding: var(--s-1) var(--s-3); font-size: var(--t-14); }
+.pt-chart-legend { color: var(--muted); min-height: 1.5em; }
+.pt-chart-canvas { position: relative; aspect-ratio: 16 / 9; min-height: 220px; min-width: 0; }
 
 /* positions table */
 .pt-positions { display: grid; gap: var(--s-3); }
@@ -450,7 +453,8 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
   .pt-progress { width: 100%; }
   .pt-day-controls { justify-content: stretch; }
   .pt-day-controls .button-secondary { flex: 1; }
-  .pt-chart { aspect-ratio: 16 / 10; padding: var(--s-3); }
+  .pt-chart { padding: var(--s-3); }
+  .pt-chart-canvas { aspect-ratio: 4 / 3; }
   /* positions: each row becomes a small card, with labels from data-label */
   .pt-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .pt-table tbody { display: grid; gap: var(--s-2); }

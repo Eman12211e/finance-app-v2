@@ -22,7 +22,7 @@
 
   function freshUi() {
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
-             historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false };
+             historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily" };
   }
 
   function el(tag, cls, text) {
@@ -175,7 +175,7 @@
   function loadMarket() {
     call("market", { state: view.state }, function (data) {
       market = data;
-      refresh(["watch"]);
+      refresh(["watch", "chart"]);
     });
   }
 
@@ -386,6 +386,7 @@
 
   function buildWorkspace() {
     closeSheet(true);
+    disposeChart();
     root.textContent = "";
     root.appendChild(banner());
     var title = el("h2", "visually-hidden", "Practice Trading");
@@ -590,16 +591,150 @@
     no.focus();
   }
 
-  // ---- chart placeholder (P3 fills this area) ----
+  // ---- price chart: TradingView Lightweight Charts (vendored, static/vendor). Bars never pass today. ----
+
+  var chart = null;  // the live chart; rebuilt with its region, so zoom resets on a new ticker, day or timeframe
+
+  function disposeChart() {
+    if (chart) chart.remove();
+    chart = null;
+  }
+
+  function token(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function withAlpha(color, alpha) {  // tokens are #rrggbb; the canvas needs a plain colour string
+    return /^#[0-9a-f]{6}$/i.test(color) ? color + alpha : color;
+  }
+
+  // weekly bars from daily ones, dated by each week's first trading day
+  function weekly(dates, bars) {
+    var out = [];
+    dates.forEach(function (d, k) {
+      var b = bars[k], t = Date.parse(d + "T00:00:00Z");
+      var monday = new Date(t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000).toISOString().slice(0, 10);
+      var last = out[out.length - 1];
+      if (last && last.week === monday) {
+        last.h = Math.max(last.h, b.h);
+        last.l = Math.min(last.l, b.l);
+        last.c = b.c;
+        last.v += b.v;
+      } else {
+        out.push({ week: monday, time: d, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v });
+      }
+    });
+    return out;
+  }
+
+  function timeKey(t) {  // crosshair times come back as strings or {year, month, day}
+    if (typeof t === "string" || !t) return t;
+    return t.year + "-" + String(t.month).padStart(2, "0") + "-" + String(t.day).padStart(2, "0");
+  }
 
   RENDER.chart = function (box) {
-    var i = info(ui.symbol);
-    var h = el("h3", null, ui.symbol + " price chart");
+    disposeChart();
+    var symbol = ui.symbol, i = info(symbol), weeklyView = ui.timeframe === "weekly";
+    var head = el("div", "pt-chart-head");
+    var h = el("h3", null, symbol + " price chart ");
     h.id = "pt-chart-title";
-    box.appendChild(h);
-    box.appendChild(el("p", "pt-small", (i.name || ui.symbol) + (i.sector ? ", " + i.sector + " sector" : "")));
-    box.appendChild(el("p", "pt-small", "This space is reserved for the interactive chart coming in P3: candlesticks, "
-      + "volume and your trade markers."));
+    h.appendChild(sim());
+    head.appendChild(h);
+    var frames = el("div", "pt-segmented pt-frames");
+    frames.setAttribute("role", "group");
+    frames.setAttribute("aria-label", "Chart timeframe");
+    [["daily", "Daily"], ["weekly", "Weekly"]].forEach(function (f) {
+      var b = button(null, f[1], function () {
+        ui.timeframe = f[0];
+        refresh(["chart"]);
+      });
+      b.dataset.key = "tf-" + f[0];
+      b.setAttribute("aria-pressed", ui.timeframe === f[0] ? "true" : "false");
+      frames.appendChild(b);
+    });
+    head.appendChild(frames);
+    box.appendChild(head);
+    box.appendChild(el("p", "pt-small", (i.name || symbol) + (i.sector ? ", " + i.sector + " sector" : "")));
+    var legend = el("p", "pt-chart-legend pt-tiny");
+    var canvas = el("div", "pt-chart-canvas");
+    canvas.setAttribute("aria-hidden", "true");  // the summary below is the text version of the chart
+    var summary = el("p", "pt-small pt-chart-summary");
+    box.appendChild(legend);
+    box.appendChild(canvas);
+    box.appendChild(summary);
+    var credit = el("p", "pt-tiny muted", "Chart by ");
+    var link = el("a", null, "TradingView Lightweight Charts™");
+    link.href = "https://www.tradingview.com/";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    credit.appendChild(link);
+    credit.appendChild(document.createTextNode(", © 2026 TradingView, Inc. Prices shown are simulated."));
+    box.appendChild(credit);
+    var LC = window.LightweightCharts;
+    if (!LC || !marketIsCurrent()) {
+      summary.textContent = LC ? "Loading simulated prices…"
+        : "The chart could not load. Your prices and trades are still in the positions table and history.";
+      return;
+    }
+
+    var daily = market.bars[symbol];
+    var bars = weeklyView ? weekly(market.dates, daily) : daily.map(function (b, k) {
+      return { time: market.dates[k], o: b.o, h: b.h, l: b.l, c: b.c, v: b.v };
+    });
+    var up = token("--up"), down = token("--down");
+    chart = LC.createChart(canvas, {
+      autoSize: true,
+      layout: { background: { type: "solid", color: token("--surface") }, textColor: token("--muted"),
+                fontFamily: token("--font-text"), attributionLogo: false },  // the credit line below links instead
+      grid: { vertLines: { color: token("--surface-2") }, horzLines: { color: token("--surface-2") } },
+      rightPriceScale: { borderColor: token("--border"), scaleMargins: { top: 0.08, bottom: 0.25 } },
+      timeScale: { borderColor: token("--border"), rightOffset: 2, fixLeftEdge: true, maxBarSpacing: 28 },
+      handleScroll: { vertTouchDrag: false },  // a vertical swipe on a phone still scrolls the page
+      localization: { priceFormatter: function (p) { return "$" + p.toFixed(2); } },
+    });
+    var candles = chart.addSeries(LC.CandlestickSeries, { upColor: up, downColor: down, borderUpColor: up,
+      borderDownColor: down, wickUpColor: up, wickDownColor: down });
+    candles.setData(bars.map(function (b) {
+      return { time: b.time, open: b.o / 100, high: b.h / 100, low: b.l / 100, close: b.c / 100 };
+    }));
+    var volume = chart.addSeries(LC.HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "volume",
+      lastValueVisible: false, priceLineVisible: false });
+    volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    volume.setData(bars.map(function (b) {
+      return { time: b.time, value: b.v, color: withAlpha(b.c >= b.o ? up : down, "59") };
+    }));
+
+    var barTimeFor = function (date) {  // a trade's bar: its day, or the week it falls in
+      var hit = bars.filter(function (b) { return b.time <= date; });
+      return hit.length ? hit[hit.length - 1].time : date;
+    };
+    var marks = view.portfolio.transactions.filter(function (t) { return t.symbol === symbol; }).map(function (t) {
+      var buy = t.side === "buy";
+      return { time: barTimeFor(t.date), position: buy ? "belowBar" : "aboveBar", shape: buy ? "arrowUp" : "arrowDown",
+               color: buy ? up : down, text: (buy ? "B " : "S ") + t.shares };
+    }).sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
+    LC.createSeriesMarkers(candles, marks);
+    // a few bars fill the width from the left; a long history opens on the latest 90 bars (zoom out for the rest)
+    if (bars.length > 90) chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
+    else chart.timeScale().fitContent();
+
+    var byTime = {};
+    bars.forEach(function (b) { byTime[b.time] = b; });
+    var last = bars[bars.length - 1];
+    function readout(b) {
+      legend.textContent = (weeklyView ? "Week of " : "") + niceDate(b.time) + ": open " + money(b.o) + ", high "
+        + money(b.h) + ", low " + money(b.l) + ", close " + money(b.c) + ", volume " + b.v.toLocaleString("en-US") + ".";
+    }
+    readout(last);
+    chart.subscribeCrosshairMove(function (p) { readout(byTime[timeKey(p.time)] || last); });
+
+    var high = Math.max.apply(null, bars.map(function (b) { return b.h; }));
+    var low = Math.min.apply(null, bars.map(function (b) { return b.l; }));
+    summary.textContent = (weeklyView ? "Weekly" : "Daily") + " simulated prices from " + niceDate(market.dates[0])
+      + " to " + niceDate(view.day.date) + ": last close " + money(last.c) + ", highest " + money(high) + ", lowest "
+      + money(low) + ". " + (marks.length ? marks.length + (marks.length === 1 ? " of your trades is" : " of your trades are")
+      + " marked: B for a buy, S for a sell." : "Your trades in " + symbol + " will be marked on the chart.")
+      + " Scroll or pinch to zoom and drag to move through time.";
   };
 
   // ---- watchlist ----
@@ -1257,6 +1392,7 @@
 
   function showDamaged(detail) {
     closeSheet(true);
+    disposeChart();
     view = null;
     draft = null;
     regions = null;
@@ -1273,6 +1409,7 @@
   }
 
   function renderStart() {
+    disposeChart();
     regions = null;
     root.textContent = "";
     root.appendChild(banner());
@@ -1358,6 +1495,10 @@
     dock();
   });
   window.addEventListener("resize", dock);
+  // the chart draws on a canvas with colours read from the theme tokens, so it is redrawn when the theme changes
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () { refresh(["chart"]); });
+  new MutationObserver(function () { refresh(["chart"]); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   window.Paper = {
     init: function () { root = document.getElementById("paper-root"); },

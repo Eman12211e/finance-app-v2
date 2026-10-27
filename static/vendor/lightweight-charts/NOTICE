@@ -2,8 +2,9 @@ TradingView Lightweight Charts(TM) v5.2.1
 Copyright (c) 2026 TradingView, Inc. https://www.tradingview.com/
 Licensed under the Apache License 2.0 (see LICENSE in this folder).
 
-The chart shows TradingView's attribution logo (the library's attributionLogo option, on by default), which links
-to https://www.tradingview.com/ as the licence asks.
+The practice chart turns the in-chart logo off (attributionLogo: false) and instead shows a visible credit line
+under the chart, "Chart by TradingView Lightweight Charts(TM), (c) 2026 TradingView, Inc.", linking to
+https://www.tradingview.com/ as the licence asks.
 
 The standalone bundle includes fancy-canvas 2.1.0 (MIT licence, by TradingView's smakarov@tradingview.com).
 
