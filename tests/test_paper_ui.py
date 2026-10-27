@@ -36,6 +36,8 @@ def test_only_session_and_order_numbers_are_ever_sent_to_the_server():
     sent_order = re.search(r"var order = \{ id: d\.id, ([^}]*)\}", js()).group(1)
     assert set(re.findall(r"(\w+):", sent_order)) == {"symbol", "side", "shares"}
     assert "paperPost(path, body)" in js() and js().count("paperPost(") == 1
+    analysis = re.findall(r"postAnalysis\(\{([^}]*)\}\)", js())
+    assert analysis and all(set(re.findall(r"(\w+):", b)) == {"state", "symbol", "timeframe", "indicators"} for b in analysis)
 
 
 def test_journal_text_is_kept_in_browser_storage_only():
@@ -276,7 +278,7 @@ def test_chart_uses_the_vendored_library_loaded_before_the_tab(client):
 
 def test_chart_only_draws_bars_the_server_sent_for_today_and_marks_your_trades():
     code = js()
-    assert "var daily = market.bars[symbol];" in code and "if (!LC || !marketIsCurrent())" in code
+    assert "market.bars[symbol].map(" in code and "if (!LC || !marketIsCurrent())" in code
     assert "view.portfolio.transactions.filter(function (t) { return t.symbol === symbol; })" in code
     assert '"arrowUp"' in code and '"arrowDown"' in code and "LC.createSeriesMarkers(candles, marks)" in code
 
@@ -290,3 +292,14 @@ def test_chart_is_accessible_credited_and_follows_the_theme():
     assert 'attributeFilter: ["data-theme"]' in code and "prefers-color-scheme: dark" in code
     assert "vertTouchDrag: false" in code  # phones can still scroll past the chart
     assert '[["daily", "Daily"], ["weekly", "Weekly"]]' in code
+
+
+# ---- P4 step 3: weekly bars come from the server ----
+
+def test_weekly_chart_uses_server_bars_and_labels_partial_and_final_short_weeks():
+    code = js()
+    assert "function weekly(" not in code  # the P3 copy of the weekly rules is gone; the server owns them
+    assert 'window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: "weekly", indicators: [] })' in code
+    assert "if (!regions || !view || weeklyKey() !== key) return;" in code  # late replies are ignored
+    assert 'partial: "Partial Week", final_short: "Final Short Week"' in code
+    assert 'request("/api/analysis/indicators"' in read("static", "js", "api.js")

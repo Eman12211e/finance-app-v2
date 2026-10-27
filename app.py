@@ -3,7 +3,7 @@ import logging
 from flask import Flask, render_template
 
 import config
-from routes import alerts, brokerages, chat, documents, earnings, lab, paper, sentiment, stocks
+from routes import alerts, analysis, brokerages, chat, documents, earnings, lab, paper, sentiment, stocks
 from routes.envelope import fail, ok
 from services.errors import RequestTooLarge
 from services import warmup
@@ -16,7 +16,7 @@ def create_app():
     )
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = config.MAX_REQUEST_BYTES
-    for module in (stocks, earnings, chat, alerts, sentiment, lab, documents, brokerages, paper):
+    for module in (stocks, earnings, chat, alerts, sentiment, lab, documents, brokerages, paper, analysis):
         app.register_blueprint(module.bp)
 
     @app.errorhandler(413)

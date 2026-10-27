@@ -608,23 +608,24 @@
     return /^#[0-9a-f]{6}$/i.test(color) ? color + alpha : color;
   }
 
-  // weekly bars from daily ones, dated by each week's first trading day
-  function weekly(dates, bars) {
-    var out = [];
-    dates.forEach(function (d, k) {
-      var b = bars[k], t = Date.parse(d + "T00:00:00Z");
-      var monday = new Date(t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000).toISOString().slice(0, 10);
-      var last = out[out.length - 1];
-      if (last && last.week === monday) {
-        last.h = Math.max(last.h, b.h);
-        last.l = Math.min(last.l, b.l);
-        last.c = b.c;
-        last.v += b.v;
-      } else {
-        out.push({ week: monday, time: d, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v });
-      }
-    });
-    return out;
+  // Weekly bars come from the server (/api/analysis/indicators), which owns the completed-week rules. They are fetched
+  // once per market, ticker and day; a reply for an earlier ticker or day is ignored.
+  var weeklyData = null;
+  var WEEK_LABELS = { partial: "Partial Week", final_short: "Final Short Week" };
+
+  function weeklyKey() {
+    return view.scenario.id + "|" + ui.symbol + "|" + view.day.index;
+  }
+
+  function loadWeekly(key) {
+    if (weeklyData && weeklyData.key === key) return;
+    weeklyData = { key: key, loading: true };
+    window.Api.postAnalysis({ state: view.state, symbol: ui.symbol, timeframe: "weekly", indicators: [] })
+      .then(function (env) {
+        if (!regions || !view || weeklyKey() !== key) return;
+        weeklyData = env.ok ? { key: key, bars: env.data.bars } : { key: key, error: env.error.message };
+        refresh(["chart"]);
+      });
   }
 
   function timeKey(t) {  // crosshair times come back as strings or {year, month, day}
@@ -677,11 +678,16 @@
       return;
     }
 
-    var daily = market.bars[symbol];
-    var bars = weeklyView ? weekly(market.dates, daily) : daily.map(function (b, k) {
+    if (weeklyView && (!weeklyData || weeklyData.key !== weeklyKey() || !weeklyData.bars)) {
+      var failed = weeklyData && weeklyData.key === weeklyKey() && weeklyData.error;
+      summary.textContent = failed ? "Weekly prices could not load: " + weeklyData.error : "Loading weekly prices…";
+      if (!failed) loadWeekly(weeklyKey());
+      return;
+    }
+    var bars = weeklyView ? weeklyData.bars : market.bars[symbol].map(function (b, k) {
       return { time: market.dates[k], o: b.o, h: b.h, l: b.l, c: b.c, v: b.v };
     });
-    var up = token("--up"), down = token("--down");
+    var up = token("--up"), down = token("--down"), surface = token("--surface");
     chart = LC.createChart(canvas, {
       autoSize: true,
       layout: { background: { type: "solid", color: token("--surface") }, textColor: token("--muted"),
@@ -695,7 +701,9 @@
     var candles = chart.addSeries(LC.CandlestickSeries, { upColor: up, downColor: down, borderUpColor: up,
       borderDownColor: down, wickUpColor: up, wickDownColor: down });
     candles.setData(bars.map(function (b) {
-      return { time: b.time, open: b.o / 100, high: b.h / 100, low: b.l / 100, close: b.c / 100 };
+      var point = { time: b.time, open: b.o / 100, high: b.h / 100, low: b.l / 100, close: b.c / 100 };
+      if (b.status === "partial") point.color = surface;  // a hollow candle: this week is not finished
+      return point;
     }));
     var volume = chart.addSeries(LC.HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "volume",
       lastValueVisible: false, priceLineVisible: false });
@@ -712,7 +720,14 @@
       var buy = t.side === "buy";
       return { time: barTimeFor(t.date), position: buy ? "belowBar" : "aboveBar", shape: buy ? "arrowUp" : "arrowDown",
                color: buy ? up : down, text: (buy ? "B " : "S ") + t.shares };
-    }).sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
+    });
+    var trades = marks.length;
+    var lastLabel = WEEK_LABELS[bars[bars.length - 1].status];
+    if (lastLabel) {
+      marks.push({ time: bars[bars.length - 1].time, position: "aboveBar", shape: "circle", color: token("--muted"),
+                   text: lastLabel });
+    }
+    marks.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
     LC.createSeriesMarkers(candles, marks);
     // a few bars fill the width from the left; a long history opens on the latest 90 bars (zoom out for the rest)
     if (bars.length > 90) chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
@@ -722,7 +737,7 @@
     bars.forEach(function (b) { byTime[b.time] = b; });
     var last = bars[bars.length - 1];
     function readout(b) {
-      legend.textContent = (weeklyView ? "Week of " : "") + niceDate(b.time) + ": open " + money(b.o) + ", high "
+      legend.textContent = (weeklyView ? (WEEK_LABELS[b.status] || "Week") + " of " : "") + niceDate(b.time) + ": open " + money(b.o) + ", high "
         + money(b.h) + ", low " + money(b.l) + ", close " + money(b.c) + ", volume " + b.v.toLocaleString("en-US") + ".";
     }
     readout(last);
@@ -732,8 +747,10 @@
     var low = Math.min.apply(null, bars.map(function (b) { return b.l; }));
     summary.textContent = (weeklyView ? "Weekly" : "Daily") + " simulated prices from " + niceDate(market.dates[0])
       + " to " + niceDate(view.day.date) + ": last close " + money(last.c) + ", highest " + money(high) + ", lowest "
-      + money(low) + ". " + (marks.length ? marks.length + (marks.length === 1 ? " of your trades is" : " of your trades are")
+      + money(low) + ". " + (trades ? trades + (trades === 1 ? " of your trades is" : " of your trades are")
       + " marked: B for a buy, S for a sell." : "Your trades in " + symbol + " will be marked on the chart.")
+      + (lastLabel === "Partial Week" ? " The last bar is a Partial Week: this week so far, which can still change."
+        : lastLabel ? " The last bar is the Final Short Week: the scenario's final " + last.days + " trading days." : "")
       + " Scroll or pinch to zoom and drag to move through time.";
   };
 

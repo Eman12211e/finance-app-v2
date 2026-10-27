@@ -572,3 +572,25 @@ unrealized_pl_cents}], realized_pl_cents, unrealized_pl_cents, portfolio_value_c
 `orders` [{id, symbol, side, shares, placed_day, status: pending|filled|rejected|cancelled, reason, fill_day}],
 `notices`. Order problem codes: `unsupported_symbol`, `invalid_side`, `invalid_quantity`, `insufficient_cash`,
 `insufficient_shares`, `scenario_ended`, `order_limit`. A state that fails verification returns `INVALID_STATE`.
+
+## V2: Analysis Toolbox (P4, educational only)
+
+`POST /api/analysis/indicators` {state, symbol, timeframe: daily|weekly, indicators: [{type, period}]} → chart data
+for the verified session, never past the current simulated day. Read-only: it never changes the session, balances,
+orders or fills, and its values are never used by the trading engine.
+
+- `indicators`: up to four, each once, presets only: `{"type": "sma", "period": 20|50}`, `{"type": "ema", "period":
+  12|26}`, `{"type": "rsi", "period": 14}`, `{"type": "macd", "period": [12, 26, 9]}`. At most two of SMA/EMA (drawn
+  on the price) and two of RSI/MACD (panes). An empty list returns bars only.
+- Response `data`: `symbol`, `timeframe`, `date` (today), `final_day` (today is the scenario's last day), `bars`,
+  `indicators` [{type, period, series {name: [value | null]}}], `notice`, `education`.
+- `bars` (integer cents): daily `[{time, o, h, l, c, v}]`; weekly `[{time, end, days, o, h, l, c, v, status}]`, one per
+  Monday-to-Friday week up to today, dated by its first trading day, `status` `complete` | `partial` (the unfinished
+  week, shown as Partial Week) | `final_short` (the scenario's final shorter week, completed on the final day, shown
+  as Final Short Week).
+- `series` arrays line up with `bars`. Names: `sma`, `ema`, `rsi`, and `macd`, `signal`, `histogram`. SMA, EMA and
+  MACD values are dollars (4 decimals); RSI is 0-100 (2 decimals). `null` means "Not enough data". Weekly series use
+  completed weeks only, so a Partial Week's entry is always `null`.
+- Errors: `INVALID_STATE` for a missing, malformed or tampered session; `INVALID_REQUEST` (with a readable message) for
+  an unknown symbol, timeframe, indicator or period, a repeated indicator, or more than the allowed overlays or panes;
+  `REQUEST_TOO_LARGE` (413) over 64 KB.
