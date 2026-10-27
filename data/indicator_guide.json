@@ -1,0 +1,75 @@
+{
+ "source": "docs/P4_STEP6_CONTENT.md (owner-approved). Static text: no AI, no network. Placeholders in {braces} are filled with the analysis API's values.",
+ "label": "Our plain summary",
+ "footer": "Education only. An indicator describes past simulated prices; it is not a recommendation to buy or sell.",
+ "shared": {
+  "weekly_prefix": "On the weekly view (completed weeks only):",
+  "not_enough": "{name} needs {needed} {units}. This view has {have} so far, so it is not drawn yet.",
+  "partial_week": "This week is a Partial Week: it is shown on the chart but not used in any weekly value until it completes.",
+  "final_short_week": "The last week is the scenario's Final Short Week ({days} trading days); it is complete and included.",
+  "units": {"daily": "daily closes", "weekly": "completed weeks"},
+  "unit": {"daily": "day", "weekly": "week"}
+ },
+ "indicators": {
+  "sma": {
+   "title": "SMA",
+   "needed": {"20": 20, "50": 50},
+   "readings": {
+    "above": "The latest close, ${close}, is above its {n}-{unit} average of ${value}.",
+    "below": "The latest close, ${close}, is below its {n}-{unit} average of ${value}.",
+    "equal": "The latest close, ${close}, is at its {n}-{unit} average."
+   },
+   "what": "The average of the last {n} closing prices: the last {n} simulated days on the daily view, or the last {n} completed weeks on the weekly view. Each new close replaces the oldest one in the average, which smooths out day-to-day ups and downs.",
+   "how": "Some people look at whether the price is above or below the average, and at whether a shorter average crosses a longer one. When the average has been rising, closes over that period have generally been moving up.",
+   "watch": "It uses only past prices, so it always lags behind them. It does not tell you what the next price will be, and prices often cross back and forth over an average."
+  },
+  "ema": {
+   "title": "EMA",
+   "needed": {"12": 12, "26": 26},
+   "readings": {
+    "above": "The latest close, ${close}, is above its {n}-{unit} EMA of ${value}.",
+    "below": "The latest close, ${close}, is below its {n}-{unit} EMA of ${value}.",
+    "equal": "The latest close, ${close}, is at its {n}-{unit} EMA."
+   },
+   "what": "An average of past closing prices in which recent closes count more than older ones, so it responds sooner when prices change direction. It starts from the simple average of the first {n} closes; after that, each new close moves it by a fixed share, 2 ÷ ({n} + 1).",
+   "how": "Some people compare a faster average, such as EMA 12, with a slower one, such as EMA 26 or SMA 50, to see whether recent prices are moving away from the longer-run average.",
+   "watch": "Responding sooner also means more false turns when prices move up and down without a clear direction. Like every average, it describes the past."
+  },
+  "rsi": {
+   "title": "RSI",
+   "style": "line in the RSI pane, guides at 30 and 70",
+   "needed": {"14": 15},
+   "readings": {
+    "high": "RSI is {value}: at or above 70, a level some people call \"overbought\". Recently, average gains have been more than twice the size of average losses.",
+    "low": "RSI is {value}: at or below 30, a level some people call \"oversold\". Recently, average losses have been more than twice the size of average gains.",
+    "upper": "RSI is {value}, between 30 and 70. Recently, average gains have been larger than average losses.",
+    "lower": "RSI is {value}, between 30 and 70. Recently, average losses have been larger than average gains.",
+    "middle": "RSI is {value}: recently, average gains and average losses have been the same size. RSI is also 50 when prices have not moved at all."
+   },
+   "what": "The Relative Strength Index compares the average size of recent gains with the average size of recent losses and puts the result on a scale from 0 to 100. It uses Wilder's smoothing over 14 periods, so the last 14 days (or completed weeks) count most and older moves fade gradually. 50 means average gains and losses are the same size. The pane's dashed lines mark 30 and 70.",
+   "how": "Readings at or above 70 are often called \"overbought\", and at or below 30 \"oversold\". Those labels describe how one-sided recent moves have been.",
+   "watch": "Prices can stay above 70 or below 30 for a long time. A high reading does not mean prices are about to drop, and a low one does not mean they are about to climb. It needs 15 closes before it shows a value."
+  },
+  "macd": {
+   "title": "MACD",
+   "style": "MACD solid line, signal dashed line, histogram bars",
+   "needed": {"line": 26, "signal": 34},
+   "readings": {
+    "line_above": "The MACD line is {macd}: above zero, so the 12-{unit} EMA is above the 26-{unit} EMA.",
+    "line_below": "The MACD line is {macd}: below zero, so the 12-{unit} EMA is below the 26-{unit} EMA.",
+    "line_at": "The MACD line is {macd}: at zero, so the 12-{unit} EMA is equal to the 26-{unit} EMA.",
+    "signal_above": "It is above its signal line ({signal}).",
+    "signal_below": "It is below its signal line ({signal}).",
+    "signal_level": "It is level with its signal line ({signal}).",
+    "signal_missing": "Its signal line needs 34 {units}: Not enough data yet.",
+    "widened": "The gap between them widened since the previous {unit}.",
+    "narrowed": "The gap between them narrowed since the previous {unit}.",
+    "crossed": "The MACD line crossed its signal line since the previous {unit}.",
+    "unchanged": "The gap between them did not change since the previous {unit}."
+   },
+   "what": "MACD (Moving Average Convergence Divergence) has three parts. The MACD line is the 12-period EMA minus the 26-period EMA. The signal line is a 9-period EMA of the MACD line. The histogram bars show the MACD line minus the signal line. The dotted line marks zero.",
+   "how": "Above zero means the shorter average is above the longer one; below zero means it is under it. Some people watch for the MACD line crossing its signal line or crossing zero.",
+   "watch": "Crossings happen often and many reverse soon after. Because every part is built from averages, it reacts after prices have already moved. The line needs 26 closes and the signal line 34."
+  }
+ }
+}

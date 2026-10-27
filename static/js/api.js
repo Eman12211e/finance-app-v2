@@ -65,6 +65,9 @@
       if (p.filters.length) query.set("filters", p.filters.join(","));
       return request("/api/brokerages/compare?" + query.toString());
     },
+    getAnalysisGuide: function () {
+      return request("/api/analysis/guide");
+    },
     postAnalysis: function (body) {
       return request("/api/analysis/indicators", {
         method: "POST",

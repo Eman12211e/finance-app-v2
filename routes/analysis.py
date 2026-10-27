@@ -6,7 +6,7 @@ from flask import Blueprint, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from routes.envelope import fail, ok
-from services import indicators, paper_engine, paper_market
+from services import explain, indicators, paper_engine, paper_market
 from services.errors import AppError, InvalidRequest, RequestTooLarge
 
 log = logging.getLogger(__name__)
@@ -68,17 +68,32 @@ def indicator_data(body):
     final_day = len(dates) - 1 == paper_market.last_day(paper_market.get(body["state"]["scenario"]))
     if timeframe == "daily":
         bars = [{"time": d, **b} for d, b in zip(dates, daily)]
-        closes = [b["c"] for b in daily]
+        closed = bars
     else:
         bars = indicators.weekly(dates, daily, final_day)
-        closes = [w["c"] for w in indicators.completed(bars)]  # never the Partial Week
+        closed = indicators.completed(bars)  # never the Partial Week
+    closes = [b["c"] for b in closed]
     padding = [None] * (len(bars) - len(closes))  # the Partial Week's entry, always null
     out = []
     for kind, period in chosen:
-        series = {name: values + padding for name, values in indicators.compute(kind, period, closes).items()}
-        out.append({"type": kind, "period": list(period) if isinstance(period, tuple) else period, "series": series})
+        values = indicators.raw(kind, period, closes)
+        series = {name: v + padding for name, v in indicators.rounded(kind, values).items()}
+        sentence = explain.reading(kind, period, values, closed, timeframe, bars[-1].get("status", "complete"),
+                                   bars[-1].get("days"))
+        out.append({"type": kind, "period": list(period) if isinstance(period, tuple) else period, "series": series,
+                    "reading": sentence})
     return {"symbol": symbol, "timeframe": timeframe, "date": dates[-1], "final_day": final_day, "bars": bars,
             "indicators": out, "notice": data["notice"], "education": EDUCATION_NOTE}
+
+
+@bp.get("/guide")
+def guide_endpoint():
+    """The approved explanation text (static), so What is this? works for indicators that are switched off."""
+    try:
+        return ok(explain.guide(), None, None)
+    except Exception:
+        log.exception("analysis guide failed")
+        return fail(AppError())
 
 
 @bp.post("/indicators")

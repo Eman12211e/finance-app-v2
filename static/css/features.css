@@ -346,6 +346,28 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-line-legend li { display: inline-flex; gap: var(--s-1); align-items: center; }
 .pt-line-legend strong { color: var(--text); font-weight: 600; }
 
+/* explanation cards (P4 step 6): the reading first, Learn more for the approved explanation */
+.pt-cards { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); align-items: start; margin-top: var(--s-2); }
+.pt-card { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-12); background: var(--surface); }
+.pt-card h4 { margin: 0; display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; font-size: var(--t-14); }
+.pt-card-now { margin: 0; font-size: var(--t-14); color: var(--text); }
+.pt-learn-more summary { cursor: pointer; font-size: var(--t-14); font-weight: 600; color: var(--accent); min-height: 24px; display: inline-flex; align-items: center; }
+.pt-learn-more[open] summary { margin-bottom: var(--s-2); }
+.pt-explain { display: grid; gap: var(--s-2); }
+.pt-explain p { margin: 0; }
+.pt-explain dl { display: grid; gap: var(--s-1); margin: 0; font-size: var(--t-14); }
+.pt-explain dt { font-weight: 600; }
+.pt-explain dd { margin: 0 0 var(--s-1); color: var(--muted); }
+.pt-summary-tag { font-size: var(--t-12); font-weight: 600; color: var(--accent); }
+.pt-edu-note { margin: 0; padding-top: var(--s-2); border-top: 1px solid var(--border); font-size: var(--t-12); color: var(--muted); }
+/* What is this? beside each preset in the Indicators menu; it never ticks the box */
+.pt-ind-item { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: var(--s-2); }
+.pt-what { min-height: 24px; padding: 0 var(--s-1); border: 0; background: none; color: var(--accent); font-size: var(--t-12); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.pt-what[aria-expanded="true"] { text-decoration-thickness: 2px; }
+.pt-what-panel { grid-column: 1 / -1; margin: var(--s-1) 0 var(--s-2); padding: var(--s-2) var(--s-3); border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 var(--r-8) var(--r-8) 0; }
+.pt-what-panel[hidden] { display: none; }
+.pt-ind-menu { max-height: min(80vh, 640px); overflow-y: auto; }
+
 /* positions table */
 .pt-positions { display: grid; gap: var(--s-3); }
 .pt-positions h3 { display: flex; gap: var(--s-2); align-items: center; }

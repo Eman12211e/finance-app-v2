@@ -30,7 +30,7 @@
     var saved = readIndicators();
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
              historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily",
-             overlays: saved.overlays, panes: saved.panes, indMenuOpen: false };
+             overlays: saved.overlays, panes: saved.panes, indMenuOpen: false, learnOpen: {}, whatOpen: null };
   }
 
   function el(tag, cls, text) {
@@ -673,6 +673,41 @@
       });
   }
 
+  var guideText = null;  // data/indicator_guide.json via /api/analysis/guide, loaded once
+
+  function loadGuide() {
+    if (guideText) return;
+    guideText = { loading: true };
+    window.Api.getAnalysisGuide().then(function (env) {
+      guideText = env.ok ? env.data : null;  // on failure the cards still show their readings; Learn more waits
+      if (env.ok && regions) refresh(["chart"]);
+    });
+  }
+
+  function presetKey(type, period) {
+    return type + "-" + [].concat(period).join("-");
+  }
+
+  // the full approved explanation for one preset: What it shows, How people read it, Watch out, and the footer
+  function explanation(type, period, withFooter) {
+    var entry = guideText && guideText.indicators && guideText.indicators[type];
+    var box = el("div", "pt-explain");
+    if (!entry) {
+      box.appendChild(el("p", "pt-tiny muted", "The explanation is loading."));
+      return box;
+    }
+    var n = Array.isArray(period) ? period.join("-") : String(period);
+    box.appendChild(el("p", "pt-summary-tag", guideText.label));
+    var dl = el("dl");
+    [["What it shows", entry.what], ["How people read it", entry.how], ["Watch out", entry.watch]].forEach(function (row) {
+      dl.appendChild(el("dt", null, row[0]));
+      dl.appendChild(el("dd", null, row[1].split("{n}").join(n)));
+    });
+    box.appendChild(dl);
+    if (withFooter) box.appendChild(el("p", "pt-edu-note", guideText.footer));
+    return box;
+  }
+
   function toggleIndicator(p, on) {
     var list = presetOf({ type: p[0], period: p[1] }, PANES) ? "panes" : "overlays";
     ui[list] = ui[list].filter(function (o) { return !presetOf(o, [p]); });
@@ -725,6 +760,7 @@
       group.appendChild(el("legend", null, g[0]));
       g[1].forEach(function (p) {
         var slot = g[2].findIndex(function (o) { return presetOf(o, [p]); });
+        var item = el("div", "pt-ind-item");
         var row = el("label", "pt-ind-row");
         var box = el("input");
         box.type = "checkbox";
@@ -741,7 +777,28 @@
         }
         row.appendChild(document.createTextNode(indicatorName({ type: p[0], period: p[1] })
           + (g[4] && slot === 0 ? " (solid line)" : g[4] && slot === 1 ? " (dashed line)" : "")));
-        group.appendChild(row);
+        item.appendChild(row);
+        var key = presetKey(p[0], p[1]);
+        var what = button("pt-what", "What is this?", null);
+        what.dataset.key = "what-" + key;
+        what.setAttribute("aria-label", "What is " + indicatorName({ type: p[0], period: p[1] }) + "?");
+        what.setAttribute("aria-controls", "pt-what-" + key);
+        what.setAttribute("aria-expanded", ui.whatOpen === key ? "true" : "false");
+        var panel = explanation(p[0], p[1], true);
+        panel.id = "pt-what-" + key;
+        panel.classList.add("pt-what-panel");
+        panel.hidden = ui.whatOpen !== key;
+        what.addEventListener("click", function () {  // opens the explanation only; the indicator stays as it is
+          ui.whatOpen = ui.whatOpen === key ? null : key;
+          menu.querySelectorAll(".pt-what").forEach(function (b) {
+            var mine = b === what && ui.whatOpen === key;
+            b.setAttribute("aria-expanded", mine ? "true" : "false");
+            document.getElementById(b.getAttribute("aria-controls")).hidden = !mine;
+          });
+        });
+        item.appendChild(what);
+        item.appendChild(panel);
+        group.appendChild(item);
       });
       menu.appendChild(group);
     });
@@ -827,6 +884,7 @@
     credit.appendChild(link);
     credit.appendChild(document.createTextNode(", © 2026 TradingView, Inc. Prices shown are simulated."));
     box.appendChild(credit);
+    loadGuide();
     var LC = window.LightweightCharts;
     if (!LC) {
       summary.textContent = "The chart could not load. Your prices and trades are still in the positions table and history.";
@@ -1014,7 +1072,40 @@
       + (lastLabel === "Partial Week" ? " The last bar is a Partial Week: this week so far, which can still change."
         : lastLabel ? " The last bar is the Final Short Week: the scenario's final " + last.days + " trading days." : "")
       + " Scroll or pinch to zoom and drag to move through time.";
+    if (data.indicators.length) box.appendChild(explanationCards(data.indicators));
   };
+
+  // One card per active indicator: the reading the API chose from unrounded values, then Learn more (closed by
+  // default) with the approved explanation. Nothing is calculated here.
+  function explanationCards(items) {
+    var wrap = el("div", "pt-cards");
+    var lineSlot = 0;
+    items.forEach(function (ind) {
+      var key = presetKey(ind.type, ind.period), name = indicatorName(ind);
+      var entry = guideText && guideText.indicators && guideText.indicators[ind.type];
+      var style = presetOf(ind, OVERLAYS) ? (lineSlot++ === 0 ? "solid line" : "dashed line") : entry ? entry.style : "";
+      var card = el("section", "pt-card");
+      var head = el("h4", null, name + (style ? " (" + style + ")" : "") + " ");
+      head.id = "pt-card-" + key;
+      head.appendChild(sim());
+      card.setAttribute("aria-labelledby", head.id);
+      card.appendChild(head);
+      card.appendChild(el("p", "pt-card-now", ind.reading));
+      var more = el("details", "pt-learn-more");
+      more.open = !!ui.learnOpen[key];
+      more.addEventListener("toggle", function () { ui.learnOpen[key] = more.open; });
+      var summary = el("summary", null, "Learn more");
+      summary.dataset.key = "learn-" + key;
+      summary.setAttribute("aria-label", "Learn more about " + name);
+      more.appendChild(summary);
+      more.appendChild(explanation(ind.type, ind.period, false));
+      card.appendChild(more);
+      card.appendChild(el("p", "pt-edu-note", guideText && guideText.footer
+        ? guideText.footer : "Education only. An indicator describes past simulated prices; it is not a recommendation to buy or sell."));
+      wrap.appendChild(card);
+    });
+    return wrap;
+  }
 
   // ---- watchlist ----
 

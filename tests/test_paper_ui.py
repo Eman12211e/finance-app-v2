@@ -382,3 +382,36 @@ def test_pane_values_appear_in_readout_legend_and_summary():
     assert 'return "MACD " + lineValue(pn.series.macd[j], 2, "") + ", signal "' in code
     assert '" (0 to 100, guides at 30 and 70) "' in code and "Panes below the price: " in t
     assert "Weekly values use completed weeks only." in t
+
+
+# ---- P4 step 6: explanation cards, Learn more, What is this? ----
+
+def test_cards_show_the_api_reading_and_calculate_nothing():
+    code = js()
+    assert 'card.appendChild(el("p", "pt-card-now", ind.reading));' in code
+    assert "function explanationCards(items)" in code and "box.appendChild(explanationCards(data.indicators))" in code
+    for banned in ("toFixed(1) >= 70", ">= 70", "<= 30"):  # thresholds live in services/explain.py only
+        assert banned not in code, banned
+
+
+def test_learn_more_is_a_closed_disclosure_with_the_approved_sections():
+    code, t = js(), text()
+    assert 'var more = el("details", "pt-learn-more");' in code and "more.open = !!ui.learnOpen[key];" in code
+    assert '"Learn more about " + name' in code
+    assert '[["What it shows", entry.what], ["How people read it", entry.how], ["Watch out", entry.watch]]' in code
+    assert "Education only. An indicator describes past simulated prices; it is not a recommendation to buy or sell." in t
+
+
+def test_what_is_this_sits_outside_the_checkbox_label_and_never_switches_it_on():
+    code = js()
+    assert 'var what = button("pt-what", "What is this?", null);' in code
+    assert "item.appendChild(row);" in code and "item.appendChild(what);" in code  # beside the label, not inside it
+    assert 'what.setAttribute("aria-controls", "pt-what-" + key);' in code and '"aria-expanded"' in code
+    handler = code[code.index('what.addEventListener("click"'):code.index("item.appendChild(what);")]
+    assert "toggleIndicator" not in handler and "checked" not in handler
+
+
+def test_card_headings_name_the_period_and_line_style():
+    code = js()
+    assert '(lineSlot++ === 0 ? "solid line" : "dashed line")' in code and "entry.style" in code
+    assert 'request("/api/analysis/guide")' in read("static", "js", "api.js")

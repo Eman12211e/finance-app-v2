@@ -93,15 +93,28 @@ def _dollars(values, places=4):
     return [None if v is None else round(v / 100, places) + 0.0 for v in values]  # + 0.0 turns -0.0 into 0.0
 
 
-def compute(kind, period, closes_cents):
-    """One preset indicator over integer-cent closes, in display units: dollars (4 decimals) for SMA, EMA and MACD,
-    0-100 (2 decimals) for RSI. Returns {series name: values aligned with closes_cents}."""
+def raw(kind, period, closes_cents):
+    """One preset indicator, unrounded: cents for SMA, EMA and MACD, 0-100 for RSI. Explanations choose their
+    wording from these values; only displayed numbers are rounded."""
     if kind not in PRESETS or period not in PRESETS[kind]:
         raise ValueError(f"Not an offered indicator preset: {kind} {period}")
     if kind == "sma":
-        return {"sma": _dollars(sma(closes_cents, period))}
+        return {"sma": sma(closes_cents, period)}
     if kind == "ema":
-        return {"ema": _dollars(ema(closes_cents, period))}
+        return {"ema": ema(closes_cents, period)}
     if kind == "rsi":
-        return {"rsi": [None if v is None else round(v, 2) for v in rsi(closes_cents, period)]}
-    return {name: _dollars(values) for name, values in macd(closes_cents, *period).items()}
+        return {"rsi": rsi(closes_cents, period)}
+    return macd(closes_cents, *period)
+
+
+def rounded(kind, values):
+    """Display units for raw(): dollars (4 decimals) for SMA, EMA and MACD, 0-100 (2 decimals) for RSI."""
+    if kind == "rsi":
+        return {"rsi": [None if v is None else round(v, 2) for v in values["rsi"]]}
+    return {name: _dollars(series) for name, series in values.items()}
+
+
+def compute(kind, period, closes_cents):
+    """One preset indicator over integer-cent closes, in display units. Returns {series name: values aligned with
+    closes_cents}."""
+    return rounded(kind, raw(kind, period, closes_cents))

@@ -9,7 +9,9 @@ Read this first after any context reset. Brief and decisions: `docs/P4_BRIEF.md`
 | `bbc7fb2` | 2: `services/indicators.py` + 39 tests (approved) |
 | `67a3bca` | 3: analysis endpoint (approved) |
 | `03b553d` | 4: SMA and EMA overlays (approved) |
-| this commit | 5: RSI and MACD panes |
+| `c15c93a` | 5: RSI and MACD panes (approved) |
+| `d8b90d7` | 6 content: final explanation text (approved) |
+| this commit | 6: explanation cards |
 
 ## Step 3 — Analysis endpoint
 
@@ -94,3 +96,39 @@ of 9 values, Partial Week not calculated, Daily/Weekly switching, theme repaint,
 presets, no overflow, only local requests, no console errors); overlay checks 36/36; P2.5/P3 workflows 198/198;
 visual audit clean on all 20 tab/width/theme screens with all four indicators on. Screenshots (not committed):
 `C:\Users\emanl\finance-app-v2-screenshots\P4\step-5\`.
+
+## Step 6 — Educational explanations
+
+- **Text:** `data/indicator_guide.json`, copied word for word from the approved `docs/P4_STEP6_CONTENT.md` (a test
+  keeps them identical). Static: no AI, no network. `GET /api/analysis/guide` serves it.
+- **Readings** are chosen on the server (`services/explain.py`, called by `/api/analysis/indicators` for each
+  indicator) from the unrounded values of `indicators.raw()` (owner refinement): RSI zones at 30 / 50 / 70, the close
+  against SMA/EMA, MACD's side of zero, its signal line and the histogram's change (widened, narrowed, crossed,
+  unchanged; a zero gap gets no change sentence). Numbers are rounded only for display, and get extra decimals when
+  the usual rounding would contradict the chosen sentence (RSI 69.996 shows as "69.996", an average 0.2 cents under
+  the close as "$199.958"). Not enough data names what is needed and what exists; the weekly prefix, Partial Week and
+  Final Short Week sentences follow the approved text. `indicators.compute()` is now `rounded(raw())`, so chart values
+  are unchanged.
+- **Cards** (`paper.js`, `features.css`): one per active indicator under the chart, heading with name, period and line
+  style plus the Simulated mark, the API's reading, a closed **Learn more** disclosure (Our plain summary, What it
+  shows, How people read it, Watch out; open state kept across redraws) and the footer. The browser shows strings
+  only; it calculates nothing.
+- **What is this?** beside every preset in the Indicators menu (outside the checkbox's label): opens the full
+  explanation inside the popover or phone sheet without switching the indicator on; one open at a time
+  (`aria-expanded`, `aria-controls`, a specific name such as "What is SMA 50?").
+
+**Found and fixed while testing:** in the two-column card grid an opened Learn more stretched the neighbouring card to
+the same height; cards now align to the top.
+
+**Checks:** pytest 535 passed (+43 `tests/test_explain.py`: every reading branch, RSI at and around 30 / 50 / 70,
+display rounding that never contradicts the sentence, SMA/EMA and MACD from unrounded values, Not enough data for
+every preset, weekly prefix / Partial Week / Final Short Week, the guide equal to the approved document, banned
+phrases, the API's readings and the guide route; +4 static front-end checks). Mutation checks: choosing the RSI zone
+from the rounded value, dropping the extra display decimals, and comparing a zero MACD gap each fail the tests.
+`check_endpoints.py`: 9 SKIP, exit 0, data file restored. Headless Edge (zero-cost demo server): explanation checks
+22/22 (cards and headings for all four presets, readings equal to the API daily and weekly, footer and labelled
+regions, Learn more closed by default and opened by keyboard, kept open across a theme redraw, What is this? for an
+indicator that is off without switching it on or sending a request, one explanation at a time, Not enough data on day
+11, Final Short Week on day 250, phone: one column, no overflow, What is this? inside the sheet; only local requests;
+no console errors); panes 26/26; overlays 36/36; P2.5/P3 workflows 198/198; visual audit clean on all 20 tab/width/
+theme screens. Screenshots (not committed): `C:\Users\emanl\finance-app-v2-screenshots\P4\step-6\`.

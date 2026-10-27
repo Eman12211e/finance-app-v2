@@ -583,7 +583,9 @@ orders or fills, and its values are never used by the trading engine.
   12|26}`, `{"type": "rsi", "period": 14}`, `{"type": "macd", "period": [12, 26, 9]}`. At most two of SMA/EMA (drawn
   on the price) and two of RSI/MACD (panes). An empty list returns bars only.
 - Response `data`: `symbol`, `timeframe`, `date` (today), `final_day` (today is the scenario's last day), `bars`,
-  `indicators` [{type, period, series {name: [value | null]}}], `notice`, `education`.
+  `indicators` [{type, period, series {name: [value | null]}, reading}], `notice`, `education`. `reading` is the
+  approved current-reading sentence (P4 step 6), chosen from unrounded values by `services/explain.py`; numbers in
+  it are rounded for display only, with extra decimals when rounding would contradict the sentence.
 - `bars` (integer cents): daily `[{time, o, h, l, c, v}]`; weekly `[{time, end, days, o, h, l, c, v, status}]`, one per
   Monday-to-Friday week up to today, dated by its first trading day, `status` `complete` | `partial` (the unfinished
   week, shown as Partial Week) | `final_short` (the scenario's final shorter week, completed on the final day, shown
@@ -594,3 +596,7 @@ orders or fills, and its values are never used by the trading engine.
 - Errors: `INVALID_STATE` for a missing, malformed or tampered session; `INVALID_REQUEST` (with a readable message) for
   an unknown symbol, timeframe, indicator or period, a repeated indicator, or more than the allowed overlays or panes;
   `REQUEST_TOO_LARGE` (413) over 64 KB.
+
+`GET /api/analysis/guide` → the approved, static explanation text (`data/indicator_guide.json`): `label`, `footer`,
+`shared` sentences and per-indicator `title`, `style`, `needed`, `readings` templates and the Learn more parts `what`,
+`how`, `watch` (`{n}` = the preset's period). Used by the explanation cards and What is this?; no AI, no market data.
