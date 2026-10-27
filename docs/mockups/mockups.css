@@ -281,6 +281,7 @@ details.history summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-
 .swatch.b { border-top: 2px dashed var(--ind-b); }
 .swatch.hist { width: 10px; height: 10px; border: 0; background: linear-gradient(90deg, var(--up) 50%, var(--down) 50%); opacity: .6; }
 .swatch.draw { border-top: 2px solid var(--text); }
+.swatch.partial { width: 10px; height: 12px; border: 1.5px dashed var(--muted); }
 
 .chart-svg { width: 100%; height: auto; display: block; font: 600 11px/1 var(--font-text); }
 .chart-svg .grid { stroke: var(--surface-2); }
@@ -288,6 +289,11 @@ details.history summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-
 .chart-svg .candle line { stroke-width: 1; }
 .chart-svg .candle.up line { stroke: var(--up); } .chart-svg .candle.up rect { fill: var(--up); }
 .chart-svg .candle.down line { stroke: var(--down); } .chart-svg .candle.down rect { fill: var(--down); }
+/* the unfinished week: an outline only, dashed, named Partial Week; never part of a weekly indicator */
+.chart-svg .candle.partial rect { fill: var(--surface); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.chart-svg .candle.partial.up rect { stroke: var(--up); } .chart-svg .candle.partial.down rect { stroke: var(--down); }
+.chart-svg .candle.partial line { stroke-dasharray: 3 2; }
+.chart-svg .partial-tag { fill: var(--text); }
 .chart-svg .vol-up { fill: var(--up); opacity: .3; } .chart-svg .vol-down { fill: var(--down); opacity: .3; }
 .chart-svg .ind-a { fill: none; stroke: var(--ind-a); stroke-width: 2; }
 .chart-svg .ind-b { fill: none; stroke: var(--ind-b); stroke-width: 2; stroke-dasharray: 6 4; }
@@ -342,5 +348,7 @@ details.history summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-
 .edu-note { font-size: var(--t-12); color: var(--muted); border-top: 1px solid var(--border); padding-top: var(--s-2); }
 .explain.waiting { border-style: dashed; }
 .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--s-5); padding: var(--s-5); align-items: start; max-width: 1280px; margin: 0 auto; }
+.state-wide { grid-column: 1 / -1; }
 .state-note { font-size: var(--t-12); color: var(--muted); font-weight: 600; margin-bottom: var(--s-2); }
-@media (max-width: 720px) { .explain-grid { grid-template-columns: 1fr; } }
+.only-narrow { display: none; }
+@media (max-width: 720px) { .explain-grid { grid-template-columns: 1fr; } .only-wide { display: none; } .only-narrow { display: block; } }
