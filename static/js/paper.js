@@ -699,6 +699,43 @@
     drawStatus("Cleared every drawing on " + ui.symbol + ".", false);
   }
 
+  // Clear drawings removes every line on this ticker at once, so it asks first (like Reset); Remove does not
+  function confirmClear() {
+    var list = drawingsFor(), panel = document.getElementById("pt-drawings");
+    if (!list.length || !panel) return;
+    var old = panel.querySelector(".pt-confirm-clear");
+    if (old) old.remove();
+    var box = el("div", "pt-confirm-reset pt-confirm-clear");
+    box.setAttribute("role", "alertdialog");
+    box.setAttribute("aria-label", "Clear drawings");
+    box.appendChild(el("p", null, "Clear all " + list.length + " drawing" + (list.length === 1 ? "" : "s") + " on "
+      + ui.symbol + "? This cannot be undone."));
+    var yes = button("button-primary", "Yes, clear drawings", function () {
+      box.remove();
+      clearDrawings();
+      var next = document.querySelector('[data-key="draw-add-h"]');
+      if (next) next.focus();
+    });
+    yes.dataset.key = "draw-clear-yes";
+    var no = button("button-secondary", "Keep drawings", function () {
+      box.remove();
+      var back = document.querySelector('[data-key="draw-clear-panel"]');
+      if (back) back.focus();
+    });
+    no.dataset.key = "draw-clear-no";
+    box.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        no.click();
+      }
+    });
+    box.appendChild(yes);
+    box.appendChild(no);
+    panel.appendChild(box);
+    box.scrollIntoView({ block: "nearest" });
+    no.focus();
+  }
+
   function modeText() {
     if (ui.drawMode === "h") return "Horizontal line: click or tap the chart at the price you want. Press Esc to cancel.";
     if (ui.drawMode === "t") {
@@ -745,6 +782,8 @@
     });
     var empty = document.getElementById("pt-draw-empty");
     if (empty) empty.hidden = list.length > 0;
+    var asking = document.querySelector(".pt-confirm-clear");
+    if (asking && !list.length) asking.remove();  // nothing left to clear
     root.querySelectorAll("[data-clear]").forEach(function (b) { b.disabled = !list.length; });
   }
 
@@ -851,7 +890,7 @@
     form.appendChild(row2);
     form.appendChild(el("p", "pt-tiny muted", "A keyboard trend line joins the two days' closing prices."));
     panel.appendChild(form);
-    var clear = button("button-secondary pt-draw-clear", "Clear drawings", clearDrawings);
+    var clear = button("button-secondary pt-draw-clear", "Clear drawings", confirmClear);
     clear.dataset.key = "draw-clear-panel";
     clear.dataset.clear = "";
     panel.appendChild(clear);
@@ -1038,7 +1077,7 @@
       b.setAttribute("aria-pressed", ui.drawMode === m[0] ? "true" : "false");
       bar.appendChild(b);
     });
-    var clear = button("pt-tool", "Clear drawings", clearDrawings);
+    var clear = button("pt-tool", "Clear drawings", confirmClear);
     clear.dataset.key = "draw-clear";
     clear.dataset.clear = "";
     bar.appendChild(clear);
@@ -1367,8 +1406,25 @@
       if (time !== null) onChartPoint({ time: time, point: { x: x, y: y } });
     });
     // a few bars fill the width from the left; a long history opens on the latest 90 bars (zoom out for the rest)
-    if (bars.length > 90) chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
-    else chart.timeScale().fitContent();
+    var shownBars = Math.min(bars.length, 90);
+    if (lastLabel) {
+      // the Partial / Final Short Week label sits over the last bar, and "Your line" labels sit at the right edge:
+      // leave about 120 px after the last bar so they never cover each other. Empty slots also narrow the bars, so
+      // solve for them: k slots of width W / (n + k) make 120 px, unless bars are already at their widest (28 px).
+      var plotWidth = Math.max(canvas.clientWidth - 70, 160);
+      var slots = Math.ceil(120 * shownBars / (plotWidth - 120));
+      if (plotWidth / (shownBars + Math.ceil(120 / 28)) >= 28) slots = Math.ceil(120 / 28);
+      chart.timeScale().setVisibleLogicalRange({ from: bars.length - shownBars, to: bars.length - 1 + slots });
+      requestAnimationFrame(function () {  // the measured gap, for the visual regression check
+        if (!chart) return;
+        var x = chart.timeScale().timeToCoordinate(last.time);
+        if (x !== null) canvas.dataset.weekLabelRoom = String(Math.round(chart.paneSize(0).width - x));
+      });
+    } else if (bars.length > 90) {
+      chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
+    } else {
+      chart.timeScale().fitContent();
+    }
 
     var indexOf = {};
     bars.forEach(function (b, j) { indexOf[b.time] = j; });

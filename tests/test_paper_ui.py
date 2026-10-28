@@ -453,3 +453,17 @@ def test_keyboard_alternatives_and_the_drawings_panel():
     assert "A keyboard trend line joins the two days' closing prices." in t
     assert 'remove.setAttribute("aria-label", "Remove " +' in code and 'clear.dataset.clear = "";' in code
     assert "kept in this browser only; they never change prices, orders or your portfolio" in t
+
+
+# ---- P4 step 7 adjustments: weekly label room, Clear drawings confirmation ----
+
+def test_weekly_label_has_room_beside_the_your_line_labels():
+    code = js()
+    assert "var slots = Math.ceil(120 * shownBars / (plotWidth - 120));" in code and "canvas.dataset.weekLabelRoom" in code
+
+
+def test_clear_drawings_asks_first_and_remove_does_not():
+    code, t = js(), text()
+    assert code.count("confirmClear)") == 2  # toolbar and panel buttons both ask first
+    assert '"Yes, clear drawings"' in code and '"Keep drawings"' in code and "This cannot be undone." in t
+    assert 'var remove = button("button-secondary", "Remove", function () { removeDrawing(d.id); });' in code
