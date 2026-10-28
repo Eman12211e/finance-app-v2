@@ -415,3 +415,41 @@ def test_card_headings_name_the_period_and_line_style():
     code = js()
     assert '(lineSlot++ === 0 ? "solid line" : "dashed line")' in code and "entry.style" in code
     assert 'request("/api/analysis/guide")' in read("static", "js", "api.js")
+
+
+# ---- P4 step 7: drawing tools ----
+
+def test_drawings_live_only_in_browser_storage_and_go_with_the_session():
+    code = js()
+    assert 'var DRAWINGS_KEY = "paper-drawings-v1";' in code and "var MAX_DRAWINGS = 20;" in code
+    assert code.count("DRAWINGS_KEY") == 4  # declared, read, written, cleared with the session; never sent
+    assert "window.localStorage.removeItem(DRAWINGS_KEY);" in code
+    for name in ("postAnalysis", "paperPost"):
+        for body in re.findall(name + r"\(\{([^}]*)\}", code):
+            assert "draw" not in body.lower(), body
+
+
+def test_drawings_are_dates_and_dollar_prices_checked_when_read():
+    code = js()
+    assert 'addDrawing({ kind: "h", price: Number(raw) })' in code and 'addDrawing({ kind: "t", a: ends[0], b: ends[1] })' in code
+    assert "d.a.date < d.b.date" in code and "isFinite(v) && v > 0" in code and ".filter(validDrawing).slice(0, MAX_DRAWINGS)" in code
+    assert "ts.timeToCoordinate(l.t1), y1 = series.priceToCoordinate(l.p1)" in code  # pixels only while drawing
+    assert "t1: barTimeFor(d.a.date)" in code  # a date between weekly bars belongs to the week it falls in
+
+
+def test_mouse_and_touch_drawing_use_the_price_pane_and_can_be_cancelled():
+    code, t = js(), text()
+    assert 'canvas.addEventListener("pointerup"' in code and "if (x > size.width || y > size.height) return;" in code
+    assert "chart.timeScale().coordinateToTime(x)" in code and "Math.abs(e.clientX - pressed.x) > 6" in code
+    assert "candles.coordinateToPrice(p.point.y)" in code and "Press Esc to cancel." in t
+    assert 'if (e.key === "Escape" && ui.drawMode && regions) setDrawMode(null);' in code
+    assert "candles.attachPrimitive(trendLines(trend));" in code and 'title: "Your line"' in code
+
+
+def test_keyboard_alternatives_and_the_drawings_panel():
+    code, t = js(), text()
+    assert "Enter a price in dollars from 0.01 to 100,000, like 210.00." in t
+    assert "Choose an end date after the start date." in t and 'to.setAttribute("aria-invalid"' in code
+    assert "A keyboard trend line joins the two days' closing prices." in t
+    assert 'remove.setAttribute("aria-label", "Remove " +' in code and 'clear.dataset.clear = "";' in code
+    assert "kept in this browser only; they never change prices, orders or your portfolio" in t

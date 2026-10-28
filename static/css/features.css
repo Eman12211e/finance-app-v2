@@ -368,6 +368,31 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-what-panel[hidden] { display: none; }
 .pt-ind-menu { max-height: min(80vh, 640px); overflow-y: auto; }
 
+/* drawings (P4 step 7): the drawing-mode banner and "Your drawings" */
+.pt-tool[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--surface-2); }
+.pt-tool:disabled { color: var(--muted); cursor: default; }
+.pt-draw-banner { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; justify-content: space-between; margin-top: var(--s-2);
+  padding: var(--s-2) var(--s-3); border: 1px solid var(--accent); border-radius: var(--r-8); background: var(--surface-2); font-size: var(--t-14); }
+.pt-draw-banner[hidden] { display: none; }
+.pt-drawings { display: grid; gap: var(--s-2); margin-top: var(--s-2); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-12); }
+.pt-drawings h4 { margin: 0; font-size: var(--t-14); display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: baseline; }
+.pt-drawings p { margin: 0; }
+.pt-drawings [hidden] { display: none; }
+.pt-draw-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.pt-draw-list li { display: flex; gap: var(--s-2) var(--s-3); align-items: center; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-8); font-size: var(--t-14); }
+.pt-draw-list li span:nth-child(2) { flex: 1; min-width: 0; }
+.pt-swatch-draw { border-top: 2px solid var(--text); }
+.pt-draw-status:empty { display: none; }
+.pt-draw-form { border: 1px solid var(--border); border-radius: var(--r-8); margin: 0; padding: var(--s-2) var(--s-3) var(--s-3); display: grid; gap: var(--s-2); min-width: 0; }
+.pt-draw-form legend { font-size: var(--t-14); font-weight: 600; padding: 0 var(--s-1); }
+.pt-draw-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: end; }
+.pt-draw-row label { display: grid; gap: 2px; font-size: var(--t-12); color: var(--muted); min-width: 0; }
+.pt-draw-row input, .pt-draw-row select { min-height: 32px; max-width: 100%; padding: var(--s-1) var(--s-2); border: 1px solid var(--border);
+  border-radius: var(--r-8); background: var(--surface); color: var(--text); font-size: var(--t-14); }
+.pt-draw-row input[aria-invalid="true"], .pt-draw-row select[aria-invalid="true"] { border-color: var(--down); }
+.pt-draw-row .button-secondary, .pt-draw-clear { min-height: 32px; }
+.pt-draw-clear { justify-self: start; }
+
 /* positions table */
 .pt-positions { display: grid; gap: var(--s-3); }
 .pt-positions h3 { display: flex; gap: var(--s-2); align-items: center; }

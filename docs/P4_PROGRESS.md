@@ -11,7 +11,8 @@ Read this first after any context reset. Brief and decisions: `docs/P4_BRIEF.md`
 | `03b553d` | 4: SMA and EMA overlays (approved) |
 | `c15c93a` | 5: RSI and MACD panes (approved) |
 | `d8b90d7` | 6 content: final explanation text (approved) |
-| this commit | 6: explanation cards |
+| `287a3c8` | 6: explanation cards (approved) |
+| this commit | 7: drawing tools |
 
 ## Step 3 — Analysis endpoint
 
@@ -132,3 +133,40 @@ indicator that is off without switching it on or sending a request, one explanat
 11, Final Short Week on day 250, phone: one column, no overflow, What is this? inside the sheet; only local requests;
 no console errors); panes 26/26; overlays 36/36; P2.5/P3 workflows 198/198; visual audit clean on all 20 tab/width/
 theme screens. Screenshots (not committed): `C:\Users\emanl\finance-app-v2-screenshots\P4\step-6\`.
+
+## Step 7 — Drawing tools
+
+- **Storage:** `paper-drawings-v1` in localStorage, keyed by market and ticker; each drawing is
+  `{id, kind: "h", price}` or `{id, kind: "t", a: {date, price}, b: {date, price}}` (ISO dates, dollar prices to the
+  cent; never pixels). Re-checked when read (shape, dates in order, finite positive prices), at most 20 per ticker,
+  cleared with the session by Reset and Change market. Never sent to the server and never part of prices, orders,
+  fills or the portfolio.
+- **Chart:** horizontal lines are the candle series' price lines (dashed, in the text colour, titled "Your line" with
+  an axis label); trend lines are a series primitive that turns dates and prices into pixels only while drawing, so
+  zoom and scroll follow. On the weekly view a date maps to the week it falls in (the same rule as trade markers).
+  Adding or removing a drawing updates the live chart in place; nothing is rebuilt, so the zoom stays.
+- **Mouse and touch:** Horizontal line / Trend line toolbar buttons (`aria-pressed`) start a mode with a status banner
+  ("click or tap the chart…", "…the second point…", Esc or Cancel ends it). A press that does not move counts; a drag
+  still pans. Points snap to the nearest bar's date; the price follows the pointer, rounded to the cent. Price pane
+  only. A second point on the same date is refused with a reason.
+- **Keyboard:** a typed horizontal-line price (validated: 0.01 to 100,000, up to two decimals, "$" and "," allowed;
+  Enter adds) and a trend line between two chosen days' closing prices (daily closes up to today from the watchlist's
+  bars; the end must be after the start). Errors set `aria-invalid` and are announced.
+- **Your drawings** panel under the chart: each drawing with a Remove button named after it, Clear drawings (also in
+  the toolbar), a polite status line ("Added: …", "Removed: …"). The chart's text summary lists every drawing; on the
+  weekly view it names the week each end falls in.
+
+**Found and fixed while testing:** the chart library treats a quick second click or tap (under about half a second)
+as a double-click and drops it, so a trend line's second point could be lost. Drawing now uses the browser's pointer
+events on the chart (a press that does not move), which report every click and tap.
+
+**Checks:** pytest 539 passed (+4 static Step 7 checks). `check_endpoints.py`: 9 SKIP, exit 0, data file restored.
+Headless Edge (zero-cost demo server): drawing checks 36/36 (mouse horizontal and trend lines, same-date refusal, Esc
+and Cancel, no drawing without a mode, typed prices refused and accepted, keyboard trend lines on the days' closes,
+summary, portfolio unchanged, reload, weekly mapping of a Wednesday to its week, theme change, per-ticker lists,
+Remove with focus kept in the panel, Clear, Reset and Change market clearing, touch taps for both kinds, phone
+without overflow, no drawing data in any request, only local requests, no console errors); explanations 22/22; panes
+26/26; overlays 36/36; P2.5/P3 workflows 198/198; visual audit clean on all 20 tab/width/theme screens.
+Screenshots (not committed): `C:\Users\emanl\finance-app-v2-screenshots\P4\step-7\`.
+
+**Open:** on the weekly view the "Your line" labels at the right edge can overlap the Partial Week marker's text.

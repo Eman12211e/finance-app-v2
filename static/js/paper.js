@@ -8,6 +8,8 @@
   var SESSION_KEY = "paper-session-v1";
   var JOURNAL_KEY = "paper-journal-v1";
   var INDICATORS_KEY = "paper-indicators-v1";  // chart overlays chosen in this browser; never part of the session
+  var DRAWINGS_KEY = "paper-drawings-v1";  // your chart drawings, per market and ticker; never sent anywhere
+  var MAX_DRAWINGS = 20;  // per ticker
   var OVERLAYS = [["sma", 20], ["sma", 50], ["ema", 12], ["ema", 26]];  // the approved presets drawn on the price
   var MAX_OVERLAYS = 2;
   var PANES = [["rsi", 14], ["macd", [12, 26, 9]]];  // the approved presets drawn in panes below the price
@@ -30,7 +32,8 @@
     var saved = readIndicators();
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
              historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily",
-             overlays: saved.overlays, panes: saved.panes, indMenuOpen: false, learnOpen: {}, whatOpen: null };
+             overlays: saved.overlays, panes: saved.panes, indMenuOpen: false, learnOpen: {}, whatOpen: null,
+             drawMode: null, drawStart: null };
   }
 
   function el(tag, cls, text) {
@@ -115,6 +118,7 @@
       window.localStorage.removeItem(SESSION_KEY);
       window.localStorage.removeItem(JOURNAL_KEY);
       window.localStorage.removeItem(INDICATORS_KEY);  // a new session starts with every indicator off
+      window.localStorage.removeItem(DRAWINGS_KEY);  // and with no drawings
     } catch (e) { /* storage unavailable */ }
   }
 
@@ -185,6 +189,7 @@
     call("market", { state: view.state }, function (data) {
       market = data;
       refresh(["watch"]);
+      fillTrendDates();  // the keyboard trend-line dates follow the new day
     });
   }
 
@@ -608,6 +613,287 @@
   function disposeChart() {
     if (chart) chart.remove();
     chart = null;
+    drawLayer = null;
+  }
+
+  // ---- drawings (P4 step 7): horizontal and trend lines, kept in this browser as dates and dollar prices ----
+  // They are only ever drawn: never sent to the server, never part of prices, orders, fills or the portfolio.
+
+  var drawLayer = null;  // the live chart's drawing handles: adding or removing a drawing never rebuilds the chart
+
+  function readAllDrawings() {
+    try {
+      var all = JSON.parse(window.localStorage.getItem(DRAWINGS_KEY) || "{}");
+      return all && typeof all === "object" && !Array.isArray(all) ? all : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function validDrawing(d) {  // saved drawings are re-checked: only well-formed lines are drawn
+    var day = /^\d{4}-\d{2}-\d{2}$/;
+    var price = function (v) { return typeof v === "number" && isFinite(v) && v > 0 && v < 10000000; };
+    if (!d || typeof d.id !== "string") return false;
+    if (d.kind === "h") return price(d.price);
+    return d.kind === "t" && !!d.a && !!d.b && day.test(d.a.date) && day.test(d.b.date) && d.a.date < d.b.date
+      && price(d.a.price) && price(d.b.price);
+  }
+
+  function drawingsKey() {
+    return view.scenario.id + "|" + ui.symbol;
+  }
+
+  function drawingsFor() {
+    var list = readAllDrawings()[drawingsKey()];
+    return (Array.isArray(list) ? list : []).filter(validDrawing).slice(0, MAX_DRAWINGS);
+  }
+
+  function saveDrawings(list) {
+    var all = readAllDrawings();
+    all[drawingsKey()] = list;
+    try { window.localStorage.setItem(DRAWINGS_KEY, JSON.stringify(all)); } catch (e) { /* storage unavailable */ }
+    syncDrawings();
+  }
+
+  function dollars(price) {
+    return money(Math.round(price * 100));
+  }
+
+  function describeDrawing(d, dayText) {
+    var day = dayText || niceDate;
+    return d.kind === "h" ? "Horizontal line at " + dollars(d.price)
+      : "Trend line from " + day(d.a.date) + " (" + dollars(d.a.price) + ") to " + day(d.b.date) + " (" + dollars(d.b.price) + ")";
+  }
+
+  function drawStatus(text, error) {
+    var status = document.getElementById("pt-draw-status");
+    if (!status) return;
+    status.textContent = text;
+    status.classList.toggle("error-text", !!error);
+  }
+
+  function addDrawing(d) {
+    var list = drawingsFor();
+    if (list.length >= MAX_DRAWINGS) {
+      drawStatus("You have " + MAX_DRAWINGS + " drawings on " + ui.symbol + ". Remove one to add another.", true);
+      return false;
+    }
+    d.id = "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    list.push(d);
+    saveDrawings(list);
+    drawStatus("Added: " + describeDrawing(d) + ".", false);
+    return true;
+  }
+
+  function removeDrawing(id) {
+    var list = drawingsFor(), gone = list.filter(function (d) { return d.id === id; })[0];
+    saveDrawings(list.filter(function (d) { return d.id !== id; }));
+    if (gone) drawStatus("Removed: " + describeDrawing(gone) + ".", false);
+    var next = document.querySelector("#pt-draw-list button") || document.querySelector('[data-key="draw-add-h"]');
+    if (next) next.focus();  // the removed row's button is gone: keep the keyboard in the panel
+  }
+
+  function clearDrawings() {
+    if (!drawingsFor().length) return;
+    saveDrawings([]);
+    drawStatus("Cleared every drawing on " + ui.symbol + ".", false);
+  }
+
+  function modeText() {
+    if (ui.drawMode === "h") return "Horizontal line: click or tap the chart at the price you want. Press Esc to cancel.";
+    if (ui.drawMode === "t") {
+      return "Trend line: click or tap the " + (ui.drawStart ? "second" : "first") + " point on the chart. Press Esc to cancel.";
+    }
+    return "";
+  }
+
+  function setDrawMode(mode) {
+    ui.drawMode = mode;
+    ui.drawStart = null;
+    if (!root) return;
+    root.querySelectorAll("[data-draw]").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.draw === mode ? "true" : "false");
+    });
+    showBanner();
+    if (drawLayer) drawLayer.pending(null);
+  }
+
+  function showBanner(note) {
+    var banner = document.getElementById("pt-draw-banner");
+    if (!banner) return;
+    banner.hidden = !ui.drawMode;
+    banner.querySelector("span").textContent = note || modeText();
+  }
+
+  // the chart and the panel follow the stored drawings
+  function syncDrawings() {
+    var list = drawingsFor();
+    if (drawLayer) drawLayer.sync(list);
+    var items = document.getElementById("pt-draw-list");
+    if (!items) return;
+    items.textContent = "";
+    list.forEach(function (d) {
+      var li = el("li");
+      var swatch = el("span", "pt-swatch pt-swatch-draw");
+      swatch.setAttribute("aria-hidden", "true");
+      li.appendChild(swatch);
+      li.appendChild(el("span", null, describeDrawing(d)));
+      var remove = button("button-secondary", "Remove", function () { removeDrawing(d.id); });
+      remove.setAttribute("aria-label", "Remove " + describeDrawing(d).replace(/^./, function (c) { return c.toLowerCase(); }));
+      li.appendChild(remove);
+      items.appendChild(li);
+    });
+    var empty = document.getElementById("pt-draw-empty");
+    if (empty) empty.hidden = list.length > 0;
+    root.querySelectorAll("[data-clear]").forEach(function (b) { b.disabled = !list.length; });
+  }
+
+  // the trend-line picker lists the daily closes up to today (the watchlist's bars; never later)
+  function fillTrendDates() {
+    var from = document.getElementById("pt-tline-from"), to = document.getElementById("pt-tline-to");
+    if (!from || !to) return;
+    var ready = marketIsCurrent() && market.bars[ui.symbol];
+    [from, to].forEach(function (sel, k) {
+      var keep = sel.value;
+      sel.textContent = "";
+      if (!ready) {
+        sel.appendChild(el("option", null, "Loading dates…"));
+        sel.disabled = true;
+        return;
+      }
+      sel.disabled = false;
+      market.dates.forEach(function (d, j) {
+        var o = el("option", null, niceDate(d) + " close (" + money(market.bars[ui.symbol][j].c) + ")");
+        o.value = d;
+        sel.appendChild(o);
+      });
+      var n = market.dates.length;
+      sel.value = keep && market.dates.indexOf(keep) !== -1 ? keep : market.dates[k === 0 ? Math.max(0, n - 21) : n - 1];
+    });
+  }
+
+  function addTypedLine() {
+    var input = document.getElementById("pt-hline-price"), raw = input.value.replace(/[$,\s]/g, "");
+    var ok = /^\d+(\.\d{1,2})?$/.test(raw) && Number(raw) > 0 && Number(raw) <= 100000;
+    input.setAttribute("aria-invalid", ok ? "false" : "true");
+    if (!ok) {
+      drawStatus("Enter a price in dollars from 0.01 to 100,000, like 210.00.", true);
+      input.focus();
+      return;
+    }
+    if (addDrawing({ kind: "h", price: Number(raw) })) input.value = "";
+  }
+
+  function addPickedTrend() {
+    var from = document.getElementById("pt-tline-from"), to = document.getElementById("pt-tline-to");
+    if (from.disabled) return;
+    var a = market.dates.indexOf(from.value), b = market.dates.indexOf(to.value);
+    to.setAttribute("aria-invalid", b > a ? "false" : "true");
+    if (!(b > a)) {
+      drawStatus("Choose an end date after the start date.", true);
+      to.focus();
+      return;
+    }
+    var bars = market.bars[ui.symbol];
+    addDrawing({ kind: "t", a: { date: from.value, price: bars[a].c / 100 }, b: { date: to.value, price: bars[b].c / 100 } });
+  }
+
+  function drawingsPanel() {
+    var panel = el("section", "pt-drawings");
+    panel.id = "pt-drawings";
+    panel.setAttribute("aria-labelledby", "pt-drawings-title");
+    var h = el("h4", null, "Your drawings ");
+    h.id = "pt-drawings-title";
+    h.appendChild(el("span", "pt-tiny muted", "(kept in this browser only; they never change prices, orders or your portfolio)"));
+    panel.appendChild(h);
+    var empty = el("p", "pt-small", "No drawings on " + ui.symbol + " yet. Use Horizontal line or Trend line above the "
+      + "chart, or add one with the keyboard.");
+    empty.id = "pt-draw-empty";
+    panel.appendChild(empty);
+    var list = el("ul", "pt-draw-list");
+    list.id = "pt-draw-list";
+    panel.appendChild(list);
+    var status = el("p", "pt-tiny pt-draw-status");
+    status.id = "pt-draw-status";
+    status.setAttribute("aria-live", "polite");
+    panel.appendChild(status);
+
+    var form = el("fieldset", "pt-draw-form");
+    form.appendChild(el("legend", null, "Add a line with the keyboard"));
+    var row1 = el("div", "pt-draw-row");
+    var priceLabel = el("label", null, "Horizontal line price ($)");
+    var price = el("input");
+    price.id = "pt-hline-price";
+    price.type = "text";
+    price.inputMode = "decimal";
+    price.autocomplete = "off";
+    price.placeholder = "210.00";
+    price.setAttribute("aria-describedby", "pt-draw-status");
+    price.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addTypedLine(); } });
+    priceLabel.appendChild(price);
+    row1.appendChild(priceLabel);
+    var addH = button("button-secondary", "Add horizontal line", addTypedLine);
+    addH.dataset.key = "draw-add-h";
+    row1.appendChild(addH);
+    form.appendChild(row1);
+    var row2 = el("div", "pt-draw-row");
+    [["pt-tline-from", "Trend line from"], ["pt-tline-to", "to"]].forEach(function (f) {
+      var label = el("label", null, f[1]);
+      var sel = el("select");
+      sel.id = f[0];
+      sel.setAttribute("aria-describedby", "pt-draw-status");
+      label.appendChild(sel);
+      row2.appendChild(label);
+    });
+    var addT = button("button-secondary", "Add trend line", addPickedTrend);
+    addT.dataset.key = "draw-add-t";
+    row2.appendChild(addT);
+    form.appendChild(row2);
+    form.appendChild(el("p", "pt-tiny muted", "A keyboard trend line joins the two days' closing prices."));
+    panel.appendChild(form);
+    var clear = button("button-secondary pt-draw-clear", "Clear drawings", clearDrawings);
+    clear.dataset.key = "draw-clear-panel";
+    clear.dataset.clear = "";
+    panel.appendChild(clear);
+    return panel;
+  }
+
+  // trend lines drawn on the price pane; dates and prices become pixels only while drawing, so zoom and scroll follow
+  function trendLines(state) {
+    var chartApi = null, series = null;
+    var renderer = {
+      draw: function (target) {
+        if (!chartApi || !series) return;
+        target.useMediaCoordinateSpace(function (scope) {
+          var ctx = scope.context, ts = chartApi.timeScale();
+          ctx.save();
+          ctx.strokeStyle = state.ink;
+          ctx.fillStyle = state.ink;
+          ctx.lineWidth = 1.5;
+          var dot = function (x, y) { ctx.beginPath(); ctx.arc(x, y, 3.5, 0, 2 * Math.PI); ctx.fill(); };
+          state.lines.concat(state.pending ? [state.pending] : []).forEach(function (l) {
+            var x1 = ts.timeToCoordinate(l.t1), y1 = series.priceToCoordinate(l.p1);
+            if (x1 === null || y1 === null) return;
+            if (l.t2) {
+              var x2 = ts.timeToCoordinate(l.t2), y2 = series.priceToCoordinate(l.p2);
+              if (x2 === null || y2 === null) return;
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+              dot(x2, y2);
+            }
+            dot(x1, y1);
+          });
+          ctx.restore();
+        });
+      },
+    };
+    return {
+      attached: function (param) { chartApi = param.chart; series = param.series; state.redraw = param.requestUpdate; },
+      detached: function () { chartApi = null; series = null; },
+      paneViews: function () { return [{ renderer: function () { return renderer; } }]; },
+    };
   }
 
   function token(name) {
@@ -745,9 +1031,29 @@
     btn.setAttribute("aria-controls", "pt-ind-menu");
     btn.setAttribute("aria-expanded", ui.indMenuOpen ? "true" : "false");
     bar.appendChild(btn);
+    [["h", "Horizontal line"], ["t", "Trend line"]].forEach(function (m) {
+      var b = button("pt-tool", m[1], function () { setDrawMode(ui.drawMode === m[0] ? null : m[0]); });
+      b.dataset.draw = m[0];
+      b.dataset.key = "draw-" + m[0];
+      b.setAttribute("aria-pressed", ui.drawMode === m[0] ? "true" : "false");
+      bar.appendChild(b);
+    });
+    var clear = button("pt-tool", "Clear drawings", clearDrawings);
+    clear.dataset.key = "draw-clear";
+    clear.dataset.clear = "";
+    bar.appendChild(clear);
     bar.appendChild(el("span", "pt-tool-note", ui.overlays.length + " of " + MAX_OVERLAYS + " lines on the price, "
       + ui.panes.length + " of " + MAX_PANES + " panes"));
     wrap.appendChild(bar);
+    var banner = el("div", "pt-draw-banner");
+    banner.id = "pt-draw-banner";
+    banner.setAttribute("role", "status");
+    banner.appendChild(el("span", null, modeText()));
+    var cancel = button("button-secondary", "Cancel", function () { setDrawMode(null); });
+    cancel.dataset.key = "draw-cancel";
+    banner.appendChild(cancel);
+    banner.hidden = !ui.drawMode;
+    wrap.appendChild(banner);
 
     var menu = el("div", "pt-ind-menu");
     menu.id = "pt-ind-menu";
@@ -1004,6 +1310,62 @@
     }
     marks.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
     LC.createSeriesMarkers(candles, marks);
+
+    var ink = token("--text"), priceLines = [], trend = { ink: ink, lines: [], pending: null, redraw: function () {} };
+    var dayText = weeklyView ? function (date) { return "the week of " + niceDate(barTimeFor(date)); } : null;
+    var drawSummary = el("span");
+    candles.attachPrimitive(trendLines(trend));
+    drawLayer = {
+      sync: function (list) {
+        priceLines.forEach(function (pl) { candles.removePriceLine(pl); });
+        priceLines = list.filter(function (d) { return d.kind === "h"; }).map(function (d) {
+          return candles.createPriceLine({ price: d.price, color: ink, lineWidth: 1, lineStyle: LC.LineStyle.Dashed,
+            axisLabelVisible: true, title: "Your line" });
+        });
+        // a date between weekly bars belongs to the week it falls in
+        trend.lines = list.filter(function (d) { return d.kind === "t"; }).map(function (d) {
+          return { t1: barTimeFor(d.a.date), p1: d.a.price, t2: barTimeFor(d.b.date), p2: d.b.price };
+        });
+        trend.redraw();
+        drawSummary.textContent = list.length ? " Your drawings: " + list.map(function (d) {
+          return describeDrawing(d, dayText).replace(/^./, function (c) { return c.toLowerCase(); });
+        }).join("; ") + "." : "";
+      },
+      pending: function (at) {
+        trend.pending = at ? { t1: barTimeFor(at.date), p1: at.price } : null;
+        trend.redraw();
+      },
+    };
+    function onChartPoint(p) {
+      var price = candles.coordinateToPrice(p.point.y);
+      if (price === null || !(price > 0)) return;  // above or below the price range shown
+      var at = { date: timeKey(p.time), price: Math.round(price * 100) / 100 };  // the nearest bar's date, in cents
+      if (ui.drawMode === "h") {
+        addDrawing({ kind: "h", price: at.price });
+        setDrawMode(null);
+      } else if (!ui.drawStart) {
+        ui.drawStart = at;
+        drawLayer.pending(at);
+        showBanner();
+      } else if (at.date === ui.drawStart.date) {
+        showBanner("Trend line: choose a second point on a different " + (weeklyView ? "week" : "day") + ". Press Esc to cancel.");
+      } else {
+        var ends = [ui.drawStart, at].sort(function (x, y) { return x.date < y.date ? -1 : 1; });
+        addDrawing({ kind: "t", a: ends[0], b: ends[1] });
+        setDrawMode(null);
+      }
+    }
+    // The browser's pointer events, not the chart's click events: the chart treats a quick second click or tap as a
+    // double-click and drops it, which would lose a trend line's second point. A press that moves is a pan, not a point.
+    var pressed = null;
+    canvas.addEventListener("pointerdown", function (e) { pressed = { x: e.clientX, y: e.clientY }; });
+    canvas.addEventListener("pointerup", function (e) {
+      if (!ui.drawMode || !chart || !pressed || Math.abs(e.clientX - pressed.x) > 6 || Math.abs(e.clientY - pressed.y) > 6) return;
+      var r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, size = chart.paneSize(0);
+      if (x > size.width || y > size.height) return;  // the price pane only, not its scale or the panes below
+      var time = chart.timeScale().coordinateToTime(x);
+      if (time !== null) onChartPoint({ time: time, point: { x: x, y: y } });
+    });
     // a few bars fill the width from the left; a long history opens on the latest 90 bars (zoom out for the rest)
     if (bars.length > 90) chart.timeScale().setVisibleLogicalRange({ from: bars.length - 90, to: bars.length + 1 });
     else chart.timeScale().fitContent();
@@ -1072,7 +1434,12 @@
       + (lastLabel === "Partial Week" ? " The last bar is a Partial Week: this week so far, which can still change."
         : lastLabel ? " The last bar is the Final Short Week: the scenario's final " + last.days + " trading days." : "")
       + " Scroll or pinch to zoom and drag to move through time.";
+    summary.appendChild(drawSummary);
     if (data.indicators.length) box.appendChild(explanationCards(data.indicators));
+    box.appendChild(drawingsPanel());
+    syncDrawings();
+    fillTrendDates();
+    if (ui.drawStart) drawLayer.pending(ui.drawStart);
   };
 
   // One card per active indicator: the reading the API chose from unrounded values, then Learn more (closed by
@@ -1865,6 +2232,9 @@
     dock();
   });
   window.addEventListener("resize", dock);
+  document.addEventListener("keydown", function (e) {  // Esc leaves a drawing mode
+    if (e.key === "Escape" && ui.drawMode && regions) setDrawMode(null);
+  });
   document.addEventListener("click", function (e) {  // the Indicators popover closes on a click elsewhere
     if (ui.indMenuOpen && regions && !e.target.closest(".pt-tools")) setMenu(false, false);
   });
