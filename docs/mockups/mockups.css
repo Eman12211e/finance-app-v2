@@ -352,3 +352,65 @@ details.history summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-
 .state-note { font-size: var(--t-12); color: var(--muted); font-weight: 600; margin-bottom: var(--s-2); }
 .only-narrow { display: none; }
 @media (max-width: 720px) { .explain-grid { grid-template-columns: 1fr; } .only-wide { display: none; } .only-narrow { display: block; } }
+
+/* ---- P5 Test a strategy (proposal for the mockup gate) ----
+   The hypothetical money line is drawn in the "Simulated" amber, so the one new colour use repeats the app's mark for
+   simulated figures; buy and hold is the muted dashed line. In / Out are outlined flags on a stem, unlike the filled
+   B / S triangles of the learner's own practice trades. Never colour alone: solid / dashed, names on the chart. */
+.centre { min-width: 0; display: grid; gap: var(--s-4); }
+.view-switch { max-width: 360px; }
+.view-switch button { min-height: 40px; }
+.setup { display: grid; gap: var(--s-3); }
+.setup-head { display: flex; justify-content: space-between; align-items: center; }
+.setup-head h2 { margin: 0; }
+.select { width: 100%; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-8); background: var(--surface); color: var(--text); min-height: 40px; }
+.choice { border: 0; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.rule { border: 1px solid var(--border); border-radius: var(--r-12); padding: var(--s-2) var(--s-3); display: grid; gap: var(--s-1); }
+.rule:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.rule label { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--s-2); align-items: baseline; }
+.rule label > span { grid-column: 2; }
+.opt { display: flex; gap: var(--s-2); align-items: baseline; font-size: var(--t-14); min-height: 32px; }
+.link-btn { justify-self: start; border: 0; background: none; padding: 0; color: var(--accent); text-decoration: underline; font-size: var(--t-12); min-height: 24px; }
+
+.results { display: grid; gap: var(--s-3); padding-left: var(--s-6); }
+.results h2 { margin: 0; font-size: var(--t-20); }
+.results.waiting, .halves.waiting { border-style: dashed; padding-left: var(--s-4); }
+.outcome { font-size: var(--t-20); line-height: 1.4; max-width: 62ch; }
+.outcome b { font-weight: 700; }
+.metrics th[scope="row"] { text-align: left; font-size: var(--t-14); color: var(--text); font-weight: 600; border-bottom: 1px solid var(--border); padding: var(--s-2); }
+.metrics thead th { white-space: nowrap; }
+.metrics tfoot th, .metrics tfoot td { border-bottom: 0; font-weight: 700; padding-top: var(--s-3); }
+.cell-note { display: block; font-size: var(--t-12); color: var(--muted); font-weight: 400; }
+.fills td { font-size: var(--t-14); white-space: nowrap; }
+.fills td:first-child, .fills td:nth-child(2), .fills td:nth-child(3) { text-align: left; }
+.fills th:nth-child(2), .fills th:nth-child(3) { text-align: left; }
+.halves { display: grid; gap: var(--s-2); }
+.halves h3, .chart-card h3, .h-small { font-size: var(--t-16); margin: 0; }
+.how summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-display); }
+.how ul { margin: var(--s-2) 0 0; padding-left: var(--s-5); display: grid; gap: var(--s-1); max-width: 80ch; }
+.explain details summary { cursor: pointer; font-size: var(--t-14); font-weight: 600; color: var(--accent); }
+.standing { font-size: var(--t-14); color: var(--muted); border-left: 3px solid var(--warning); padding-left: var(--s-3); max-width: 80ch; }
+
+.swatch.strat { border-top: 3px solid var(--warning); }
+.swatch.bench { border-top: 2px dashed var(--muted); }
+.flag-key { font-style: normal; font-size: 10px; font-weight: 700; border: 1.5px solid var(--text); border-radius: 3px; padding: 0 3px; line-height: 13px; }
+.chart-svg .warmup { fill: var(--surface-2); opacity: .7; }
+.chart-svg .warmup-tag, .chart-svg .start-tag { fill: var(--muted); font-weight: 600; }
+.chart-svg .start-line { stroke: var(--muted); stroke-dasharray: 2 3; }
+.chart-svg .flag line { stroke: var(--text); stroke-width: 1.2; }
+.chart-svg .flag rect { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+.chart-svg .flag text { fill: var(--text); font-size: 10px; font-weight: 700; }
+.chart-svg .val-strat { fill: none; stroke: var(--warning); stroke-width: 2.5; }
+.chart-svg .val-bench { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 6 4; }
+.chart-svg .tag-s { fill: var(--warning); } .chart-svg .tag-bh { fill: var(--muted); }
+.chart-svg .line-tag, .chart-svg .warmup-tag, .chart-svg .start-tag { paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.phone .outcome { font-size: var(--t-16); }
+.phone .results { padding-left: var(--s-5); }
+.phone .metrics th, .phone .metrics td { padding: var(--s-1) var(--s-1); font-size: var(--t-12); }
+.phone .metrics thead th { white-space: normal; }
+.explain-grid { align-items: start; }
+.fills th, .fills td { padding-inline: var(--s-1); }
+.fills td:first-child, .fills td:nth-child(2) { white-space: normal; }
+.nowrap { white-space: nowrap; }
+.state-wide .chart-svg { max-width: 760px; }
+.phone .setup > p.small { display: none; }

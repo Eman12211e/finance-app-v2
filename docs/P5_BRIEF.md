@@ -70,10 +70,16 @@ Practice Trading already does ("Day 70 of 250" is index 69). Every rule below gi
 "Evaluation days" means `L − S`: the number of daily changes in value, which is also the number of days a fill could
 happen. At the minimum, L = 69 gives 20 evaluation days and needs **70 trading days** of history (indices 0–69).
 
+**Warm-up versus evaluation.** The 50 closes of **Days 1–50** (indices 0–49) are price history used only to compute
+SMA 50 and the other indicators. No money is invested during them and no return is counted for them. The evaluation
+begins at the **close of Day 50** with $10,000.00 in cash; that close is the first value point, the first daily change
+counted is Day 50 close → Day 51 close, and the first possible fill is the **Day 51 open**. Day 50's close is shared:
+it is the last warm-up price and the evaluation's starting point.
+
 ### 3.2 Initial state and entry rules
 
 Every preset and the benchmark start identically: **at the close of day S, all cash ($10,000.00), no shares, no
-earlier trades.** Days before S are used only to compute indicators. No position is assumed to exist before S, and no
+earlier trades.** Days 1–50 are used only to compute indicators. No position is assumed to exist before S, and no
 trade before S is inferred from indicator values (in particular, SMA 20 already being above SMA 50 on day S is not
 treated as an earlier entry).
 
@@ -230,8 +236,9 @@ control ("Trade" / "Test a strategy", `aria-pressed`). It uses the same market, 
 - **Chart** (one Lightweight Charts chart, panes as in P4): price candles with **In** / **Out** markers (D11: not
   B / S, so they are not mistaken for the learner's own practice trades), the SMA 20 / 50 lines for the crossover or
   an RSI pane with 30 / 70 guides for the RSI rule, and a value pane with the strategy (solid) and buy-and-hold
-  (dashed) lines. Warm-up days (before S) are marked "warm-up: indicators only". The crosshair readout gives the date,
-  both values and any fill.
+  (dashed) lines. The warm-up, Days 1–50, is shaded and labelled as price history for the indicators only; the value
+  pane starts at the Day 50 close and draws nothing before it. The crosshair readout gives the date, both values and
+  any fill.
 - **Explanations:** a card per metric and per rule, with Learn more (P4 pattern). Text goes through the content gate.
 - **States:** not enough data, no trades, open position at the end, signal on the last day, too short to split,
   request error with a retry.

@@ -8,7 +8,7 @@
 </head>
 <body>
 <div class="review" role="region" aria-label="Mockup review controls">
-  <strong>P2.5 and P4 design mockups</strong>
+  <strong>P2.5, P4 and P5 design mockups</strong>
   <span>Theme:</span>
   <label><input type="radio" name="theme" id="theme-system" checked> System</label>
   <label><input type="radio" name="theme" id="theme-light"> Light</label>
@@ -115,6 +115,36 @@
     <dl>
       <dt>Shown</dt><dd>The Indicators menu at its limit, the drawing-mode banner, a keyboard-form error, RSI above 70, not enough history, flat prices, a weekly view with the week in progress, and an empty drawings list.</dd>
       <dt>For approval</dt><dd>The wording of each state, the indicator colours and line styles, and the partial-week rule in docs/P4_BRIEF.md.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="09-strategy-desktop.html">09 P5 Test a strategy, desktop (1280 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>Replay one fixed rule on the days already reached and compare it with buying and holding the same ticker over the same days.</dd>
+      <dt>Layout hierarchy</dt><dd>Practice Trading keeps its tickers and account strip. A Trade / Test a strategy switch replaces the centre with the results; the right rail holds the setup (ticker, rule, costs, Run test) where the order ticket was. Results: the outcome in one sentence, the measures table, the chart (prices with In / Out, the rule's averages, the value of $10,000), what the rule did, explanation cards, how the test works, earlier and later halves, the standing note.</dd>
+      <dt>Visible immediately</dt><dd>The final values and total returns of the rule and of buy and hold, and the gap in points, with the Simulated mark.</dd>
+      <dt>Needs interaction</dt><dd>Choosing ticker, rule and costs; Run test; Learn more; What is this?</dd>
+      <dt>Desktop vs phone</dt><dd>On phones everything stacks: switch, setup, results, chart, fills as rows (10).</dd>
+      <dt>Keyboard and access</dt><dd>A real form (select, radio groups, a submit button); results announced politely and focus moved to their heading; a real table with row and column headers; the chart has a text summary; the rule's value line is solid amber and buy and hold dashed grey, each named on the chart; In / Out are words, not colours.</dd>
+      <dt>Less confusing because</dt><dd>Both sides start from the same cash on the same day, every assumption is written under "How this test works", and the halves say plainly that they describe, not prove.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="10-strategy-phone.html">10 P5 Test a strategy, phone (390 px)</a></h2>
+    <dl>
+      <dt>Primary task</dt><dd>The same on a phone.</dd>
+      <dt>Layout hierarchy</dt><dd>Switch and setup with Run test in reach; then the outcome and the measures table; then the chart and the fills as rows.</dd>
+      <dt>Keyboard and access</dt><dd>Targets at least 40 px for the switch, select and Run test; the measures table keeps its headers at 390 px without sideways scrolling.</dd>
+    </dl>
+  </section>
+
+  <section class="panel shot">
+    <h2><a href="11-strategy-states.html">11 P5 Test a strategy: states and edge cases</a></h2>
+    <dl>
+      <dt>Shown</dt><dd>Not enough data, no trades, a signal on the last day with shares still held, the RSI rule's chart, too short to split, a failed request, running, and What is this?</dd>
+      <dt>For approval</dt><dd>The wording of each state, the amber / dashed value lines, the In / Out flags, the warm-up shading, and the setup in the order ticket's place.</dd>
     </dl>
   </section>
 
