@@ -6,7 +6,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 |---|---|
 | `2e5d909` | 0: brief, owner decisions D1–D12, day numbering, start and entry rules |
 | `f3e2c3c` | 1: mockups 09–11 (approved); warm-up Days 1–50 kept apart from evaluation |
-| this commit | 2: `services/backtest.py` + tests (for mathematical review) |
+| `b13d641` | 2: `services/backtest.py` + tests (for mathematical review) |
+| this commit | 2 corrections + 3: exact signals, price checks, metrics, comparison, halves (for mathematical review) |
 
 ## Step 2 — Backtesting engine
 
@@ -64,3 +65,82 @@ treating equal averages as above, a non-strict RSI threshold, rounding a buy pri
 starting a day early each fail the tests. `check_endpoints.py`: 9 SKIP, exit 0, data file restored. Protected files
 (`paper_engine.py`, `paper_market.py`, `routes/paper.py`, scenarios) and P4's `indicators.py`, `explain.py`,
 `routes/analysis.py` unchanged.
+
+## Step 2 corrections (owner's review of `b13d641`)
+
+1. **Unaffordable entry:** skipped, never borrowed, recorded in `skipped` with `code: "cash_below_one_share"` and the
+   reason sentence. A rule that signals again later may enter then; buy and hold decides only on its start day, so a
+   skipped benchmark stays in cash (tested both ways).
+2. **Halves restart independently** (see step 3): each half is its own `simulate()` from $10,000.00 and no shares at
+   the close of its own start day; earlier prices feed only the signals.
+3. **Exact decisions:** `signals(closes)` replaces the float comparisons; the engine no longer imports
+   `services.indicators` (the chart lines in step 4 still will). Definitions are the shared indicator's:
+   - SMA 20 above SMA 50 ⇔ `sum20 / 20 > sum50 / 50` ⇔ `5·sum20 > 2·sum50` (integer prefix sums).
+   - Wilder RSI: `g_14 = G / 14`, `g_i = (13·g_(i−1) + gain_i) / 14`. With `g_i = A_i / 14^(i−13)`:
+     `A_14 = G`, `A_i = 13·A_(i−1) + gain_i·14^(i−14)` (substitute and multiply by 14^(i−13)); losses `B_i` share the
+     denominator, so `g/l = A/B`. `RSI = 100 − 100/(1 + A/B)`: `< 30 ⇔ 7A < 3B`, `> 70 ⇔ 3A > 7B`; `B = 0` gives 50
+     (A = 0, "mid") or 100 (A > 0, "high"), the shared convention. Exactly 30 or 70 does nothing.
+   - Verified equal to the exact Fraction recursion and to the float indicator's classification on every day of every
+     symbol, on 200 random small-move series, and at RSI exactly 30 / 70 and one cent either side, and SMA exactly
+     equal and one cent either side. A searched-for case where RSI is exactly 30 but the float reads
+     29.999999999999986 (a false buy for a float comparison) gives no signal. SMA floats cannot flip for whole-cent
+     closes (equal sums divide to equal floats; distinct ones differ by ≥ 0.01 cent), and the tests show they agree.
+4. **Invalid prices:** `simulate` refuses any open or close that is not a positive whole number of cents (bools
+   included), naming the bar; `fill_price` refuses a result below 1 cent (a 1-cent open sold with example costs)
+   instead of filling at zero.
+
+## Step 3 — Metrics, comparison, halves
+
+- **`metrics(sim)`** from the integer daily values v_S..v_L (n = L − S changes):
+  - total return `(v_L − 1,000,000) / 1,000,000`;
+  - max drawdown: largest `(peak − v_t) / peak` against the running peak, compared as exact fractions; ties keep the
+    earliest trough; the peak is the first day its value was reached; `max_drawdown` gives peak and trough
+    {index, date, value_cents}, or null when the value never fell below a previous peak;
+  - daily volatility: sample standard deviation (n − 1) of the exact `v_t / v_(t−1) − 1`, not annualised; the variance
+    is an exact fraction and `sqrt_pct` rounds its square root exactly in integers (`isqrt`), no float step;
+  - buys, sells, `evaluation_days` = n, `days_invested` (days t in S+1..L ending with shares), costs paid in cents.
+  - Percentages round half away from zero to two decimals from exact fractions (`pct`); never "-0.0".
+- **`compare(dates, bars, rule, costs, start)`**: rule and buy and hold on identical days from identical starts, each
+  with `metrics`; `difference_pp` from the exact final values, `(v_L^rule − v_L^b&h) / 10,000`, then rounded. It can
+  differ by 0.01 from subtracting the two rounded returns (tested bound); the UI should show this number, not
+  recompute it.
+- **`halves(...)`**: null unless L − S ≥ 80; `M = S + ⌊(L − S) / 2⌋`; earlier = `compare` on bars up to M from S
+  (identical to the full run's prefix, as it shares S); later = `compare` on all bars from M, restarted with fresh
+  cash and no shares, no inherited position or trades. A cross between M − 1 and M is a decision made on M and is
+  acted on; averages already apart at M are not an entry. Descriptive only: nothing is fitted, nothing is called
+  in-sample or out-of-sample.
+- **`run()`** returns `result = compare(..., 49)` plus `halves`.
+
+**Conventions to review:** rounding half away from zero; drawdown tie → earliest trough, peak's first day;
+volatility of daily value changes including cash days (0% moves lower it, as the brief's explanation says);
+`difference_pp` from exact values; later half restarted at M with a crossing on M counted.
+
+**Checks:** pytest 785 passed (679 before; `tests/test_backtest.py` now 225):
+
+- `ref_metrics`: brute-force drawdown over every pair of days, 60-digit `Decimal` returns, variance, square root and
+  `ROUND_HALF_UP`, equal to `metrics()` for every symbol, rule and cost setting at four window ends and on every half;
+  volatility also within 0.005 of `statistics.stdev` on floats;
+- hand-worked series (returns, tied drawdowns, days invested, 13.77% volatility), flat and rising series, rounding at
+  exactly half a hundredth in both signs, the square root exactly at, just below and just above a rounding boundary;
+- the approved mockup 09 numbers (SYN-HLT1, Day 161): +4.43% / +10.30%, −5.87 points, drawdowns 10.51% / 10.73% with
+  dates, volatility 0.96% / 1.63%, 49 of 111 days, costs $30.91 / $10.89, halves −1.75% / +2.86% and +9.14% / +7.18%;
+- halves: none at L = 128, shown at L = 129 (40 + 40), never on synthetic-a; each half of every long symbol, rule
+  and cost setting starts at $10,000.00 and no shares, equals the exact reference run from its own start and passes
+  the accounting replay; the earlier half equals the full run's prefix; a cross on M is acted on; a position held by
+  the full run at M is not inherited; later prices change nothing earlier in a later-start run; repeat runs identical.
+
+Mutation checks (one at a time, file restored byte for byte, all 12 caught): drawdown from the start value, peak dated
+on its latest day, population standard deviation, later half not restarted, non-strict SMA, non-strict RSI 30, wrong
+RSI recurrence scale, fill-price guard dropped, price validation dropped, rounding at a third, square-root rounding off
+by half, difference from rounded returns.
+
+**Reproduce** (no CI in this repo; from the repo root, any Python 3.12 with pytest):
+
+    python -m pytest -q -p no:cacheprovider               # 785 passed
+    python -m pytest tests/test_backtest.py -q             # 225 passed
+    python scripts/check_endpoints.py; echo $?             # 9 SKIP (no keys), exit 0
+    git checkout -- data/endpoint_check.json               # the check rewrites this file
+
+**Limitations:** volatility and returns are display-rounded floats beside exact cents and indices; all checks run on
+the two fixed synthetic markets plus hand-made series; the brief's §5 line "imports only services.indicators" is now
+"imports only the standard library" (the brief itself is unchanged).
