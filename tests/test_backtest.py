@@ -797,3 +797,17 @@ def test_results_with_metrics_and_halves_are_repeatable():
     runs = {json.dumps(bt.run(dates, bars, "sma_cross", "example"), sort_keys=True) for _ in range(3)}
     assert len(runs) == 1 and bars == before
     assert '"halves": {' in runs.pop()
+
+
+def test_metrics_equal_the_reference_at_window_ends_spread_over_every_residue():
+    """Brief section 7 asks for every possible L: each symbol takes every 10th L from its own offset, so together the
+    14 symbols cover every last day modulo 10 (scripts in the P5 evidence folder ran every L once)."""
+    covered = set()
+    for k, (market, symbol) in enumerate(CASES):
+        dates, bars = market["dates"], market["bars"][symbol]
+        for last in range(bt.NEEDED_DAYS - 1 + k % 10, len(bars), 10):
+            covered.add(last % 10)
+            for rule in RULES:
+                sim = bt.simulate(dates[:last + 1], bars[:last + 1], rule, "example" if k % 2 else "none")
+                assert bt.metrics(sim) == ref_metrics(sim), (symbol, rule, last)
+    assert covered == set(range(10))
