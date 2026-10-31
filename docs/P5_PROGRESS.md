@@ -7,7 +7,9 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `2e5d909` | 0: brief, owner decisions D1–D12, day numbering, start and entry rules |
 | `f3e2c3c` | 1: mockups 09–11 (approved); warm-up Days 1–50 kept apart from evaluation |
 | `b13d641` | 2: `services/backtest.py` + tests (for mathematical review) |
-| this commit | 2 corrections + 3: exact signals, price checks, metrics, comparison, halves (for mathematical review) |
+| `2e8b931` | 2 corrections + 3: exact signals, price checks, metrics, comparison, halves (for mathematical review) |
+| `8cc6be6` | 3b: metrics reference at window ends covering every residue |
+| this commit | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
 
 ## Step 2 — Backtesting engine
 
@@ -144,3 +146,36 @@ by half, difference from rounded returns.
 **Limitations:** volatility and returns are display-rounded floats beside exact cents and indices; all checks run on
 the two fixed synthetic markets plus hand-made series; the brief's §5 line "imports only services.indicators" is now
 "imports only the standard library" (the brief itself is unchanged).
+
+## Step 4 — `POST /api/backtest/run`
+
+- **`routes/backtest.py`** (new blueprint, registered in `app.py`): body exactly {state, symbol, preset, costs};
+  unknown fields, non-string or unknown preset / cost setting / symbol give `INVALID_REQUEST`; a missing, malformed or
+  tampered session gives `INVALID_STATE` (from `paper_engine.market_bars`, the only engine function used); over 64 KB
+  gives 413 (the app-wide limit, via P4's `_body`); anything unexpected is logged and answered `INTERNAL_ERROR` with
+  no details. Bars stop at the session's day, so L is always today. The response (documented in
+  `docs/API_CONTRACT.md`, "Test a strategy") carries both sides' values, fills, skipped entries, end position and
+  metrics, `difference_pp`, `unacted_signal`, halves (metrics and fills, no daily values), the session dates and the
+  rule's own indicator lines in P4 display units, the scenario notice and the brief's standing note. Not enough
+  history gives `result: null` with `needed_days` and `available_days`.
+- It never writes: the engine's state-changing functions are stubbed to fail in a test, the posted state is compared
+  before and after, and a session holding a practice position gets the same result as one without (the test uses
+  its own fictional $10,000).
+- **`tests/test_backtest_api.py`** (72): the mockup request's numbers and shape; every symbol of both markets × both
+  rules × both cost settings at three session days equal to the independent reference (fills, skipped, values,
+  metrics, unacted signal, later half); RSI line; not enough history at days 1, 2, 50, 69 and the first result at
+  70; halves at 129 / 130; nothing after the session day used or returned; a signal on the current day; byte-identical
+  repeat responses; tampered, malformed and missing sessions; read-only; body not an object; 64 KB; GET refused;
+  unknown fields, symbols (including the other market's), presets and cost settings with bools, numbers, lists and
+  objects; a seeded fuzz of 400 malformed bodies (only 200 / 400, reaching OK, INVALID_REQUEST and INVALID_STATE); an
+  unexpected failure answered without details; the route calls only `paper_engine.market_bars`.
+- Route mutation checks: unknown fields accepted, no type check on costs, a full-scenario read instead of the
+  session's days, the benchmark swapped for the strategy, and errors re-raised are each caught. Dropping the type
+  check on the preset is an equivalent mutant (membership in a tuple of strings cannot raise or accept a non-string),
+  kept for clarity.
+- Audit run once (not in the suite, ~3 minutes): engine, metrics and accounting against the reference at **every**
+  last day for every symbol, rule and cost setting (13,644 runs) and the halves at every third last day from 129
+  (7,872 half runs): 0 mismatches. Evidence: `..\finance-app-v2-screenshots\P5\step-3-4\`.
+
+**Checks:** pytest 858 passed (785 + 1 in 3b + 72); `check_endpoints.py` 9 SKIP, exit 0, data file restored;
+protected and P4 files unchanged since `e929096`.

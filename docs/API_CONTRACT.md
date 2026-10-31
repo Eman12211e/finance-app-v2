@@ -600,3 +600,34 @@ orders or fills, and its values are never used by the trading engine.
 `GET /api/analysis/guide` → the approved, static explanation text (`data/indicator_guide.json`): `label`, `footer`,
 `shared` sentences and per-indicator `title`, `style`, `needed`, `readings` templates and the Learn more parts `what`,
 `how`, `watch` (`{n}` = the preset's period). Used by the explanation cards and What is this?; no AI, no market data.
+
+## V2: Test a strategy (P5, simulated only)
+
+`POST /api/backtest/run` {state, symbol, preset: sma_cross|rsi_threshold, costs: example|none} → a hypothetical
+test of one preset rule against buy and hold on one ticker of the verified practice session, using the session's
+days only (up to and including the current simulated day). Read-only: it never changes the session, balances,
+orders or fills; it uses its own fictional $10,000.00 and ignores the learner's practice positions. `source` and
+`as_of` are `null`. Rules, day numbering and metrics: `docs/P5_BRIEF.md` sections 3 and 4.
+
+- Response `data`: `symbol`, `preset`, `costs`, `date` (today), `needed_days` (70), `available_days` (today's index
+  + 1), `window` {start_index (49), start_date, last_index, last_date, evaluation_days} or `null`, `result` or
+  `null` (not enough history: nothing is estimated), `notice` (the scenario's notice), `education` (the standing
+  note).
+- `result`: `strategy` and `benchmark`, each {`values` [{time, value_cents}] from the Day 50 close to today,
+  `fills` [{signal_index, signal_date, index, date, side, shares, open_cents, price_cents, amount_cents, cost_cents,
+  cash_after_cents}], `skipped` [{signal_index, index, date, side, open_cents, price_cents, code:
+  "cash_below_one_share", reason}], `end` {cash_cents, shares, close_cents} (an open position is valued at today's
+  close, not sold), `metrics`}; `difference_pp` (rule minus buy and hold, percentage points, from the exact final
+  values); `unacted_signal` {index, date, side} or `null` (a decision on today's close, which has no next open yet);
+  `halves` or `null`; `dates` (every session day up to today); `indicators` [{type, period, series}] the rule's own
+  lines aligned with `dates`, in P4 display units (SMA 20 and 50 in dollars, or RSI 14 0–100).
+- `metrics` (integer cents and counts are exact; `_pct` values are rounded half away from zero to two decimals):
+  `start_value_cents`, `final_value_cents`, `total_return_pct`, `max_drawdown_pct`, `max_drawdown` {peak, trough:
+  {index, date, value_cents}} or `null`, `daily_volatility_pct` (sample standard deviation of daily value changes,
+  not annualised), `buys`, `sells`, `evaluation_days`, `days_invested`, `days_invested_pct`, `costs_paid_cents`.
+- `halves` (only when each half has at least 40 evaluation days, from Day 130): `midpoint_index`, `midpoint_date`,
+  `earlier` and `later`, each {window, strategy, benchmark, difference_pp, unacted_signal} without `values`. Each half
+  is a separate run restarted with $10,000.00 and no shares; descriptive only, never validation.
+- Errors: `INVALID_STATE` for a missing, malformed or tampered session; `INVALID_REQUEST` (readable message) for a
+  body that is not a JSON object, an unknown field, or an unknown or wrongly typed symbol, preset or cost setting
+  (booleans and numbers included); `REQUEST_TOO_LARGE` (413) over 64 KB; `INTERNAL_ERROR` (500, logged, no details).
