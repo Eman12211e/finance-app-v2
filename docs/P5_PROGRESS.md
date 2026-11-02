@@ -314,5 +314,5 @@ for owner approval.
 miss is the documented equivalent mutant); every-window-end audit 13,644 runs and 7,872 half runs, 0 mismatches;
 `check_endpoints.py` exit 0; browser backtest 133/133, visual_audit 24/24 (now with the strategy view), workflows 198,
 overlays 36, panes 26, explanations 22, drawings 41, each run on its own. Evidence:
-`..inance-app-v2-screenshots\P5inal\REPORT.md`.
+`..\finance-app-v2-screenshots\P5\final\REPORT.md`.
 
