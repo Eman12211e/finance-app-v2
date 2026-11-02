@@ -64,7 +64,10 @@ def test_the_mockup_request_returns_the_approved_numbers_and_shape(client):
                            "last_date": m["dates"][160], "evaluation_days": 111}
     assert d["notice"] == m["notice"] and d["education"].startswith("This is a hypothetical test")
     r = d["result"]
-    assert set(r) == {"strategy", "benchmark", "difference_pp", "unacted_signal", "halves", "dates", "indicators"}
+    assert set(r) == {"strategy", "benchmark", "difference_pp", "unacted_signal", "halves", "dates", "bars",
+                      "indicators"}
+    assert r["bars"] == [{"time": t, "o": x["o"], "h": x["h"], "l": x["l"], "c": x["c"]}
+                         for t, x in zip(m["dates"][:161], m["bars"]["SYN-HLT1"][:161])]  # stops at today
     s, b = r["strategy"], r["benchmark"]
     assert (s["metrics"]["total_return_pct"], b["metrics"]["total_return_pct"], r["difference_pp"]) == (4.43, 10.3, -5.87)
     assert [(f["index"], f["side"], f["shares"]) for f in s["fills"]] == [(79, "buy", 94), (113, "sell", 94),
@@ -135,6 +138,7 @@ def test_nothing_after_the_session_day_is_used_or_returned(client, day):
     d = data(ask(client, state_on(day), "SYN-CON1"))
     m = market()
     assert d["window"]["last_date"] == d["date"] == m["dates"][day] and len(d["result"]["dates"]) == day + 1
+    assert len(d["result"]["bars"]) == day + 1 and d["result"]["bars"][-1]["time"] == m["dates"][day]
     assert all(f["index"] <= day for side in ("strategy", "benchmark") for f in d["result"][side]["fills"])
     # the whole answer equals a run on bars that stop at today, so later prices cannot reach it
     assert d["result"]["strategy"]["metrics"] == bt.run(m["dates"][:day + 1], m["bars"]["SYN-CON1"][:day + 1],

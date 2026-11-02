@@ -37,6 +37,7 @@ ws.onopen = async () => {
     writeFileSync(`${outDir}/${name}.png`, Buffer.from(r.data, "base64"));
     await ev(`(() => { document.querySelectorAll("#disclaimer-footer, .tabs").forEach(n => { n.style.position = ""; }); return true; })()`);
   };
+  const shotEl = async (name, sel) => { await ev(`document.querySelectorAll("#disclaimer-footer, .tabs").forEach(n => { n.style.position = "static"; }); true`); const r = await ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); e.scrollIntoView({ block: "start" }); const b = e.getBoundingClientRect(); return { x: b.left + scrollX, y: Math.max(0, b.top + scrollY - 8), w: b.width, h: b.height + 16 }; })()`); await sleep(300); const sh = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true, clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } }, s); writeFileSync(`${outDir}/${name}.png`, Buffer.from(sh.data, "base64")); await ev(`document.querySelectorAll("#disclaimer-footer, .tabs").forEach(n => { n.style.position = ""; }); true`); };
   const seed = async days => ev(`(async () => {
     const post = (a, b) => fetch("/api/paper/" + a, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then(r => r.json()).then(j => j.data);
     let st = (await post("new", { scenario: "synthetic-b" })).state;
@@ -67,6 +68,13 @@ ws.onopen = async () => {
   const table = sel => ev(`[...document.querySelectorAll(${JSON.stringify(sel + " tbody tr")})].map(tr => [...tr.children].map(c => c.textContent))`);
   const text = sel => ev(`(document.querySelector(${JSON.stringify(sel)}) || {}).textContent || ""`);
   const all = () => ev(`document.querySelector(".pt-bt-results-box").textContent`);
+  const chartQa = () => ev(`(() => { const c = document.querySelector(".pt-bt-canvas"); return c && c.dataset.qa ? JSON.parse(c.dataset.qa) : null; })()`);
+  const longD = iso => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const expectedReadout = (d, j) => {  // the crosshair readout for day j, built here from the API's reply
+    const r = d.result, b = r.bars[j], f = r.strategy.fills.find(x => x.index === j), k = j - d.window.start_index;
+    return `${longD(b.time)} (Day ${j + 1}): close ${money(b.c)}.` + (f ? ` ${f.side === "buy" ? "In: bought" : "Out: sold"} ${f.shares} at ${money(f.price_cents)}.` : "")
+      + (k >= 0 ? ` This rule ${money(r.strategy.values[k].value_cents)}, buy and hold ${money(r.benchmark.values[k].value_cents)}.` : "");
+  };
 
   await send("Page.navigate", { url: base + "/" }, s); await sleep(800);
 
@@ -119,7 +127,45 @@ ws.onopen = async () => {
   check("the standing note ends the result", (await ev(`document.querySelector(".pt-bt-results-box").lastElementChild.textContent`)).startsWith("This is a hypothetical test on computer-generated prices."));
   check("no banned wording in the results", !/\b(expect|predict|best|winning|outperform|guaranteed|you should|buy now|sell now|in-sample|out-of-sample)\b/i.test(await all()));
   check("gains and losses carry a sign and an arrow, not colour alone", await ev(`[...document.querySelectorAll(".pt-bt-results-box .pt-up, .pt-bt-results-box .pt-down")].every(n => /^[+−]/.test(n.textContent) && /[▲▼]/.test(getComputedStyle(n, "::before").content))`));
+  // ---------- the chart (step 7): what is drawn equals the API ----------
+  const qa = await chartQa();
+  check("one chart, drawn with a size, its canvas hidden from screen readers", await ev(`(() => { const c = document.querySelector(".pt-bt-canvas"); const r = c.getBoundingClientRect(); return document.querySelectorAll(".pt-bt-canvas").length === 1 && c.children.length === 1 && r.width > 400 && r.height > 300 && c.getAttribute("aria-hidden") === "true"; })()`) && qa && qa.panes === 2);
+  const asPoints = side => hlt.result[side].values.map(v => [v.time, v.value_cents / 100]);
+  check("value pane: this rule's line is exactly the API's daily values", JSON.stringify(qa.strategy) === JSON.stringify(asPoints("strategy")), qa.strategy.length);
+  check("value pane: buy and hold's line is exactly the API's daily values", JSON.stringify(qa.benchmark) === JSON.stringify(asPoints("benchmark")));
+  check("both lines start at the Day 50 close at $10,000 and end on the current day", JSON.stringify([qa.strategy[0], qa.benchmark[0]]) === JSON.stringify([[hlt.result.dates[49], 10000], [hlt.result.dates[49], 10000]]) && qa.strategy.at(-1)[0] === hlt.date && qa.benchmark.at(-1)[0] === hlt.date && qa.strategy.length === qa.benchmark.length);
+  check("candles: every session day, none after today", qa.candles.n === 161 && qa.candles.last === hlt.date && hlt.result.bars.length === 161);
+  const wantMarks = hlt.result.strategy.fills.map(f => ({ time: f.date, text: f.side === "buy" ? "In" : "Out" }));
+  check("markers: In / Out on each fill's execution day (not the signal day)", JSON.stringify(qa.marks.map(m => ({ time: m.time, text: m.text }))) === JSON.stringify(wantMarks) && qa.marks.every(m => m.x !== null), JSON.stringify(qa.marks));
+  await ev(`document.querySelector(".pt-bt-canvas").scrollIntoView({ block: "center" }); true`); await sleep(250);
+  const box = await ev(`(() => { const r = document.querySelector(".pt-bt-canvas").getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()`);
+  const hover = async x => { await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: Math.round(box.x + x), y: Math.round(box.y + box.h * 0.25) }, s); await sleep(25); return text(".pt-bt-readout"); };
+  const atMarks = [];
+  for (const m of qa.marks) atMarks.push(await hover(m.x));
+  check("each marker sits on its fill day's bar (the crosshair there reads that fill)", atMarks.every((t, k) => t === expectedReadout(hlt, hlt.result.strategy.fills[k].index)), atMarks.join(" | "));
+  check("the start line sits on the Day 50 close at $10,000.00 each", (await hover(qa.start.x)) === expectedReadout(hlt, 49) && expectedReadout(hlt, 49).endsWith("This rule $10,000.00, buy and hold $10,000.00."), await hover(qa.start.x));
+  const seen = {};
+  for (let x = 2; x < box.w - 75; x += 2) { const t = await hover(x); const m = /\(Day (\d+)\)/.exec(t); if (m) seen[m[1]] = t; }
+  const days = Object.keys(seen).map(Number);
+  const wrong = days.filter(n => seen[n] !== expectedReadout(hlt, n - 1));
+  check("crosshair sweep: every day 1–161 reads exactly the API's close, fill and both values", days.length === 161 && wrong.length === 0, `${days.length} days, wrong: ${wrong.slice(0, 3).map(n => seen[n]).join(" | ")}`);
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 5, y: 5 }, s); await sleep(100);
+  check("the readout rests on the current day", (await text(".pt-bt-readout")) === expectedReadout(hlt, 160));
+  check("text version of the chart (mockup 09 wording)", (await text(".pt-bt-chart > p.pt-small")) === "Daily simulated prices of SYN-HLT1 from Jan 2 to Aug 14, 2025. The shaded Days 1–50 are price history for the averages only; results are measured from the Day 50 close. SMA 20 (solid) and SMA 50 (dashed) over the prices; In and Out mark the rule's 3 fills (Days 80, 114, 147). Below, the value of $10,000: this rule (solid) ended at $10,442.81, buy and hold (dashed) at $11,029.60.", await text(".pt-bt-chart > p.pt-small"));
+  check("legend names every line and marker in words", (await ev(`[...document.querySelectorAll(".pt-bt-legend li")].map(li => li.textContent).join("|")`)) === "SMA 20|SMA 50|Inrule bought|Outrule sold|This rule|Buy and hold");
+  check("the chart sits between the results table and the fills, as in the mockup", await ev(`(() => { const y = q => document.querySelector(q).getBoundingClientRect().top; return y(".pt-bt-metrics") < y(".pt-bt-chart") && y(".pt-bt-chart") < y(".pt-bt-fills"); })()`));
+  for (let k = 0; k < 3; k++) await runTest("SYN-HLT1", "sma_cross", "example");
+  check("repeated runs leave one chart, not several", await ev(`document.querySelectorAll(".pt-bt-canvas").length === 1 && document.querySelector(".pt-bt-canvas").children.length === 1`));
+  await ev(`document.documentElement.setAttribute("data-theme", "dark"); true`); await sleep(400);
+  check("a theme change redraws the one chart in the new colours", await ev(`document.querySelector(".pt-bt-canvas").children.length === 1`) && JSON.stringify((await chartQa()).strategy) === JSON.stringify(asPoints("strategy")));
+  await ev(`document.documentElement.removeAttribute("data-theme"); true`); await sleep(400);
+  await send("Emulation.setDeviceMetricsOverride", { width: 1100, height: 900, deviceScaleFactor: 1, mobile: false }, s); await sleep(500);
+  const narrow = await ev(`document.querySelector(".pt-bt-canvas").getBoundingClientRect().width`);
+  check("the chart follows a narrower window", narrow > 300 && narrow !== box.w && await ev(`(() => { const c = document.querySelector(".pt-bt-canvas canvas"); return !!c && c.getBoundingClientRect().width > 300; })()`), narrow);
+  await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false }, s); await sleep(500);
+  await runTest("SYN-HLT1", "sma_cross", "example");
   check("no price or percentage wraps inside a table cell", await ev(`[...document.querySelectorAll(".pt-bt-table tbody td")].every(td => { const n = td.firstChild; if (!n || n.nodeType !== 3) return true; const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length <= 1; })`));
+  await shotEl("chart-1280-light", ".pt-bt-chart");
   await shot("result-1280-light");
 
   // ---------- RSI rule, no costs ----------
@@ -127,12 +173,18 @@ ws.onopen = async () => {
   const enr = await api("SYN-ENR1", "rsi_threshold", "none");
   const pts = enr.result.difference_pp;
   check("RSI outcome equals the API", (await text(".pt-bt-outcome")) === `This rule ended at ${money(enr.result.strategy.metrics.final_value_cents)} (${pct(enr.result.strategy.metrics.total_return_pct, true)}). Buying and holding SYN-ENR1 over the same days ended at ${money(enr.result.benchmark.metrics.final_value_cents)} (${pct(enr.result.benchmark.metrics.total_return_pct, true)}), so the rule ended ${Math.abs(pts).toFixed(2)} points ${pts > 0 ? "higher" : "lower"}.`, await text(".pt-bt-outcome"));
+  const rq = await chartQa();
+  check("RSI rule: price, RSI and value panes; its lines and markers equal the API", rq.panes === 3 && JSON.stringify(rq.strategy) === JSON.stringify(enr.result.strategy.values.map(v => [v.time, v.value_cents / 100])) && JSON.stringify(rq.marks.map(m => m.time)) === JSON.stringify(enr.result.strategy.fills.map(f => f.date)) && (await ev(`[...document.querySelectorAll(".pt-bt-legend li")].map(li => li.textContent).join("|")`)) === "RSI 14|Inrule bought|Outrule sold|This rule|Buy and hold");
+  check("RSI rule: the RSI pane has room for its 30 / 70 guides", await ev(`document.querySelector(".pt-bt-canvas").getBoundingClientRect().height > 520`));
+  await shotEl("rsi-chart-1280-light", ".pt-bt-chart");
   check("no-costs wording and RSI start note", (await all()).includes("No costs.") && (await all()).includes("No costs: every fill is at the opening price exactly.") && (await all()).includes("RSI 14 already has values on Day 50.") && (await table(".pt-bt-metrics"))[6][1] === "$0.00");
 
   // ---------- no trades: SYN-TEC1 crossover (the corrected sentence) ----------
   check("no trades runs", await runTest("SYN-TEC1", "sma_cross", "example"));
   check("no trades: approved, corrected wording", (await all()).includes("No trades: the rule never triggered") && (await all()).includes("The 20-day average did not cross above the 50-day average from the Day 50 close to Day 161, so the rule stayed in cash at $10,000.00 (0.00%).") && (await all()).includes("Buying and holding SYN-TEC1 over the same days ended at $11,298.08 (+12.98%).") && (await all()).includes("It does not assume a trade happened before the Day 50 close."));
   check("no trades: no fills list, the table still compares", !(await ev(`!!document.querySelector(".pt-bt-fills")`)) && (await table(".pt-bt-metrics"))[4][1] === "0 buys, 0 sells" && (await table(".pt-bt-metrics"))[2][1] === "No drop");
+  const nq = await chartQa();
+  check("no trades: no markers, this rule's line flat at $10,000, the summary says so", nq.marks.length === 0 && nq.strategy.every(p => p[1] === 10000) && (await text(".pt-bt-chart > p.pt-small")).includes("the rule made no fills on these days."));
   await shot("no-trades-1280-light");
 
   // ---------- running state and a failed request (the network is paused, then failed) ----------
@@ -167,7 +219,11 @@ ws.onopen = async () => {
   await waitFor(`document.querySelector(".pt-bt-setup-form").textContent.includes("Uses Days 1–162.")`);
   check("Next day clears the old result and updates the footnote", (await all()).includes("The practice day changed, so the previous result was cleared.") && !(await ev(`!!document.getElementById("pt-bt-title")`)));
   const accountAfterDay = await ev(`localStorage.getItem("paper-session-v1")`);
+  check("a cleared result removes its chart", !(await ev(`!!document.querySelector(".pt-bt-canvas")`)));
   check("Run test after the new day uses Day 162", await runTest("SYN-HLT1", "sma_cross", "example") && (await all()).includes("to the Day 162 close"));
+  await sleep(150);
+  const dq = await chartQa();
+  check("…and its chart ends on Day 162: candles and both lines", dq.candles.n === 162 && dq.strategy.at(-1)[0] === dq.candles.last && dq.benchmark.at(-1)[0] === dq.candles.last);
   check("…and leaves that session unchanged too", (await ev(`localStorage.getItem("paper-session-v1")`)) === accountAfterDay);
 
   // ---------- back to Trade: P4 and the workspace are intact ----------
@@ -176,14 +232,18 @@ ws.onopen = async () => {
   check("Trade again: chart drawn at full size with the saved indicator, ticket back, test hidden", await ev(`(() => { const c = document.querySelector(".pt-chart-canvas").getBoundingClientRect(); return c.width > 300 && c.height > 150 && !!document.querySelector(".pt-ticket").offsetParent && !document.querySelector(".pt-bt-setup").offsetParent && document.querySelectorAll(".pt-card").length === 1; })()`));
   await toStrategy();
   check("the result is still there when the view is opened again", (await text("#pt-bt-title")) === "SMA crossover 20 / 50 on SYN-HLT1");
+  await sleep(300);
+  check("…with its chart drawn at full size again", await ev(`(() => { const c = document.querySelector(".pt-bt-canvas canvas"); return !!c && c.getBoundingClientRect().width > 400 && document.querySelector(".pt-bt-canvas").children.length === 1; })()`));
 
   // ---------- dark, desktop ----------
   await seed(160); await open(1280, "dark"); await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example");
+  await shotEl("chart-1280-dark", ".pt-bt-chart");
   await shot("result-1280-dark");
 
   // ---------- Not enough data (Day 41) ----------
   await seed(40); await open(1280, "light"); await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example");
   check("not enough data: approved wording, nothing estimated", (await text("#pt-bt-title")) === "Not enough data yet" && (await all()).includes("This test needs 70 trading days of history: 50 to build the 50-day average and at least 20 to test on. You have reached 41 so far.") && (await all()).includes("Advance 29 more days in Practice Trading to run it. Nothing is estimated in the meantime.") && !(await ev(`!!document.querySelector(".pt-bt-metrics")`)));
+  check("not enough data: no chart is drawn", !(await ev(`!!document.querySelector(".pt-bt-canvas")`)));
   await shot("not-enough-data-1280-light");
 
   // ---------- too short to split (Day 100) ----------
@@ -193,6 +253,9 @@ ws.onopen = async () => {
   // ---------- a signal on the last day (Day 165) ----------
   await seed(164); await open(1280, "light"); await toStrategy(); await runTest("SYN-CON1", "sma_cross", "example");
   check("signal on the last day: approved wording, not filled", (await all()).includes("Signal on Day 165, the last day so far: sell. Not acted on, because there is no next open yet.") && (await all()).includes("Still holding 188 shares at the end, valued at the Day 165 close of $45.75."));
+  await sleep(150);
+  const lq = await chartQa(), con = await api("SYN-CON1", "sma_cross", "example");
+  check("last-day signal: marked on the current day, not as a fill; open position valued to the end", lq.marks.some(m => m.time === con.date && m.text === "Signal, not acted on") && lq.marks.filter(m => m.text === "In" || m.text === "Out").length === con.result.strategy.fills.length && lq.strategy.at(-1)[1] === con.result.strategy.metrics.final_value_cents / 100 && (await text(".pt-bt-chart > p.pt-small")).includes("A signal on the last day, not acted on, is marked on the last day."));
   await shot("last-day-signal-1280-light");
 
   // ---------- phone, light and dark ----------
@@ -208,11 +271,14 @@ ws.onopen = async () => {
   check("phone: no horizontal overflow with a full result", (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0);
   check("phone: each fill is a card with its labels", await ev(`(() => { const td = document.querySelector(".pt-bt-fills tbody td"); return getComputedStyle(document.querySelector(".pt-bt-fills tr")).display === "grid" && getComputedStyle(td, "::before").content.includes("Signal at the close of"); })()`));
   check("phone: no price or percentage wraps inside a table cell", await ev(`[...document.querySelectorAll(".pt-bt-table tbody td")].every(td => { const n = td.firstChild; if (!n || n.nodeType !== 3) return true; const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length <= 1; })`));
+  check("phone: the chart fits the screen", await ev(`(() => { const r = document.querySelector(".pt-bt-canvas").getBoundingClientRect(); return r.width > 300 && r.right <= document.documentElement.clientWidth && r.height > 300; })()`));
+  await shotEl("chart-390-light", ".pt-bt-chart");
   await shot("result-390-light");
   await open(390, "dark");
   await ev(`(() => { const b = document.querySelector('[data-key="view-strategy"]'); b.scrollIntoView({ block: "center" }); b.click(); return true; })()`); await sleep(150);
   await runTest("SYN-HLT1", "sma_cross", "example");
   check("phone dark: no horizontal overflow", (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0);
+  await shotEl("chart-390-dark", ".pt-bt-chart");
   await shot("result-390-dark");
 
   check("only the local server was contacted", [...hosts].every(h => h.startsWith("127.0.0.1")), [...hosts].join(","));

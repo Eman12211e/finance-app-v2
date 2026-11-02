@@ -73,6 +73,7 @@ def run_data(body):
         "earlier": _comparison(run["halves"]["earlier"], False), "later": _comparison(run["halves"]["later"], False)}
     result = _comparison(run) | {
         "halves": halves, "dates": dates,
+        "bars": [{"time": d, "o": b["o"], "h": b["h"], "l": b["l"], "c": b["c"]} for d, b in zip(dates, bars)],
         "indicators": [{"type": kind, "period": n, "series": indicators.compute(kind, n, closes)}
                        for kind, n in CHART_LINES[preset]]}
     return out | {"window": result.pop("window"), "result": result}

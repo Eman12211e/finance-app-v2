@@ -110,3 +110,37 @@ def test_no_advice_prediction_or_ranking_words():
                  "you should", "buy now", "sell now", "sure thing", "buy signal", "sell signal", "bullish", "bearish",
                  "recommend", "in-sample", "out-of-sample"):
         assert not re.search(r"\b" + re.escape(word) + r"\b", t, re.I), word
+
+
+def mockup_09():
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", read("docs", "mockups", "09-strategy-desktop.html")))
+
+
+@pytest.mark.parametrize("phrase", [
+    "Prices, the rule's fills and the value of $10,000", "Days 1–50: price history for indicators only",
+    "Day 50 close: results start", "The shaded Days 1–50 are price history for the",
+    "results are measured from the Day 50 close.", "SMA 20 (solid) and SMA 50 (dashed) over the prices;",
+    "Below, the value of $10,000: this rule (solid) ended at", "Prices and values shown are simulated.",
+])
+def test_chart_wording_follows_the_approved_mockup(phrase):
+    assert phrase in text() and phrase in mockup_09(), phrase
+
+
+@pytest.mark.parametrize("phrase", [
+    "RSI 14 in a pane below the prices, with guides at 30 and 70; ", "the rule made no fills on these days.",
+    "Not filled marks an entry the cash did not cover.", "A signal on the last day, not acted on, is marked on the last day.",
+    '"Signal, not acted on"', '"Not filled"',
+])
+def test_chart_lines_beyond_the_mockup_are_listed_for_approval(phrase):
+    addendum = content()[content().index("Step 7 addendum"):]
+    assert phrase in text() and phrase.strip('"').strip() in addendum, phrase
+
+
+def test_the_chart_draws_only_the_reply_and_marks_fills_on_their_own_day():
+    source = js()
+    assert "LC.createChart(chartBox.canvas" in source and source.count("createChart(") == 1
+    assert 'r.strategy.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; })' in source
+    assert 'r.benchmark.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; })' in source
+    assert 'return { time: f.date, position: buy ? "belowBar" : "aboveBar"' in source  # the fill day, not signal_date
+    assert 'canvas.setAttribute("aria-hidden", "true")' in source and "addEventListener(\"keydown\"" not in source
+

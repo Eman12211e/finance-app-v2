@@ -11,7 +11,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `8cc6be6` | 3b: metrics reference at window ends covering every residue |
 | `6a363c1` | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
 | `5fc8e88` | 5 (draft, approved 2026-11-02): `docs/P5_CONTENT.md`; brief import line corrected; route body helper made local |
-| this commit | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
+| `1495829` | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
+| this commit | 7: the strategy chart (prices, the rule's lines, In / Out markers, value pane) |
 
 ## Step 2 — Backtesting engine
 
@@ -229,3 +230,34 @@ Day 141, while in cash). "Typical daily move" is proposed as "Daily volatility" 
   approved metric names, banned words); `test_p4_final.py`'s QA inventory now lists `backtest.mjs`.
   `scripts/qa/backtest.mjs` (58 browser checks, registered in `run.mjs`).
 - Not in this step: the chart (step 7), explanation cards, What is this? and the guide endpoint (step 8).
+
+**Step 6 checks:** pytest 891 passed; browser suites workflows 198, overlays 36, panes 26, explanations 22,
+drawings 41, backtest 58 passed; `visual_audit` was stopped by a low-memory event in the full run and then passed
+20/20 run alone (owner review 2026-11-02, which also approved the three addendum lines in `docs/P5_CONTENT.md`).
+
+## Step 7 — The strategy chart
+
+- **One Lightweight Charts chart** between the results table and the fills (mockup 09), drawn by `static/js/backtest.js`
+  from the API reply only: candles (`result.bars`, new in the response, bounded by `market_bars` like everything
+  else), the rule's lines (SMA 20 solid / SMA 50 dashed on the price, or an RSI 14 pane with 30 / 70 guides), In / Out
+  markers on each fill's execution day, "Not filled" and "Signal, not acted on" markers, and a value pane with this
+  rule (solid, `--warning`) and buy and hold (dashed, muted), both from the Day 50 close at $10,000 (dotted line) to
+  the current day, named on the price scale and in the legend. The warm-up Days 1–50 are shaded and labelled, with the
+  "Day 50 close: results start" line across the panes. A readout follows the crosshair (date, day, close, any fill,
+  both values); the canvas is `aria-hidden` and a text version (mockup 09 wording) sits under it.
+- Redrawn on a theme change; removed before every new result, when a result is cleared (Next day) and when the
+  workspace is rebuilt; resized by the library when the window or the view changes. The trade chart in `paper.js` is
+  untouched.
+- After drawing, the canvas carries `data-qa` (each series' `data()`, every marker's date, text and x position, the
+  start line's position), as P3's `weekLabelRoom`, so the browser suite compares what is drawn with the API.
+- Chart lines beyond mockup 09 (RSI, no fills, skipped entry, last-day signal, the two extra marker labels) are in a
+  marked step 7 addendum in `docs/P5_CONTENT.md` for owner approval.
+- **Fixed during QA:** a pane primitive's `zOrder` must be a function in Lightweight Charts 5 (a string threw on every
+  frame and stopped the crosshair); the pane divider was near-white in dark mode (now `--border`); the warm-up label
+  never fitted on one line (now two lines where it fits); the RSI pane was too short for its guide labels.
+- **Checks:** pytest 906 passed; `check_endpoints.py` exit 0; browser `backtest` 83/83 (chart lines equal to the API's
+  daily values, markers on the fill days at their bars, a crosshair sweep of every day 1–161 equal to the API, start
+  line at the Day 50 close, candles ending today, repeated runs, theme change, resize, view switching, Next day, no
+  trades, not enough data, last-day signal, RSI rule, phone); workflows 198, overlays 36, panes 26, explanations 22,
+  drawings 41, visual_audit 20, each run on its own.
+

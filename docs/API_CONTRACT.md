@@ -619,7 +619,8 @@ orders or fills; it uses its own fictional $10,000.00 and ignores the learner's 
   "cash_below_one_share", reason}], `end` {cash_cents, shares, close_cents} (an open position is valued at today's
   close, not sold), `metrics`}; `difference_pp` (rule minus buy and hold, percentage points, from the exact final
   values); `unacted_signal` {index, date, side} or `null` (a decision on today's close, which has no next open yet);
-  `halves` or `null`; `dates` (every session day up to today); `indicators` [{type, period, series}] the rule's own
+  `halves` or `null`; `dates` (every session day up to today); `bars` [{time, o, h, l, c}] (integer cents, the
+  same days, for the chart's candles; nothing after today); `indicators` [{type, period, series}] the rule's own
   lines aligned with `dates`, in P4 display units (SMA 20 and 50 in dollars, or RSI 14 0–100).
 - `metrics` (integer cents and counts are exact; `_pct` values are rounded half away from zero to two decimals):
   `start_value_cents`, `final_value_cents`, `total_return_pct`, `max_drawdown_pct`, `max_drawdown` {peak, trough:

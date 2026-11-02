@@ -246,6 +246,8 @@
   // ---- the results ----
 
   function renderResults() {
+    disposeChart();
+    chartBox = null;
     resultsBox.textContent = "";
     if (shown && shown.error) {
       renderError();
@@ -344,10 +346,12 @@
     }
     main.appendChild(metricsTable(r, w));
     resultsBox.appendChild(main);
+    resultsBox.appendChild(chartPanel(d));
     if (!quiet(r)) resultsBox.appendChild(fillsPanel(d));
     resultsBox.appendChild(howItWorks(d.preset, d.costs));
     resultsBox.appendChild(halvesPanel(d));
     resultsBox.appendChild(el("p", "pt-bt-standing", STANDING));
+    drawChart();  // once the canvas is in the page and has a size
   }
 
   function noTrades(d) {
@@ -554,6 +558,250 @@
     box.appendChild(el("p", "pt-small muted", HALVES_NOTE));
     return box;
   }
+
+  // ---- the chart: candles, the rule's own lines, In / Out at the fill days, and the value of $10,000 ----
+  // Everything drawn is from the API's reply (bars, indicator lines, fills, daily values); nothing is worked out here.
+
+  var chart = null;     // the live chart, removed before every redraw
+  var chartBox = null;  // the shown result's chart parts: canvas, readout, summary and data
+
+  function disposeChart() {
+    if (chart) chart.remove();
+    chart = null;
+  }
+
+  function token(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  function withAlpha(color, alpha) {  // tokens are #rrggbb; the canvas needs a plain colour string
+    return /^#[0-9a-f]{6}$/i.test(color) ? color + alpha : color;
+  }
+
+  function legendItem(list, swatchClass, label, flag) {
+    var li = el("li");
+    if (flag) {
+      li.appendChild(el("span", "pt-bt-flag", flag));
+    } else {
+      li.appendChild(el("span", "pt-bt-swatch " + swatchClass));
+    }
+    li.appendChild(document.createTextNode(label));
+    list.appendChild(li);
+  }
+
+  function chartPanel(d) {
+    var box = panel("pt-bt-chart", "h3", "Prices, the rule's fills and the value of $10,000", "pt-bt-chart-title");
+    var readout = el("p", "pt-tiny pt-bt-readout");
+    var canvas = el("div", "pt-bt-canvas" + (d.preset === "rsi_threshold" ? " pt-bt-canvas-3" : ""));
+    canvas.setAttribute("aria-hidden", "true");  // the summary below is the text version of the chart
+    var legend = el("ul", "pt-bt-legend");
+    legend.setAttribute("aria-hidden", "true");
+    if (d.preset === "sma_cross") {
+      legendItem(legend, "pt-bt-ind-a", "SMA 20");
+      legendItem(legend, "pt-bt-ind-b", "SMA 50");
+    } else {
+      legendItem(legend, "pt-bt-ind-a", "RSI 14");
+    }
+    legendItem(legend, null, "rule bought", "In");
+    legendItem(legend, null, "rule sold", "Out");
+    legendItem(legend, "pt-bt-strat", "This rule");
+    legendItem(legend, "pt-bt-bench", "Buy and hold");
+    var summary = el("p", "pt-small");
+    var credit = el("p", "pt-tiny muted", "Chart by ");
+    var link = el("a", null, "TradingView Lightweight Charts™");
+    link.href = "https://www.tradingview.com/";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    credit.appendChild(link);
+    credit.appendChild(document.createTextNode(", © 2026 TradingView, Inc. Prices and values shown are simulated."));
+    [readout, canvas, legend, summary, credit].forEach(function (n) { box.appendChild(n); });
+    chartBox = { canvas: canvas, readout: readout, summary: summary, data: d };
+    summary.textContent = chartSummary(d);
+    return box;
+  }
+
+  function chartSummary(d) {  // the text version of the chart (mockup 09 wording)
+    var r = d.result, bars = r.bars, fills = r.strategy.fills, s = r.strategy.metrics, b = r.benchmark.metrics;
+    var sma = d.preset === "sma_cross";
+    var text = "Daily simulated prices of " + d.symbol + " from " + shortDate(bars[0].time) + " to "
+      + longDate(bars[bars.length - 1].time) + ". The shaded Days 1–50 are price history for the "
+      + (sma ? "averages" : "indicator") + " only; results are measured from the Day 50 close. "
+      + (sma ? "SMA 20 (solid) and SMA 50 (dashed) over the prices; " : "RSI 14 in a pane below the prices, with guides "
+        + "at 30 and 70; ")
+      + (fills.length ? "In and Out mark the rule's " + plural(fills.length, "fill", "fills") + " ("
+        + (fills.length === 1 ? "Day " : "Days ") + fills.map(function (f) { return f.index + 1; }).join(", ") + ")."
+        : "the rule made no fills on these days.");
+    if (r.strategy.skipped.length) text += " Not filled marks an entry the cash did not cover.";
+    if (r.unacted_signal) text += " A signal on the last day, not acted on, is marked on the last day.";
+    return text + " Below, the value of $10,000: this rule (solid) ended at " + money(s.final_value_cents)
+      + ", buy and hold (dashed) at " + money(b.final_value_cents) + ".";
+  }
+
+  // the warm-up shading and the "results start" line, drawn under the series of one pane
+  function startMarks(startTime, labels, colors) {
+    var chartApi = null;
+    var renderer = {
+      draw: function (target) {
+        if (!chartApi) return;
+        target.useMediaCoordinateSpace(function (scope) {
+          var ctx = scope.context, x = chartApi.timeScale().timeToCoordinate(startTime), h = scope.mediaSize.height;
+          if (x === null) return;
+          ctx.save();
+          ctx.font = "11px " + colors.font;
+          if (labels) {
+            ctx.fillStyle = colors.shade;
+            ctx.fillRect(0, 0, x, h);
+            ctx.fillStyle = colors.text;
+            // the mockup's label on one line, or two, or just the days when the shaded part is narrow
+            var fits = function (lines) { return lines.every(function (l) { return ctx.measureText(l).width + 12 <= x; }); };
+            var warm = [["Days 1–50: price history for indicators only"], ["Days 1–50: price history", "for indicators only"],
+              ["Days 1–50"]].filter(fits)[0] || [];
+            warm.forEach(function (line, k) { ctx.fillText(line, 6, h - 12 - 14 * (warm.length - 1 - k)); });
+          }
+          ctx.strokeStyle = colors.text;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(x + 0.5, 0);
+          ctx.lineTo(x + 0.5, h);
+          ctx.stroke();
+          if (labels) {
+            var start = "Day 50 close: results start", w = ctx.measureText(start).width;
+            ctx.fillText(start, x + 4 + w < scope.mediaSize.width ? x + 4 : Math.max(2, x - 4 - w), 14);
+          }
+          ctx.restore();
+        });
+      },
+    };
+    return {
+      attached: function (param) { chartApi = param.chart; },
+      detached: function () { chartApi = null; },
+      paneViews: function () { return [{ zOrder: function () { return "bottom"; }, renderer: function () { return renderer; } }]; },
+    };
+  }
+
+  function drawChart() {
+    disposeChart();
+    if (!chartBox || !chartBox.canvas.isConnected) return;
+    var LC = window.LightweightCharts;
+    if (!LC) {
+      chartBox.summary.textContent = "The chart could not load. " + chartSummary(chartBox.data);
+      return;
+    }
+    var d = chartBox.data, r = d.result, bars = r.bars, start = d.window.start_index;
+    var up = token("--up"), down = token("--down"), surface = token("--surface"), muted = token("--muted");
+    var accent = token("--accent"), ink = token("--text");
+    chart = LC.createChart(chartBox.canvas, {
+      autoSize: true,
+      layout: { background: { type: "solid", color: surface }, textColor: muted, fontFamily: token("--font-text"),
+                attributionLogo: false,  // the credit line links instead
+                panes: { separatorColor: token("--border"), separatorHoverColor: token("--surface-2") } },
+      grid: { vertLines: { color: token("--surface-2") }, horzLines: { color: token("--surface-2") } },
+      rightPriceScale: { borderColor: token("--border") },
+      timeScale: { borderColor: token("--border"), fixLeftEdge: true, fixRightEdge: true },
+      handleScroll: { vertTouchDrag: false },  // a vertical swipe on a phone still scrolls the page
+    });
+    var dollars = { type: "custom", minMove: 0.01, formatter: function (p) { return "$" + p.toFixed(2); } };
+    var candles = chart.addSeries(LC.CandlestickSeries, { upColor: up, downColor: down, borderUpColor: up,
+      borderDownColor: down, wickUpColor: up, wickDownColor: down, priceFormat: dollars, lastValueVisible: false,
+      priceLineVisible: false });
+    candles.setData(bars.map(function (b) {
+      return { time: b.time, open: b.o / 100, high: b.h / 100, low: b.l / 100, close: b.c / 100 };
+    }));
+    var marks = { font: token("--font-text"), shade: withAlpha(muted, "24"), text: muted };
+    candles.attachPrimitive(startMarks(r.dates[start], true, marks));
+
+    var valuePane = 1;
+    r.indicators.forEach(function (ind, k) {
+      var points = [];
+      ind.series[ind.type].forEach(function (v, j) { if (v !== null) points.push({ time: r.dates[j], value: v }); });
+      var options = { lineWidth: 2, priceLineVisible: false, crosshairMarkerVisible: false, lastValueVisible: false,
+                      title: ind.type.toUpperCase() + " " + ind.period };
+      if (ind.type === "sma") {
+        chart.addSeries(LC.LineSeries, Object.assign({ color: token(k ? "--ind-b" : "--ind-a"),
+          lineStyle: k ? LC.LineStyle.Dashed : LC.LineStyle.Solid, priceFormat: dollars }, options)).setData(points);
+      } else {
+        var rsi = chart.addSeries(LC.LineSeries, Object.assign({ color: token("--ind-a"),
+          priceFormat: { type: "custom", minMove: 0.1, formatter: function (v) { return v.toFixed(1); } },
+          autoscaleInfoProvider: function () { return { priceRange: { minValue: 0, maxValue: 100 } }; } }, options), 1);
+        rsi.setData(points);
+        [70, 30].forEach(function (level) {
+          rsi.createPriceLine({ price: level, color: muted, lineWidth: 1, lineStyle: LC.LineStyle.Dashed,
+            axisLabelVisible: true, title: "" });
+        });
+        valuePane = 2;
+      }
+    });
+    var whole = { type: "custom", minMove: 1, formatter: function (v) { return "$" + Math.round(v).toLocaleString("en-US"); } };
+    var lineOptions = { priceFormat: whole, priceLineVisible: false, crosshairMarkerVisible: false };
+    var strategyLine = chart.addSeries(LC.LineSeries, Object.assign({ color: token("--warning"), lineWidth: 3,
+      title: "This rule" }, lineOptions), valuePane);
+    strategyLine.setData(r.strategy.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; }));
+    chart.addSeries(LC.LineSeries, Object.assign({ color: muted, lineWidth: 2, lineStyle: LC.LineStyle.Dashed,
+      title: "Buy and hold" }, lineOptions), valuePane)
+      .setData(r.benchmark.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; }));
+    strategyLine.createPriceLine({ price: 10000, color: muted, lineWidth: 1, lineStyle: LC.LineStyle.Dotted,
+      axisLabelVisible: false, title: "" });  // the $10,000 start
+    strategyLine.attachPrimitive(startMarks(r.dates[start], false, marks));
+    var panes = chart.panes();
+    panes[0].setStretchFactor(3);
+    if (valuePane === 2) panes[1].setStretchFactor(1.6);  // room for the 30 and 70 guides and their labels
+    panes[valuePane].setStretchFactor(2);
+
+    // In / Out on the day each fill happened (its open), never the signal day
+    var flags = r.strategy.fills.map(function (f) {
+      var buy = f.side === "buy";
+      return { time: f.date, position: buy ? "belowBar" : "aboveBar", shape: buy ? "arrowUp" : "arrowDown",
+               color: accent, text: buy ? "In" : "Out" };
+    });
+    r.strategy.skipped.forEach(function (k) {
+      flags.push({ time: k.date, position: "belowBar", shape: "circle", color: muted, text: "Not filled" });
+    });
+    if (r.unacted_signal) {
+      flags.push({ time: r.unacted_signal.date, position: "aboveBar", shape: "circle", color: ink,
+                   text: "Signal, not acted on" });
+    }
+    flags.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
+    LC.createSeriesMarkers(candles, flags);
+    chart.timeScale().fitContent();
+    requestAnimationFrame(function () {  // what the chart holds, for the browser regression check (as P3's weekLabelRoom)
+      if (!chart || !chartBox) return;
+      var ts = chart.timeScale(), points = function (s) { return s.data().map(function (p) { return [p.time, p.value]; }); };
+      chartBox.canvas.dataset.qa = JSON.stringify({
+        candles: { n: candles.data().length, last: candles.data()[candles.data().length - 1].time },
+        strategy: points(strategyLine), benchmark: points(chart.panes()[valuePane].getSeries()[1]),
+        marks: flags.map(function (f) { return { time: f.time, text: f.text, x: ts.timeToCoordinate(f.time) }; }),
+        start: { time: r.dates[start], x: ts.timeToCoordinate(r.dates[start]) }, panes: chart.panes().length,
+      });
+    });
+
+    var indexOf = {}, fillAt = {};
+    r.dates.forEach(function (t, j) { indexOf[t] = j; });
+    r.strategy.fills.forEach(function (f) { fillAt[f.index] = f; });
+    function readout(j) {
+      var b = bars[j], f = fillAt[j];
+      var text = longDate(b.time) + " (" + dayOf(j) + "): close " + money(b.c) + ".";
+      if (f) text += " " + (f.side === "buy" ? "In: bought " : "Out: sold ") + f.shares + " at " + money(f.price_cents) + ".";
+      if (j >= start) {
+        text += " This rule " + money(r.strategy.values[j - start].value_cents) + ", buy and hold "
+          + money(r.benchmark.values[j - start].value_cents) + ".";
+      }
+      chartBox.readout.textContent = text;
+    }
+    readout(bars.length - 1);
+    chart.subscribeCrosshairMove(function (p) {
+      var t = p.time && typeof p.time === "object"
+        ? p.time.year + "-" + String(p.time.month).padStart(2, "0") + "-" + String(p.time.day).padStart(2, "0") : p.time;
+      var j = indexOf[t];
+      readout(j === undefined ? bars.length - 1 : j);
+    });
+  }
+
+  // the canvas takes its colours from the theme tokens, so it is redrawn when the theme changes
+  function redrawForTheme() {
+    if (chart) drawChart();
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawForTheme);
+  new MutationObserver(redrawForTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   // ---- hooks for paper.js ----
 

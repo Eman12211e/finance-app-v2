@@ -310,13 +310,28 @@ appears only as "will go" / "will happen next" in a sentence that says results d
 8. New: "Why this is not a forecast", the rule-starting notes, the RSI rule's reasons for sharing the Day 50 start,
    skipped-entry wording, the no-trades sentence for the RSI rule, and the session-could-not-be-verified message.
 
-## Step 6 addendum: interface sentences not in the approved text (for owner approval)
+## Step 6 addendum: interface sentences (approved by the owner 2026-11-02)
 
 Added while building the setup and results view (step 6). Each is a plain status line with no claim about results;
-they are in use and will be changed if the owner prefers other wording.
+they are in use.
 
 - **Day changed:** "The practice day changed, so the previous result was cleared. Run the test again to include the
   new day." (A result only covers the day it ran on; Next day while the view is open clears it.)
 - **Screen-reader announcement after a run** (in the polite status line, not shown on screen): "Test finished."
   followed by the outcome sentence; "Not enough data yet."; "The test could not run."
 - **Metrics table footer when the difference is exactly 0.00:** "Level with buy and hold (0.00 points)".
+
+## Step 7 addendum: chart text (for owner approval)
+
+The chart's heading, readout, warm-up labels, legend and text version follow approved mockup 09 word for word. These
+lines cover cases the mockup did not show; they are in use and can be changed if the owner prefers other wording.
+
+- **Text version, RSI rule:** "RSI 14 in a pane below the prices, with guides at 30 and 70;" (in place of the SMA
+  sentence) and "price history for the indicator only" (in place of "for the averages only").
+- **Text version, no fills:** "…the rule made no fills on these days."
+- **Text version, skipped entry:** "Not filled marks an entry the cash did not cover."
+- **Text version, last-day signal:** "A signal on the last day, not acted on, is marked on the last day."
+- **Chart markers:** "Not filled" (a skipped entry) and "Signal, not acted on" (a decision on the last day), beside
+  In and Out.
+- **Library missing:** "The chart could not load." followed by the text version.
+

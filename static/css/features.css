@@ -613,6 +613,16 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-bt-how p { margin: 0; }
 .pt-bt-standing { margin: 0; padding: var(--s-3) var(--s-4); border-left: 3px solid var(--warning); border-radius: 0 var(--r-8) var(--r-8) 0;
   background: var(--surface-2); font-size: var(--t-14); }
+/* the strategy chart (step 7): price pane, the RSI pane for that rule, and the value of $10,000 below */
+.pt-bt-readout { margin: 0; min-height: 3em; color: var(--muted); }
+.pt-bt-canvas { position: relative; min-width: 0; aspect-ratio: 16 / 12; min-height: 320px; }
+.pt-bt-canvas-3 { aspect-ratio: 16 / 16; }
+.pt-bt-legend { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; padding: 0; list-style: none; font-size: var(--t-12); color: var(--muted); }
+.pt-bt-legend li { display: inline-flex; gap: var(--s-1); align-items: center; }
+.pt-bt-flag { font-weight: 700; color: var(--accent); }
+.pt-bt-ind-a { border-top: 2px solid var(--ind-a); }
+.pt-bt-ind-b { border-top: 2px dashed var(--ind-b); }
+.pt-bt-chart > p { margin: 0; }
 @media (max-width: 720px) {
   /* switch, then the setup form, then the results (the trade sheet and its button are hidden in this view) */
   .pt-view-switch { order: 0; max-width: none; }
@@ -620,6 +630,8 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
   .pt-bt-results-box { order: 2; }
   .pt-bt-results { padding-left: var(--s-5); }
   .pt-bt-panel { padding: var(--s-3); }
+  .pt-bt-canvas { aspect-ratio: 4 / 4.6; min-height: 300px; }
+  .pt-bt-canvas-3 { aspect-ratio: 4 / 6.2; }
   /* the fills table: each fill becomes a small card, with labels from data-label */
   .pt-bt-fills thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .pt-bt-fills tbody { display: grid; gap: var(--s-2); }
