@@ -1,7 +1,7 @@
-anthropic==2.3.0
+# Runtime: what the app imports. Every installed package, transitive ones included, is pinned in requirements.lock.
+# Python 3.12 (see .python-version). Install for development with requirements-dev.lock instead.
 Flask==3.1.3
-pytest==9.1.1
 python-dotenv==1.2.4
 requests==2.34.2
-# yfinance: used only by scripts/build_demo_data.py, never at runtime
-yfinance==1.7.0
+# imported by services/ai_service.py and services/llm_providers.py; never called while ZERO_COST_MODE is on
+anthropic==2.3.0

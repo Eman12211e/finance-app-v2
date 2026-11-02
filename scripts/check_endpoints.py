@@ -82,6 +82,10 @@ def main():
     for r in results:
         label = "SKIP" if r["note"] == "SKIP (no key)" else ("OK" if r["ok"] else "FAIL")
         print(f"{label:<5} {r['provider']:<8} {r['endpoint']:<20} status={r['status']}  {r['note']}")
+    if all(r["note"] == "SKIP (no key)" for r in results):
+        # nothing was checked (no keys, or zero-cost mode): keep the last real result, which live mode reads
+        print("No endpoint was checked, so data/endpoint_check.json was left unchanged.")
+        return
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump({"checked_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

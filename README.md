@@ -12,18 +12,30 @@ way they already do without keys (fixed explanations, chat shows "not available"
 
 ## Setup (Windows PowerShell)
 
+Python 3.12 (`.python-version`). Keep the project in a short folder path such as `C:\Users\you\finance-app-v2`: one
+runtime package (`anthropic`) has very long file names, and without Windows long-path support its install fails in a
+deeply nested folder.
+
 ```powershell
-python -m venv venv
-venv\Scripts\python -m pip install -r requirements.txt
-copy .env.example .env   # then add your API keys
+py -3.12 -m venv venv
+venv\Scripts\python -m pip install -r requirements-dev.lock   # exact versions of every package (app + tests)
+copy .env.example .env   # optional; the app runs without it, in zero-cost demo mode
 ```
 
-The app starts without `.env` or keys, in demo mode.
+| File | What it is |
+|---|---|
+| `requirements.txt` / `requirements.lock` | Runtime: what the app imports / every package pinned, transitive ones included |
+| `requirements-dev.txt` / `requirements-dev.lock` | Runtime plus pytest (development and tests) |
+| `requirements-build.txt` | Optional: yfinance, only for `scripts/build_demo_data.py` |
+| `requirements-sentiment.txt` | Optional: the local FinBERT Sentiment Explorer |
+
+To run the app without the test tools, install `requirements.lock` instead. The locks are `pip freeze` output of clean
+installs; regenerate them the same way after an intended version change.
 
 ## Run
 
 ```powershell
-venv\Scripts\python app.py      # http://localhost:5000
+venv\Scripts\python app.py      # development server, http://127.0.0.1:5000
 ```
 
 ## Tests
@@ -35,8 +47,8 @@ venv\Scripts\python -m pytest
 ## Scripts
 
 ```powershell
-venv\Scripts\python scripts\check_endpoints.py   # checks provider endpoints, writes data/endpoint_check.json
-venv\Scripts\python scripts\build_demo_data.py   # rebuilds data/demo_stocks.json from yfinance
+venv\Scripts\python scripts\check_endpoints.py   # checks provider endpoints; rewrites data/endpoint_check.json only if one was checked
+venv\Scripts\python scripts\build_demo_data.py   # rebuilds data/demo_stocks.json from yfinance (needs requirements-build.txt)
 ```
 
 ## AI Strategy Comparison Lab

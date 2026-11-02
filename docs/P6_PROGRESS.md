@@ -5,7 +5,8 @@ Base: `dev/v2` at `c335175` (P5 accepted 2026-11-02, including the step 9 conten
 
 | Commit | Step |
 |---|---|
-| this commit | 0: release-readiness audit, brief and roadmap (for owner review) |
+| `5d05c73` | 0: release-readiness audit, brief and roadmap (approved 2026-11-02 with Steps 1–4 authorized) |
+| this commit | 1: reproducible environment (split requirements, full locks, V2 venv, second clean install) |
 
 ## Resolve before next step
 
@@ -15,11 +16,11 @@ or decision.
 
 | # | Item | Needed before | Status |
 |---|---|---|---|
-| 1 | Owner approves the audit (`P6_RELEASE_AUDIT.md`) and the roadmap (`P6_BRIEF.md`) | Step 1 | Open |
-| 2 | Owner approves network access to PyPI to install the pinned packages into this repository's own venv (installing dependencies) | Step 1 | Open |
-| 3 | Owner confirms that the release target is a **controlled, local** release (own computers, or one machine on a private network), not a hosted public launch. This sets the scope of F2, R3 and Step 4 | Step 3 | Open |
-| 4 | Owner approves Waitress as a new runtime dependency (or names an alternative) | Step 3 | Open |
-| 5 | Owner decides on CI: (a) authorize adding `.github/workflows/ci.yml` and, separately, a push so it runs; or (b) local `check_all` only, with "not independent" stated in every report | Step 2 gate | Open |
+| 1 | Owner approves the audit (`P6_RELEASE_AUDIT.md`) and the roadmap (`P6_BRIEF.md`) | Step 1 | **Closed**: approved, Steps 1–4 authorized (2026-11-02) |
+| 2 | Owner approves network access to PyPI to install the pinned packages into this repository's own venv (installing dependencies) | Step 1 | **Closed**: covered by the Steps 1–4 authorization (Step 1 asks for the V2 venv) |
+| 3 | Owner confirms that the release target is a **controlled, local** release (own computers, or one machine on a private network), not a hosted public launch. This sets the scope of F2, R3 and Step 4 | Step 3 | **Partly closed**: the Steps 1–4 authorization requires loopback by default and no public service; a hosted model stays undecided |
+| 4 | Owner approves Waitress as a new runtime dependency (or names an alternative) | Step 3 | **Closed**: Step 3 authorization names Waitress |
+| 5 | Owner decides on CI: (a) authorize adding `.github/workflows/ci.yml` and, separately, a push so it runs; or (b) local `check_all` only, with "not independent" stated in every report | Step 2 gate | **Partly closed**: the workflow may be committed locally; push, activation and account connection are **not** authorized, so external CI stays pending |
 | 6 | Owner decides the project licence | Step 5 | Open |
 | 7 | Owner decides the Explore tab's Yahoo-derived `demo_stocks.json`: replace with synthetic, keep with attribution and a "not current" label, or remove | Step 5 | Open |
 | 8 | Owner sets a review-date policy for brokerage and tax facts (for example "older than 12 months is flagged") | Step 5 | Open |
@@ -44,3 +45,34 @@ or decision.
 - No code, configuration or dependency was changed. Only these three documents were added.
 - **Self-audit only.** Nothing in Step 0 is independent verification. The reported P5 totals (993 pytest, 480 browser
   checks) remain the implementer's own until Step 2.
+
+## Step 1 — Reproducible environment
+
+- **Split requirements** by what the code imports (checked with a grep of every third-party import):
+  - `requirements.txt` (runtime): Flask, python-dotenv, requests, and anthropic (imported by two services, never
+    called in zero-cost mode);
+  - `requirements-dev.txt`: plus pytest;
+  - `requirements-build.txt`: plus yfinance, only for `scripts/build_demo_data.py`;
+  - `requirements-sentiment.txt`: unchanged.
+- **Full locks:** `requirements.lock` (27 packages) and `requirements-dev.lock` (34), each the `pip freeze` of a clean
+  install, LF line endings. Python 3.12 is declared in `.python-version`. No package version was changed.
+- **V2's own venv** (`venv/`, gitignored) was built from PyPI; `pip check` is clean. A **second clean install** in a
+  new folder, from `requirements-dev.lock` alone, froze identically (34 packages) and passed the full suite. A
+  runtime-only install serves `/api/health` in zero-cost mode.
+- **Found:** on Windows without long-path support, installing `anthropic` fails in a deeply nested folder (its file
+  names are very long). The README now asks for a short project path.
+- **F7 fixed, and it was worse than a dirty tree:** `data/endpoint_check.json` is read at runtime (live mode skips
+  endpoints that failed a real check), and a keyless run overwrote the last real result with SKIP rows. A run that
+  checks nothing now leaves the file unchanged (test added).
+- **Tests added:** `tests/test_requirements.py` (pins and locks agree; tests and build tools stay out of the runtime
+  lock) and `tests/test_check_endpoints.py`.
+- **Checks (self-run):**
+  - pytest in the V2 venv: 997 passed (993 + 4);
+  - pytest in the second clean install: 993 passed (before the four new tests);
+  - browser suites with the V2 venv's Python: workflows 198, overlays 36, panes 26, explanations 22, drawings 41,
+    backtest 133, visual_audit 24, each on its own;
+  - `check_endpoints.py` exit 0 with the data file untouched;
+  - protected files unchanged.
+- **Inventory:** licences as declared in each installed package's metadata, in the evidence folder; no licensing
+  decision made.
+
