@@ -1,4 +1,4 @@
-// Finance App V2 QA suite: visual_audit. Screenshots and an in-page audit of all five tabs at 1280 and 390 px in light and dark: overflow, clipped text, contrast, unnamed controls, broken references, small targets.
+// Finance App V2 QA suite: visual_audit. Screenshots and an in-page audit of all five tabs, and of Test a strategy with a full result, at 1280 and 390 px in light and dark: overflow, clipped text, contrast, unnamed controls, broken references, small targets.
 // Optional; not part of pytest. Driven over the DevTools protocol with Node's built-in WebSocket (no packages).
 // Usage: node scripts/qa/visual_audit.mjs <devtools-websocket-url> <screenshot-dir> <app-base-url>
 // Normally run through scripts/qa/run.mjs, which starts the app (zero-cost demo mode) and a headless browser.
@@ -86,6 +86,24 @@ ws.onopen = async () => {
       await shot(name); if (theme === "light" || hash === "practice") await shot(name + "-full", true);
       report[name] = await ev(AUDIT);
     }
+  }
+  // Test a strategy (P5): a day-161 session, a full result with one What is this? and one Learn more open
+  await ev(`(async () => {
+    const post = (a, b) => fetch("/api/paper/" + a, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then(r => r.json()).then(j => j.data);
+    let st = (await post("new", { scenario: "synthetic-b" })).state;
+    for (let d = 0; d < 160; d++) st = (await post("advance", { state: st, expected_day: d })).state;
+    localStorage.setItem("paper-session-v1", JSON.stringify(st)); return true; })()`);
+  for (const width of [1280, 390]) for (const theme of ["light", "dark"]) {
+    await send("Emulation.setDeviceMetricsOverride", { width, height: width < 500 ? 844 : 900, deviceScaleFactor: 1, mobile: width < 500 }, s);
+    await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: theme }] }, s);
+    await send("Page.navigate", { url: "about:blank" }, s); await sleep(150);
+    await send("Page.navigate", { url: `${base}/#practice` }, s); await sleep(2200);
+    await ev(`(() => { document.querySelector('[data-key="view-strategy"]').click(); const sel = document.getElementById("pt-bt-symbol"); sel.value = "SYN-HLT1"; sel.dispatchEvent(new Event("change")); document.querySelector('[data-key="bt-run"]').click(); return true; })()`);
+    for (let k = 0; k < 60 && !(await ev(`!!document.querySelector(".pt-bt-canvas canvas") && !!document.querySelector(".pt-bt-cards")`)); k++) await sleep(100);
+    await ev(`(() => { document.querySelector('[data-key="what-sma_cross"]').click(); document.querySelector('[data-key="bt-learn-drawdown"]').click(); return true; })()`); await sleep(400);
+    const name = `strategy-${width}-${theme}`;
+    await shot(name); await shot(name + "-full", true);
+    report[name] = await ev(AUDIT);
   }
   // header theme toggle (data-theme) must redraw the canvas chart in the new colours
   await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false }, s);

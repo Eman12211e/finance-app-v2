@@ -137,6 +137,9 @@ def test_singular_forms_skipped_entries_and_a_level_result():
                                 "it stayed in cash.")
     assert skip["difference"].endswith("over the same days ended at $10,000.00 (0.00%), so the rule ended level with "
                                        "buying and holding (0.00 points).")
+    single = hand_made([1_000_000] * 30)
+    single["result"]["benchmark"]["fills"][0]["shares"] = 1
+    assert sg.readings(single)["buy_hold"].startswith("Buy and hold bought 1 share at the Day 51 open")
     held = hand_made([1_000_000, 1_000_100, 1_000_200])
     held["result"]["strategy"]["metrics"]["days_invested"] = 2
     assert sg.readings(held)["drawdown"] == "The value never fell below an earlier high on these days."

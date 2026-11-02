@@ -88,7 +88,8 @@ def readings(data):
     bh = g["buy_hold"]["readings"]
     if b["fills"]:
         f = b["fills"][0]
-        out["buy_hold"] = fill(bh["bought"], shares=f["shares"], open=money(f["open_cents"]), price=money(f["price_cents"]))
+        out["buy_hold"] = fill(bh["bought"], shares=f["shares"], open=money(f["open_cents"]),
+                               price=money(f["price_cents"])).replace(" bought 1 shares ", " bought 1 share ")
     else:
         out["buy_hold"] = fill(bh["skipped"], price=money(b["skipped"][0]["price_cents"]))
 

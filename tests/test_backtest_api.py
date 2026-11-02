@@ -281,3 +281,33 @@ def test_the_route_reads_bars_only_through_market_bars():
     assert engine_calls == {"market_bars"} and "paper_market" not in source
     with open(os.path.join(ROOT, "services", "paper_engine.py"), encoding="utf-8") as f:
         assert "backtest" not in f.read()
+
+
+# ---- the browser's skipped-entry fixture is the server's own reply ----
+
+FIXTURE = os.path.join(ROOT, "scripts", "qa", "fixtures", "skipped_entries.json")
+
+
+def skipped_entry_reply():
+    """No synthetic ticker costs more than $10,000, so a skipped entry needs made-up prices: $12,000 falling $40 a day.
+    Buy and hold's single entry (Day 51 open, $10,010 with costs) is skipped; the RSI rule (RSI 0 throughout) is
+    skipped once and buys a day later. The reply comes from the real route with only market_bars replaced."""
+    from unittest import mock
+    from routes import backtest as route
+    m = market()
+    closes = [1_200_000 - 4_000 * i for i in range(120)]
+    fake = {"dates": m["dates"][:120], "bars": {"SYN-HLT1": [{"o": c, "h": c, "l": c, "c": c, "v": 0} for c in closes]},
+            "notice": m["notice"]}
+    with mock.patch.object(eng, "market_bars", lambda state: fake):
+        return route.run_data({"state": {}, "symbol": "SYN-HLT1", "preset": "rsi_threshold", "costs": "example"})
+
+
+def test_the_skipped_entry_fixture_is_the_servers_own_reply():
+    reply = json.loads(json.dumps(skipped_entry_reply()))
+    with open(FIXTURE, encoding="utf-8") as f:
+        assert json.load(f) == reply  # regenerate with scripts/qa/fixtures/README if the reply changes on purpose
+    r = reply["result"]
+    assert [s["index"] for s in r["benchmark"]["skipped"]] == [50] and r["benchmark"]["fills"] == []
+    assert [(s["signal_index"], s["index"]) for s in r["strategy"]["skipped"]] == [(49, 50)]
+    assert [(f["signal_index"], f["index"], f["shares"]) for f in r["strategy"]["fills"]] == [(50, 51, 1)]
+    assert r["readings"]["buy_hold"].startswith("Buy and hold could not afford one share at the Day 51 open")

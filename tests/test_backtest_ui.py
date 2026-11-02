@@ -143,8 +143,11 @@ def test_the_chart_draws_only_the_reply_and_marks_fills_on_their_own_day():
     assert 'r.benchmark.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; })' in source
     assert 'return { time: f.date, position: buy ? "belowBar" : "aboveBar"' in source  # the fill day, not signal_date
     chart_code = source[source.index("function drawChart()"):source.index("function redrawForTheme()")]
-    # the chart is pointer-only (recorded for the step 9 accessibility audit); its text version is the alternative
-    assert 'canvas.setAttribute("aria-hidden", "true")' in source and "keydown" not in chart_code
+    # step 9: the canvas stays hidden from screen readers, and a labelled range input steps the same readout by
+    # keyboard (its aria-valuetext is the readout); the pointer-only limit of steps 7-8 is gone
+    assert 'canvas.setAttribute("aria-hidden", "true")' in source
+    assert 'step.type = "range"' in source and 'stepLabel.htmlFor = "pt-bt-step"' in source
+    assert 'chartBox.step.setAttribute("aria-valuetext", text)' in chart_code and "setCrosshairPosition" in chart_code
 
 
 
@@ -161,3 +164,9 @@ def test_the_cards_use_the_approved_footer_titles_and_labels():
     assert "window.Api.getBacktestGuide()" in t and 'request("/api/backtest/guide")' in read("static", "js", "api.js")
     assert 'b.setAttribute("aria-expanded"' in t and 'b.setAttribute("aria-controls", box.id)' in t
     assert 'summary.setAttribute("aria-label", "Learn more about " + about)' in t
+
+
+def test_the_keyboard_readout_label_is_listed_for_approval():
+    addendum = content()[content().index("Step 9 addendum"):]
+    assert '"Day shown in the readout"' in text() and "Day shown in the readout" in addendum
+

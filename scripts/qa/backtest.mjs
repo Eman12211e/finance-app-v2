@@ -3,7 +3,7 @@
 // Optional; not part of pytest. Driven over the DevTools protocol with Node's built-in WebSocket (no packages).
 // Usage: node scripts/qa/backtest.mjs <devtools-websocket-url> <screenshot-dir> <app-base-url>
 // Normally run through scripts/qa/run.mjs, which starts the app (zero-cost demo mode) and a headless browser.
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 const [wsUrl, outDir, base] = process.argv.slice(2);
 const ws = new WebSocket(wsUrl); let id = 0; const pend = {}; const errors = [], hosts = new Set(), requests = [], paused = [];
 const send = (m, params = {}, sessionId) => new Promise(r => { const i = ++id; pend[i] = r; ws.send(JSON.stringify({ id: i, method: m, params, sessionId })); });
@@ -23,13 +23,18 @@ ws.onmessage = e => {
       ws.send(JSON.stringify({ id: ++id, method: "Fetch.fulfillRequest", sessionId: m.sessionId, params: { requestId: m.params.requestId,
         responseCode: guideMode === "unavailable" ? 500 : 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }],
         body: Buffer.from(JSON.stringify(body)).toString("base64") } }));
+    } else if (runFixture && m.params.request.url.includes("/api/backtest/run")) {
+      ws.send(JSON.stringify({ id: ++id, method: "Fetch.fulfillRequest", sessionId: m.sessionId, params: { requestId: m.params.requestId,
+        responseCode: 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+        body: Buffer.from(JSON.stringify({ ok: true, data: runFixture, source: null, as_of: null, error: null })).toString("base64") } }));
     } else paused.push(m.params.requestId);
   }
 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const results = []; const check = (name, ok, detail = "") => results.push([ok ? "PASS" : "FAIL", name, String(detail).slice(0, 260)]);
 const MINUS = "−";
-let guideMode = null;  // "unavailable" or "malformed" while the guide request is answered by the test
+let guideMode = null;
+let runFixture = null;  // a committed /api/backtest/run reply (scripts/qa/fixtures) served while set  // "unavailable" or "malformed" while the guide request is answered by the test
 
 ws.onopen = async () => {
   const { targetId } = await send("Target.createTarget", { url: "about:blank" });
@@ -181,6 +186,16 @@ ws.onopen = async () => {
   check("crosshair sweep: every day 1–161 reads exactly the API's close, fill and both values", days.length === 161 && wrong.length === 0, `${days.length} days, wrong: ${wrong.slice(0, 3).map(n => seen[n]).join(" | ")}`);
   await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 5, y: 5 }, s); await sleep(100);
   check("the readout rests on the current day", (await text(".pt-bt-readout")) === expectedReadout(hlt, 160));
+  check("the day slider is labelled and starts on the current day", await ev(`(() => { const s = document.getElementById("pt-bt-step"); return s.type === "range" && s.labels[0].textContent === "Day shown in the readout" && s.min === "1" && s.max === "161" && s.value === "161"; })()`));
+  await ev(`document.getElementById("pt-bt-step").focus(); true`); await key("Home", "Home", 36);
+  const stepped = [await ev(`document.getElementById("pt-bt-step").getAttribute("aria-valuetext")`)];
+  for (let k = 1; k < 161; k++) { await key("ArrowRight", "ArrowRight", 39); stepped.push(await ev(`document.getElementById("pt-bt-step").getAttribute("aria-valuetext")`)); }
+  const stepWrong = stepped.map((v, j) => v === expectedReadout(hlt, j) ? null : j + 1).filter(Boolean);
+  check("keyboard: Home then the right arrow read every day 1–161 exactly as the API (aria-valuetext)", stepped.length === 161 && stepWrong.length === 0, stepWrong.slice(0, 5).join(","));
+  check("keyboard: the readout text follows the slider", (await text(".pt-bt-readout")) === expectedReadout(hlt, 160));
+  await key("End", "End", 35); for (let k = 0; k < 81; k++) await key("ArrowLeft", "ArrowLeft", 37);
+  check("keyboard: a fill day reads its fill (Day 80, In: bought 94)", (await ev(`document.getElementById("pt-bt-step").getAttribute("aria-valuetext")`)) === expectedReadout(hlt, 79) && (await text(".pt-bt-readout")).includes("In: bought 94 at $105.69."));
+  await key("End", "End", 35);
   check("text version of the chart (mockup 09 wording)", (await text(".pt-bt-chart > p.pt-small")) === "Daily simulated prices of SYN-HLT1 from Jan 2 to Aug 14, 2025. The shaded Days 1–50 are price history for the averages only; results are measured from the Day 50 close. SMA 20 (solid) and SMA 50 (dashed) over the prices; In and Out mark the rule's 3 fills (Days 80, 114, 147). Below, the value of $10,000: this rule (solid) ended at $10,442.81, buy and hold (dashed) at $11,029.60.", await text(".pt-bt-chart > p.pt-small"));
   check("legend names every line and marker in words", (await ev(`[...document.querySelectorAll(".pt-bt-legend li")].map(li => li.textContent).join("|")`)) === "SMA 20|SMA 50|Inrule bought|Outrule sold|This rule|Buy and hold");
   check("the chart sits between the results table and the fills, as in the mockup", await ev(`(() => { const y = q => document.querySelector(q).getBoundingClientRect().top; return y(".pt-bt-metrics") < y(".pt-bt-chart") && y(".pt-bt-chart") < y(".pt-bt-fills"); })()`));
@@ -226,6 +241,20 @@ ws.onopen = async () => {
   check("RSI rule: the RSI pane has room for its 30 / 70 guides", await ev(`document.querySelector(".pt-bt-canvas").getBoundingClientRect().height > 520`));
   await shotEl("rsi-chart-1280-light", ".pt-bt-chart");
   check("no-costs wording and RSI start note", (await all()).includes("No costs.") && (await all()).includes("No costs: every fill is at the opening price exactly.") && (await all()).includes("RSI 14 already has values on Day 50.") && (await table(".pt-bt-metrics"))[6][1] === "$0.00");
+
+  // ---------- both rules x both cost settings, another ticker: everything shown equals the API ----------
+  for (const [preset, costs] of [["sma_cross", "example"], ["sma_cross", "none"], ["rsi_threshold", "example"], ["rsi_threshold", "none"]]) {
+    await runTest("SYN-IND2", preset, costs); await sleep(150);
+    const a = await api("SYN-IND2", preset, costs), sm2 = a.result.strategy.metrics, bm2 = a.result.benchmark.metrics, q = await chartQa();
+    const row = await table(".pt-bt-metrics");
+    const ok = row[0][1] === money(sm2.final_value_cents) && row[0][2] === money(bm2.final_value_cents) && row[1][1] === pct(sm2.total_return_pct, true)
+      && row[3][1] === pct(sm2.daily_volatility_pct) && row[6][1] === money(sm2.costs_paid_cents)
+      && (await ev(`document.querySelectorAll(".pt-bt-fills tbody tr").length`)) === a.result.strategy.fills.length
+      && JSON.stringify((await cardList()).map(c => c.now)) === JSON.stringify(CARD_ORDER.map(k => a.result.readings[k]))
+      && JSON.stringify(q.strategy) === JSON.stringify(a.result.strategy.values.map(v => [v.time, v.value_cents / 100]))
+      && JSON.stringify(q.marks.filter(m => m.text === "In" || m.text === "Out").map(m => m.time)) === JSON.stringify(a.result.strategy.fills.map(f => f.date));
+    check(`SYN-IND2 ${preset} ${costs}: table, fills, cards, value line and markers equal the API`, ok);
+  }
 
   // ---------- no trades: SYN-TEC1 crossover (the corrected sentence) ----------
   check("no trades runs", await runTest("SYN-TEC1", "sma_cross", "example"));
@@ -312,6 +341,51 @@ ws.onopen = async () => {
   check("last-day signal: the rule card counts it, as the API reads it", (await text("#pt-bt-card-rule + .pt-card-now")) === con.result.readings.rule && con.result.readings.rule === "The rule acted on 4 crossings: 2 up through the 50-day average and 2 back down.");
   await shot("last-day-signal-1280-light");
 
+  // ---------- skipped entries (fixture: the server's own reply for prices above $10,000) ----------
+  runFixture = JSON.parse(readFileSync(new URL("./fixtures/skipped_entries.json", import.meta.url), "utf-8"));
+  await send("Fetch.enable", { patterns: [{ urlPattern: "*/api/backtest/run*" }] }, s);
+  await seed(160); await open(1280, "light"); await toStrategy(); await runTest("SYN-HLT1", "rsi_threshold", "example"); await sleep(200);
+  const fx = runFixture.result;
+  check("skipped entry: the rule's skipped buy is listed with the approved wording", (await all()).includes(`Signal at the close of Day 50: buy. Not filled: the cash did not cover one share at the Day 51 fill price of ${money(fx.strategy.skipped[0].price_cents)}. The money stayed in cash.`));
+  check("skipped entry: buy and hold's skipped entry replaces its bought line", (await all()).includes(`Buy and hold could not afford one share at the Day 51 open (fill price ${money(fx.benchmark.skipped[0].price_cents)}), so it stayed in cash.`) && !(await all()).includes("Buy and hold bought"));
+  check("skipped entry: cards read the fixture's readings", JSON.stringify((await cardList()).map(c => c.now)) === JSON.stringify(CARD_ORDER.map(k => fx.readings[k])));
+  const sq = await chartQa();
+  check("skipped entry: marked Not filled on its day, the fill marked In, the summary says so", sq.marks.some(m => m.text === "Not filled" && m.time === fx.strategy.skipped[0].date) && sq.marks.some(m => m.text === "In" && m.time === fx.strategy.fills[0].date) && (await text(".pt-bt-chart > p.pt-small")).includes("Not filled marks an entry the cash did not cover."));
+  check("one share is written as one share", (await all()).includes(`Still holding 1 share at the end, valued at the Day 120 close of ${money(fx.strategy.end.close_cents)}.`) && !(await all()).includes("1 shares"));
+  check("skipped entry: the halves are too short to split (120 days)", (await all()).includes("Too short to split: each half needs at least 40 test days, and there are 70 so far."));
+  await shot("skipped-entries-1280-light");
+  runFixture = null;
+  await send("Fetch.disable", {}, s);
+
+  // ---------- Reset and Change market from Test a strategy ----------
+  await seed(160); await open(1280, "light"); await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example");
+  await ev(`document.querySelector('[data-key="more"]').click(); true`); await sleep(150);
+  await ev(`document.querySelector('[data-key="reset"]').click(); true`); await sleep(150);
+  await ev(`[...document.querySelectorAll(".pt-confirm-reset button")].find(b => b.textContent === "Yes, reset").click(); true`);
+  await waitFor(`!!document.querySelector(".pt-view-switch") && document.querySelector(".pt-day-line") && document.querySelector(".pt-day-line").textContent.startsWith("Day 1 of")`);
+  check("Reset: a new session opens on Trade with no old result", await ev(`document.querySelector('[data-key="view-trade"]').getAttribute("aria-pressed") === "true" && !document.querySelector(".pt-bt-setup").offsetParent && !document.getElementById("pt-bt-title")`));
+  await toStrategy();
+  check("…and Test a strategy starts afresh on the new day", (await text(".pt-bt-setup-form")).includes("Uses Days 1–1.") && !(await ev(`!!document.querySelector(".pt-bt-canvas")`)));
+  await runTest("SYN-HLT1", "sma_cross", "example");
+  check("…where a run says not enough data (1 day reached)", (await all()).includes("You have reached 1 so far."));
+  await ev(`document.querySelector('[data-key="more"]').click(); true`); await sleep(150);
+  await ev(`document.querySelector('[data-key="change"]').click(); true`); await sleep(150);
+  await ev(`[...document.querySelectorAll(".pt-confirm-reset button")].find(b => b.textContent === "Yes, change market").click(); true`); await sleep(400);
+  check("Change market: back to the start screen, nothing of the test left", await ev(`!document.querySelector(".pt-view-switch") && !document.querySelector(".pt-bt-results-box") && !!document.querySelector(".pt-start")`));
+
+  // ---------- 200% zoom (a 640 px wide window) and reduced motion ----------
+  await seed(160);
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] }, s);
+  await send("Emulation.setDeviceMetricsOverride", { width: 640, height: 900, deviceScaleFactor: 2, mobile: false }, s);
+  await send("Page.navigate", { url: "about:blank" }, s); await sleep(100);
+  await send("Page.navigate", { url: base + "/#practice" }, s);
+  await waitFor(`!!document.querySelector(".pt-view-switch")`, 10000); await sleep(300);
+  await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example"); await sleep(300);
+  check("200% zoom (640 px): no horizontal overflow, chart and tables fit", (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0 && await ev(`[".pt-bt-canvas", ".pt-bt-metrics", ".pt-bt-cards"].every(q => document.querySelector(q).getBoundingClientRect().right <= document.documentElement.clientWidth)`));
+  check("reduced motion: nothing in the view animates", await ev(`document.querySelector(".pt-bt-results-box").getAnimations({ subtree: true }).length === 0 && document.querySelector(".pt-bt-setup").getAnimations({ subtree: true }).length === 0`));
+  await shot("zoom-200-640-light");
+  await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] }, s);
+
   // ---------- the guide unavailable, then malformed ----------
   await send("Fetch.enable", { patterns: [{ urlPattern: "*/api/backtest/guide*" }] }, s);
   for (const mode of ["unavailable", "malformed"]) {
@@ -334,7 +408,7 @@ ws.onopen = async () => {
   await ev(`(() => { const b = document.querySelector('[data-key="view-strategy"]'); b.scrollIntoView({ block: "center" }); b.click(); return true; })()`); await sleep(150);
   check("phone: switch, then setup, then results; no trade sheet or Trade button", await ev(`(() => { const y = q => document.querySelector(q).getBoundingClientRect().top;
     return y(".pt-view-switch") < y(".pt-bt-setup") && y(".pt-bt-setup") < y(".pt-bt-results-box") && !document.querySelector(".pt-trade-bar").offsetParent && !document.querySelector(".pt-ticket").offsetParent; })()`));
-  check("phone: 44 px controls", await ev(`[...document.querySelectorAll(".pt-bt-select, .pt-bt-option, [data-key='bt-run'], .pt-view-switch button")].every(n => n.getBoundingClientRect().height >= 40)`));
+  check("phone: 44 px controls in the setup", await ev(`[...document.querySelectorAll(".pt-bt-select, .pt-bt-option, [data-key='bt-run'], .pt-view-switch button, .pt-bt-what .pt-what")].every(n => n.getBoundingClientRect().height >= 44)`));
   await ev(`document.querySelector('.pt-watch-item[data-symbol="SYN-HLT1"]') && document.querySelector('.pt-watch-item[data-symbol="SYN-HLT1"]').click(); true`); await sleep(150);
   check("phone: a ticker picked in the list never opens the trade sheet", !(await ev(`!!document.querySelector(".pt-ticket.pt-open")`)) && (await ev(`document.getElementById("pt-bt-symbol").value`)) === "SYN-HLT1");
   await shot("setup-390-light");
@@ -342,6 +416,7 @@ ws.onopen = async () => {
   check("phone: no horizontal overflow with a full result", (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0);
   check("phone: each fill is a card with its labels", await ev(`(() => { const td = document.querySelector(".pt-bt-fills tbody td"); return getComputedStyle(document.querySelector(".pt-bt-fills tr")).display === "grid" && getComputedStyle(td, "::before").content.includes("Signal at the close of"); })()`));
   check("phone: no price or percentage wraps inside a table cell", await ev(`[...document.querySelectorAll(".pt-bt-table tbody td")].every(td => { const n = td.firstChild; if (!n || n.nodeType !== 3) return true; const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length <= 1; })`));
+  check("phone: 44 px targets in the results (Learn more, slider, buttons)", await ev(`[...document.querySelectorAll(".pt-bt-results-box summary, .pt-bt-results-box button, #pt-bt-step")].filter(n => n.offsetParent).every(n => n.getBoundingClientRect().height >= 44)`), await ev(`[...document.querySelectorAll(".pt-bt-results-box summary, .pt-bt-results-box button, #pt-bt-step")].filter(n => n.offsetParent && n.getBoundingClientRect().height < 44).map(n => n.textContent.trim().slice(0, 20) + " " + Math.round(n.getBoundingClientRect().height)).join(", ")`));
   check("phone: the chart fits the screen", await ev(`(() => { const r = document.querySelector(".pt-bt-canvas").getBoundingClientRect(); return r.width > 300 && r.right <= document.documentElement.clientWidth && r.height > 300; })()`));
   check("phone: cards stack in one column and fit", await ev(`(() => { const c = [...document.querySelectorAll(".pt-bt-cards .pt-card")].map(x => x.getBoundingClientRect()); return c.length === 9 && new Set(c.map(r => Math.round(r.left))).size === 1 && c.every(r => r.right <= document.documentElement.clientWidth); })()`));
   await ev(`document.querySelector('[data-key="bt-learn-rule-sma_cross"]').click(); true`); await sleep(120);

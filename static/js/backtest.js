@@ -485,7 +485,7 @@
         + ". The money stayed in cash."));
     });
     if (s.end.shares > 0) {
-      box.appendChild(el("p", "pt-small", "Still holding " + s.end.shares + " shares at the end, valued at the "
+      box.appendChild(el("p", "pt-small", "Still holding " + plural(s.end.shares, "share", "shares") + " at the end, valued at the "
         + dayOf(last) + " close of " + money(s.end.close_cents) + ". They were not sold, so no further cost was charged."));
     }
     if (r.unacted_signal) {
@@ -499,7 +499,7 @@
   function benchmarkLine(b) {
     if (b.fills.length) {
       var f = b.fills[0];
-      return el("p", "pt-small muted", "Buy and hold bought " + f.shares + " shares at the " + dayOf(f.index) + " open ("
+      return el("p", "pt-small muted", "Buy and hold bought " + plural(f.shares, "share", "shares") + " at the " + dayOf(f.index) + " open ("
         + money(f.open_cents) + ", fill price " + money(f.price_cents) + ") and kept them.");
     }
     var k = b.skipped[0];
@@ -600,6 +600,18 @@
   function chartPanel(d) {
     var box = panel("pt-bt-chart", "h3", "Prices, the rule's fills and the value of $10,000", "pt-bt-chart-title");
     var readout = el("p", "pt-tiny pt-bt-readout");
+    var stepRow = el("div", "pt-bt-step-row");
+    var stepLabel = el("label", "pt-tiny", "Day shown in the readout");
+    stepLabel.htmlFor = "pt-bt-step";
+    var step = el("input", "pt-bt-step");
+    step.type = "range";
+    step.id = "pt-bt-step";
+    step.min = "1";
+    step.max = String(d.result.bars.length);
+    step.value = step.max;
+    step.dataset.key = "bt-step";
+    stepRow.appendChild(stepLabel);
+    stepRow.appendChild(step);
     var canvas = el("div", "pt-bt-canvas" + (d.preset === "rsi_threshold" ? " pt-bt-canvas-3" : ""));
     canvas.setAttribute("aria-hidden", "true");  // the summary below is the text version of the chart
     var legend = el("ul", "pt-bt-legend");
@@ -622,8 +634,8 @@
     link.rel = "noopener noreferrer";
     credit.appendChild(link);
     credit.appendChild(document.createTextNode(", © 2026 TradingView, Inc. Prices and values shown are simulated."));
-    [readout, canvas, legend, summary, credit].forEach(function (n) { box.appendChild(n); });
-    chartBox = { canvas: canvas, readout: readout, summary: summary, data: d };
+    [readout, stepRow, canvas, legend, summary, credit].forEach(function (n) { box.appendChild(n); });
+    chartBox = { canvas: canvas, readout: readout, step: step, stepRow: stepRow, summary: summary, data: d };
     summary.textContent = chartSummary(d);
     return box;
   }
@@ -693,6 +705,7 @@
     var LC = window.LightweightCharts;
     if (!LC) {
       chartBox.summary.textContent = "The chart could not load. " + chartSummary(chartBox.data);
+      chartBox.stepRow.hidden = true;
       return;
     }
     var d = chartBox.data, r = d.result, bars = r.bars, start = d.window.start_index;
@@ -794,8 +807,15 @@
           + money(r.benchmark.values[j - start].value_cents) + ".";
       }
       chartBox.readout.textContent = text;
+      chartBox.step.value = String(j + 1);  // the slider follows the pointer, and the pointer the slider
+      chartBox.step.setAttribute("aria-valuetext", text);
     }
     readout(bars.length - 1);
+    chartBox.step.oninput = function () {  // keyboard: arrows, Page Up / Down, Home and End step through the days
+      var j = Number(chartBox.step.value) - 1;
+      readout(j);
+      chart.setCrosshairPosition(bars[j].c / 100, bars[j].time, candles);
+    };
     chart.subscribeCrosshairMove(function (p) {
       var t = p.time && typeof p.time === "object"
         ? p.time.year + "-" + String(p.time.month).padStart(2, "0") + "-" + String(p.time.day).padStart(2, "0") : p.time;

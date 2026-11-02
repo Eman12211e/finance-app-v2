@@ -13,7 +13,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `5fc8e88` | 5 (draft, approved 2026-11-02): `docs/P5_CONTENT.md`; brief import line corrected; route body helper made local |
 | `1495829` | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
 | `f89445f` | 7: the strategy chart (prices, the rule's lines, In / Out markers, value pane) |
-| this commit | 8: `data/strategy_guide.json`, `GET /api/backtest/guide`, readings, explanation cards, What is this? |
+| `7b07360` | 8: `data/strategy_guide.json`, `GET /api/backtest/guide`, readings, explanation cards, What is this? |
+| this commit | 9: final audit, the chart's keyboard readout, 44 px phone targets, singular wording, extended browser QA |
 
 ## Step 2 — Backtesting engine
 
@@ -288,4 +289,30 @@ drawings 41, backtest 58 passed; `visual_audit` was stopped by a low-memory even
   cards; recorded here and in a test that keeps the chart code free of keyboard handling until step 9 decides.
 - **Checks:** pytest 991 passed; `check_endpoints.py` exit 0; browser `backtest` 112/112, explanations 22, workflows
   198, overlays 36, panes 26, drawings 41, visual_audit 20, each run on its own.
+
+## Step 9 — Final integration, accessibility and release QA
+
+**Audit against the brief, content, contract and mockups (self-audit).** Corrected:
+
+1. **Chart accessibility (decision):** the per-day values (each day's close, any fill, both values of $10,000) were
+   reachable only through the pointer readout; the text version, the metrics and fills tables and the cards give the
+   totals and the fills, not the days between. Not equivalent, so a labelled range control ("Day shown in the
+   readout") now steps through every day by keyboard: its `aria-valuetext` is the readout sentence, the chart's
+   crosshair follows it, and the pointer keeps it in step. The canvas stays `aria-hidden`; nothing in the chart's data
+   changed. The step 7–8 test that required pointer-only chart code is replaced by one that requires this control.
+2. **44 px phone targets** (brief section 6): What is this?, Learn more summaries, How this test works, the day
+   slider, the view switch and the panel buttons were 22–32 px on phones.
+3. **Singular wording:** "Still holding 1 shares" / "bought 1 shares" now read "1 share" (browser and readings).
+4. **QA gaps against brief section 7:** every rule × cost setting against the API, skipped entries in the browser
+   (`scripts/qa/fixtures/skipped_entries.json`, the real route's reply for prices above $10,000, rebuilt and compared
+   by pytest), Reset and Change market from this view, 200% zoom, reduced motion, and the visual audit extended to the
+   view (it was listed in the brief but not done).
+New interface text (the slider label) and the singular rule are in a marked step 9 addendum in `docs/P5_CONTENT.md`
+for owner approval.
+
+**Checks (self-run; no CI):** pytest 993 passed; mutation checks engine 12/12, readings 7/7, route 6/7 (the one
+miss is the documented equivalent mutant); every-window-end audit 13,644 runs and 7,872 half runs, 0 mismatches;
+`check_endpoints.py` exit 0; browser backtest 133/133, visual_audit 24/24 (now with the strategy view), workflows 198,
+overlays 36, panes 26, explanations 22, drawings 41, each run on its own. Evidence:
+`..inance-app-v2-screenshots\P5inal\REPORT.md`.
 

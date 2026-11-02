@@ -623,6 +623,10 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 .pt-bt-what .pt-what-panel .button-secondary { justify-self: start; }
 .pt-bt-how li .pt-learn-more { margin-top: var(--s-1); }
 .pt-bt-halves .pt-learn-more { font-size: var(--t-14); }
+/* the chart's day slider (step 9): the readout by keyboard */
+.pt-bt-step-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); align-items: center; }
+.pt-bt-step-row label { color: var(--muted); }
+.pt-bt-step { width: 100%; min-height: 32px; margin: 0; accent-color: var(--accent); }
 /* the strategy chart (step 7): price pane, the RSI pane for that rule, and the value of $10,000 below */
 .pt-bt-readout { margin: 0; min-height: 3em; color: var(--muted); }
 .pt-bt-canvas { position: relative; min-width: 0; aspect-ratio: 16 / 12; min-height: 320px; }
@@ -641,6 +645,10 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
   .pt-bt-results { padding-left: var(--s-5); }
   .pt-bt-panel { padding: var(--s-3); }
   .pt-bt-canvas { aspect-ratio: 4 / 4.6; min-height: 300px; }
+  .pt-view-switch button, .pt-bt-what .pt-what, .pt-bt-step, .pt-bt-results-box .pt-learn-more summary,
+  .pt-bt-results-box .button-secondary, .pt-bt-what-panel .button-secondary { min-height: 44px; }
+  .pt-bt-step-row { grid-template-columns: minmax(0, 1fr); gap: var(--s-1); }
+  .pt-bt-how summary { min-height: 44px; padding-block: 11px; box-sizing: border-box; }  /* keeps the disclosure triangle */
   .pt-bt-canvas-3 { aspect-ratio: 4 / 6.2; }
   /* the fills table: each fill becomes a small card, with labels from data-label */
   .pt-bt-fills thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
