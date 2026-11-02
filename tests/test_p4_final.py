@@ -123,7 +123,7 @@ def qa_files():
 
 
 def test_qa_scripts_exist_and_need_no_packages():
-    assert qa_files() == ["drawings.mjs", "explanations.mjs", "overlays.mjs", "panes.mjs", "run.mjs", "visual_audit.mjs",
+    assert qa_files() == ["backtest.mjs", "drawings.mjs", "explanations.mjs", "overlays.mjs", "panes.mjs", "run.mjs", "visual_audit.mjs",
                           "workflows.mjs"]
     assert not os.path.exists(os.path.join(ROOT, "package.json")) and not os.path.exists(os.path.join(QA, "package.json"))
     for name in qa_files():

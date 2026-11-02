@@ -558,3 +558,73 @@ body[data-tab]:not([data-tab="explore"]) .fe-toast { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .pt-flash td { animation: none; background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
 }
+
+/* Test a strategy (P5): the view switch, the setup form in the ticket's place, and the results of a hypothetical test */
+.paper [hidden] { display: none !important; }
+.pt-view-switch { max-width: 360px; }
+.pt-bt-setup { position: sticky; top: var(--s-4); box-shadow: var(--shadow-1); padding: var(--s-4); }
+.pt-bt-setup-form { display: grid; gap: var(--s-4); }
+.pt-bt-setup-form p { margin: 0; }
+.pt-bt-select { width: 100%; min-height: 44px; padding: var(--s-2) var(--s-3); border: 1px solid var(--border); border-radius: var(--r-8);
+  background: var(--surface); color: var(--text); }
+.pt-bt-choice { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: var(--s-2); }
+.pt-bt-choice legend { padding: 0; }
+.pt-bt-option { display: flex; gap: var(--s-3); align-items: start; min-height: 44px; padding: var(--s-3); border: 1px solid var(--border);
+  border-radius: var(--r-12); cursor: pointer; }
+.pt-bt-option:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pt-bt-option input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.pt-bt-option-text { display: grid; gap: 2px; font-size: var(--t-14); }
+.pt-bt-setup-form [aria-disabled="true"] { opacity: .75; cursor: progress; }
+.pt-bt-status:empty { display: none; }
+.pt-bt-results-box { display: grid; gap: var(--s-4); min-width: 0; }
+.pt-bt-panel { display: grid; gap: var(--s-3); padding: var(--s-4); }
+.pt-bt-panel > p, .pt-bt-panel > h2, .pt-bt-panel > h3 { margin: 0; }
+.pt-bt-panel > h3 { font-size: var(--t-16); }
+.pt-bt-waiting { border-style: dashed; }
+/* the results carry the same hatched "paper" edge as the account strip */
+.pt-bt-results { position: relative; padding-left: var(--s-6); }
+.pt-bt-results::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; border-radius: var(--r-12) 0 0 var(--r-12); opacity: .55;
+  background: repeating-linear-gradient(135deg, var(--warning) 0 2px, transparent 2px 6px);
+}
+.pt-bt-head { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; }
+.pt-bt-title { margin: 0; font-size: var(--t-20); }
+.pt-bt-outcome { margin: 0; font-size: var(--t-16); }
+.pt-bt-state { display: grid; gap: var(--s-2); padding: var(--s-3); border: 1px dashed var(--border); border-radius: var(--r-8); }
+.pt-bt-state h3, .pt-bt-state p { margin: 0; }
+.pt-bt-state h3 { font-size: var(--t-16); }
+.pt-bt-table { width: 100%; border-collapse: collapse; font-size: var(--t-14); font-variant-numeric: tabular-nums; overflow-wrap: normal; }
+.pt-bt-table td { white-space: nowrap; }  /* a price or percentage never breaks; the notes and labels wrap */
+.pt-bt-table tfoot td { white-space: normal; }
+.pt-bt-table thead th:first-child { text-align: left; }
+.pt-bt-table caption { text-align: left; font-weight: 600; padding-bottom: var(--s-2); }
+.pt-bt-table th, .pt-bt-table td { padding: var(--s-2); border-bottom: 1px solid var(--border); text-align: right; vertical-align: top; }
+.pt-bt-table thead th { font-size: var(--t-12); color: var(--muted); font-weight: 600; }
+.pt-bt-table tbody th, .pt-bt-table tfoot th { text-align: left; font-weight: 600; }
+.pt-bt-table tfoot td { text-align: left; font-weight: 600; }
+.pt-bt-fills th:nth-child(-n+3), .pt-bt-fills td:nth-child(-n+3) { text-align: left; }
+.pt-bt-note { display: block; font-size: var(--t-12); font-weight: 400; color: var(--muted); white-space: normal; }
+.pt-bt-swatch { display: inline-block; width: 18px; height: 0; margin-right: var(--s-1); vertical-align: middle; }
+.pt-bt-strat { border-top: 3px solid var(--warning); }
+.pt-bt-bench { border-top: 2px dashed var(--muted); }
+.pt-bt-how summary { cursor: pointer; font: 700 var(--t-16)/1.4 var(--font-display); }
+.pt-bt-how ul { margin: var(--s-3) 0 0; padding-left: var(--s-5); display: grid; gap: var(--s-2); }
+.pt-bt-how h4 { margin: var(--s-4) 0 var(--s-1); font-size: var(--t-14); }
+.pt-bt-how p { margin: 0; }
+.pt-bt-standing { margin: 0; padding: var(--s-3) var(--s-4); border-left: 3px solid var(--warning); border-radius: 0 var(--r-8) var(--r-8) 0;
+  background: var(--surface-2); font-size: var(--t-14); }
+@media (max-width: 720px) {
+  /* switch, then the setup form, then the results (the trade sheet and its button are hidden in this view) */
+  .pt-view-switch { order: 0; max-width: none; }
+  .pt-bt-setup { order: 1; position: static; }
+  .pt-bt-results-box { order: 2; }
+  .pt-bt-results { padding-left: var(--s-5); }
+  .pt-bt-panel { padding: var(--s-3); }
+  /* the fills table: each fill becomes a small card, with labels from data-label */
+  .pt-bt-fills thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pt-bt-fills tbody { display: grid; gap: var(--s-2); }
+  .pt-bt-fills tr { display: grid; grid-template-columns: 1fr 1fr; gap: 2px var(--s-3); padding: var(--s-2) var(--s-3);
+    border: 1px solid var(--border); border-radius: var(--r-12); }
+  .pt-bt-fills td { border: 0; padding: 0; text-align: left; }
+  .pt-bt-fills td::before { content: attr(data-label) " "; display: block; color: var(--muted); font-size: var(--t-12); }
+}

@@ -75,6 +75,13 @@
         body: JSON.stringify(body),
       });
     },
+    postBacktest: function (body) {
+      return request("/api/backtest/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    },
     getPaperScenarios: function () {
       return request("/api/paper/scenarios");
     },

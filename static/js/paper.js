@@ -33,7 +33,7 @@
     return { symbol: null, side: "buy", shares: "1", mode: "edit", queuedId: null, queuedText: "", problem: "",
              historyOpen: true, historyFilter: "", watchOpen: !PHONE.matches, sheetOpen: false, timeframe: "daily",
              overlays: saved.overlays, panes: saved.panes, indMenuOpen: false, learnOpen: {}, whatOpen: null,
-             drawMode: null, drawStart: null };
+             drawMode: null, drawStart: null, view: "trade" };
   }
 
   function el(tag, cls, text) {
@@ -176,6 +176,7 @@
   function accept(data) {
     view = data;
     writeSession(data.state);
+    if (regions && window.Backtest) window.Backtest.dayChanged();
   }
 
   function load(data) {
@@ -339,6 +340,10 @@
   // from the watchlist or the positions table: on phones this opens the trade sheet
   function pickToTrade(symbol) {
     selectSymbol(symbol);
+    if (ui.view === "strategy") {
+      window.Backtest.setSymbol(symbol);
+      return;
+    }
     if (PHONE.matches) openSheet("pt-shares");
   }
 
@@ -433,12 +438,18 @@
 
     var layout = el("div", "pt-layout");
     var centre = el("div", "pt-centre");
-    [regions.strip, regions.chart, regions.positions, regions.pending, regions.history, learnMore()].forEach(function (n) {
+    var learn = learnMore();
+    regions.viewSwitch = viewSwitch();
+    regions.strategy = el("div", "pt-bt-results-box");  // Test a strategy (static/js/backtest.js)
+    regions.setup = el("aside", "card pt-bt-setup");
+    [regions.strip, regions.viewSwitch, regions.chart, regions.positions, regions.pending, regions.history, learn,
+      regions.strategy].forEach(function (n) {
       centre.appendChild(n);
     });
     layout.appendChild(regions.watch);
     layout.appendChild(centre);
     layout.appendChild(regions.ticket);
+    layout.appendChild(regions.setup);
     root.appendChild(layout);
 
     regions.tradeBar = button("button-primary pt-trade-bar", "Trade", function () { openSheet(); });
@@ -451,11 +462,54 @@
     root.appendChild(regions.tradeBar);
     root.appendChild(regions.scrim);
     root.appendChild(regions.toasts);
+    regions.tradeOnly = [regions.chart, regions.positions, regions.pending, regions.history, learn, regions.ticket,
+      regions.tradeBar];
 
     showMessage();
     renderTicket();
+    window.Backtest.mount(regions.setup, regions.strategy, {
+      state: function () { return view.state; },
+      symbols: function () { return Object.keys(view.quotes); },
+      symbolName: function (s) { return info(s).name; },
+      symbol: function () { return ui.symbol; },
+      day: function () { return view.day; },
+      onInvalidState: showDamaged,
+    });
+    applyView();
     refresh(["watch", "strip", "chart", "positions", "pending", "history"]);
     dock();
+  }
+
+  // ---- Trade / Test a strategy: one session, two views; a test never changes the account ----
+
+  function viewSwitch() {
+    var group = el("div", "pt-segmented pt-view-switch");
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Practice Trading view");
+    [["trade", "Trade"], ["strategy", "Test a strategy"]].forEach(function (v) {
+      var b = button(null, v[1], function () { setView(v[0]); });
+      b.dataset.key = "view-" + v[0];
+      group.appendChild(b);
+    });
+    return group;
+  }
+
+  function setView(name) {
+    if (ui.view === name) return;
+    ui.view = name;
+    applyView();
+    if (name === "trade") refresh(["chart"]);  // skipped while hidden; drawn again at its real size
+  }
+
+  function applyView() {
+    var strategy = ui.view === "strategy";
+    regions.viewSwitch.querySelectorAll("button").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.dataset.key === "view-" + ui.view ? "true" : "false");
+    });
+    regions.tradeOnly.forEach(function (n) { n.hidden = strategy; });
+    regions.strategy.hidden = !strategy;
+    regions.setup.hidden = !strategy;
+    if (strategy) closeSheet(true);
   }
 
   var RENDER = {};
@@ -465,6 +519,7 @@
   function refresh(names, focusId) {
     if (!regions) return;
     names.forEach(function (name) {
+      if (name === "chart" && ui.view === "strategy") return;  // hidden: drawn when Trade is chosen again
       if (name === "ticket") {
         if (ui.mode === "edit" && regions.form) updateTicketFigures();
         else renderTicket();

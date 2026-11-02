@@ -3,7 +3,7 @@
 // Node's built-in modules only (no npm packages); not part of pytest; contacts nothing but 127.0.0.1.
 //
 // Usage: node scripts/qa/run.mjs [output-dir] [suite ...]
-//   suites: workflows overlays panes explanations drawings visual_audit (default: all)
+//   suites: workflows overlays panes explanations drawings backtest visual_audit (default: all)
 //   env: PYTHON (a Python with the app's requirements, default "python"), BROWSER (path to msedge or chrome),
 //        QA_PORT (app port, default 5055; the browser's debugging port is QA_PORT + 4000)
 import { spawn } from "node:child_process";
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(here, "..", "..");
-const SUITES = ["workflows", "overlays", "panes", "explanations", "drawings", "visual_audit"];
+const SUITES = ["workflows", "overlays", "panes", "explanations", "drawings", "backtest", "visual_audit"];
 const args = process.argv.slice(2);
 const outDir = resolve(args[0] || join(repo, "..", "finance-app-v2-screenshots", "qa-run"));
 const chosen = args.length > 1 ? args.slice(1) : SUITES;

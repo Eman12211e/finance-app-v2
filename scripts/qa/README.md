@@ -29,6 +29,7 @@ The exit code is 0 only when every chosen suite passes.
 | `panes` | P4 step 5: RSI 14 and MACD 12-26-9 equal to the API, chart height per pane, shared crosshair, Not enough data, weekly completed weeks and Partial Week, phone |
 | `explanations` | P4 step 6: one card per indicator, headings, readings equal to the API, Learn more (keyboard, kept open), What is this? without switching on, Not enough data, Partial Week, Final Short Week, phone |
 | `drawings` | P4 step 7: horizontal and trend lines by mouse, touch and keyboard, typed-price validation, storage as dates and prices, weekly mapping and label room, per ticker, Remove, Clear with confirmation, Reset and Change market, nothing sent |
+| `backtest` | P5 step 6: Trade / Test a strategy switch (keyboard), setup form, Run test, results equal to the API (outcome, metrics, fills, halves), approved wording, no trades, not enough data, too short to split, last-day signal, running and failed request (paused and failed in the browser) with Try again, Next day clears a result, the account and saved session unchanged, only `/api/backtest/run` sent, back to Trade with the chart intact, phone order and fill cards, 1280 / 390 px × light / dark screenshots |
 | `visual_audit` | All five tabs × 1280 / 390 px × light / dark: screenshots plus overflow, clipped text, WCAG text contrast, unnamed controls, broken ARIA references, duplicate ids, small targets, console errors, hosts contacted; the header theme toggle repaints the chart |
 
 A single suite can also be run against an app and browser you started yourself:

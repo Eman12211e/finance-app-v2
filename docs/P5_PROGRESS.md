@@ -10,7 +10,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `2e8b931` | 2 corrections + 3: exact signals, price checks, metrics, comparison, halves (for mathematical review) |
 | `8cc6be6` | 3b: metrics reference at window ends covering every residue |
 | `6a363c1` | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
-| this commit | 5 (draft): `docs/P5_CONTENT.md` for owner review; brief import line corrected; route body helper made local |
+| `5fc8e88` | 5 (draft, approved 2026-11-02): `docs/P5_CONTENT.md`; brief import line corrected; route body helper made local |
+| this commit | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
 
 ## Step 2 — Backtesting engine
 
@@ -200,3 +201,31 @@ the draft: SYN-HLT1's averages crossed 4 times, not 3 (the rule acted on 3), and
 Day 141, while in cash). "Typical daily move" is proposed as "Daily volatility" with a standard-deviation sentence.
 
 **Checks:** pytest 858 passed; `check_endpoints.py` 9 SKIP, exit 0, data file restored.
+
+## Step 6 — Setup and results view (no chart, no explanation cards)
+
+- **`static/js/backtest.js`** (new): the setup form (ticker, the two rules with their approved one-line descriptions,
+  Example costs / No costs, Run test, footnote) and the results: heading with the Simulated label, window line,
+  outcome sentence, metrics table (This rule / Buy and hold, real `<table>` with row and column headers), fills table
+  (In / Out wording), skipped entries, open position, last-day signal, buy and hold's line, How this test works (five
+  points, the rule's starting note, Why this is not a forecast), earlier and later halves or Too short to split, the
+  standing note. States: before a run, not enough data, no trades (corrected "did not cross above"), running (busy
+  button stays focusable, status line), request failed with Try again, session could not be verified (the existing
+  damaged-session screen). It sends only {state, symbol, preset, costs} to `/api/backtest/run`, never writes the saved
+  session and builds text nodes only. A result is cleared when the practice day changes (Next day) and an answer that
+  arrives after the day moved on is dropped.
+- **`static/js/paper.js`** (view switch only): a "Trade" / "Test a strategy" group (`aria-pressed`) under the account
+  strip; Test a strategy hides the chart, positions, pending, history, Learn more, the order ticket and the phone Trade
+  button, and shows the setup in the ticket's column and the results in the centre. A ticker clicked in the list
+  becomes the test's ticker (never opens the trade sheet). The price chart is not redrawn while hidden and is drawn
+  again on returning to Trade. The view resets to Trade on a new session.
+- **CSS** (`features.css`): setup and results styles, `.paper [hidden]` so hidden regions stay hidden whatever their
+  display rule, phone order switch → setup → results, fills as labelled cards on phones. No horizontal scrolling (an
+  existing test forbids it): prices and percentages never wrap, labels and notes do.
+- Wording: every sentence from the approved `docs/P5_CONTENT.md`; three interface lines that were not in it (day
+  changed, the screen-reader announcement, the 0.00 footer) are listed there in a marked step 6 addendum for approval.
+- **Tests:** `tests/test_backtest_ui.py` (33: script order, only `postBacktest` with four fields, no storage or HTML
+  writes, `paper.js` adds only the switch, 27 sentences present in both `backtest.js` and the approved content, the
+  approved metric names, banned words); `test_p4_final.py`'s QA inventory now lists `backtest.mjs`.
+  `scripts/qa/backtest.mjs` (58 browser checks, registered in `run.mjs`).
+- Not in this step: the chart (step 7), explanation cards, What is this? and the guide endpoint (step 8).
