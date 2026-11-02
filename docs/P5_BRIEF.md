@@ -33,8 +33,9 @@ wording (Section 4, Wording rules).
 
 ## 2. Strategy presets
 
-All signals are computed from **daily closes up to and including the decision day**, using the P4 functions in
-`services/indicators.py` (unrounded values). Presets only: no periods or thresholds can be typed (as P4 decision 2).
+All signals are computed from **daily closes up to and including the decision day**, with the P4 definitions in
+`services/indicators.py`, compared exactly in whole numbers (`services/backtest.py` `signals`, so rounding can never
+create or hide a signal). Presets only: no periods or thresholds can be typed (as P4 decision 2).
 Exact start and entry rules are in Section 3.2.
 
 | Preset | Rule | Why it is here |
@@ -146,8 +147,8 @@ index 50.
 - Bars come only through `paper_engine.market_bars(state)`, which verifies the signed session and stops at the
   session's current day. **L is the current practice day**, so a test never shows a price the learner has not reached
   in Practice Trading.
-- Decisions on day t read indicator values at index t, and every indicator function in `services/indicators.py` is
-  causal (the value at i uses inputs 0..i).
+- Decisions on day t read signal values at index t, and the signals (like every indicator function in
+  `services/indicators.py`) are causal (the value at i uses inputs 0..i).
 - A fill on t + 1 uses only t + 1's open; the decision for t + 1 is not made until t + 1 closes.
 - Tested by prefix stability and by changing later prices (Section 7).
 
@@ -201,7 +202,8 @@ handful of trades they look precise but are mostly noise, and they read like sco
 
 - **`services/backtest.py`** (new, pure functions, integer cents): `run(dates, bars, preset, costs)` returns the daily
   values, fills and metrics for the strategy and the benchmark, plus the two halves. It imports only
-  `services.indicators` (`sma`, `rsi`) and the standard library. It **does not import or call `paper_engine`**, and
+  the standard library (decisions use exact integer forms of the `services.indicators` definitions; the route uses
+  `services.indicators` for the chart lines only). It **does not import or call `paper_engine`**, and
   the engine never imports it. Nothing it computes reaches the Practice Trading session, balances, orders or fills.
 - **`routes/backtest.py`** (new blueprint, added to `app.py`'s registration list):
   `POST /api/backtest/run` with `{state, symbol, preset: "sma_cross"|"rsi_threshold", costs: "example"|"none"}`.

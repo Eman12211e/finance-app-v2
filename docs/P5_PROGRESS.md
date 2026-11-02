@@ -9,7 +9,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `b13d641` | 2: `services/backtest.py` + tests (for mathematical review) |
 | `2e8b931` | 2 corrections + 3: exact signals, price checks, metrics, comparison, halves (for mathematical review) |
 | `8cc6be6` | 3b: metrics reference at window ends covering every residue |
-| this commit | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
+| `6a363c1` | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
+| this commit | 5 (draft): `docs/P5_CONTENT.md` for owner review; brief import line corrected; route body helper made local |
 
 ## Step 2 — Backtesting engine
 
@@ -179,3 +180,23 @@ the two fixed synthetic markets plus hand-made series; the brief's §5 line "imp
 
 **Checks:** pytest 858 passed (785 + 1 in 3b + 72); `check_endpoints.py` 9 SKIP, exit 0, data file restored;
 protected and P4 files unchanged since `e929096`.
+
+## Owner review of steps 3–4 (2026-11-02)
+
+Approved conventions: the points difference from exact values, rounded once; a crossing on the later half's first day
+counts when earlier prices establish it; each half restarts with $10,000.00, no shares and no inherited trades.
+
+- `docs/P5_BRIEF.md` sections 2, 3.7 and 5 now say the engine imports only the standard library and decides with exact
+  integer forms of the `services.indicators` definitions (the route uses `services.indicators` for chart lines only).
+- `routes/backtest.py` no longer imports P4's private `_body` from `routes/analysis.py`: every route in the codebase
+  keeps its own copy (paper, analysis), and a shared module would mean editing protected files, so the same seven
+  lines are local. Behaviour unchanged (body, 413 and fuzz tests pass).
+
+## Step 5 (draft) — `docs/P5_CONTENT.md`
+
+Every explanation, result sentence and state for owner review; not implemented (no guide JSON, endpoint or UI).
+Example numbers are computed by the engine. Two mockup sentences were found wrong while checking and are corrected in
+the draft: SYN-HLT1's averages crossed 4 times, not 3 (the rule acted on 3), and SYN-TEC1's averages did cross (down,
+Day 141, while in cash). "Typical daily move" is proposed as "Daily volatility" with a standard-deviation sentence.
+
+**Checks:** pytest 858 passed; `check_endpoints.py` 9 SKIP, exit 0, data file restored.

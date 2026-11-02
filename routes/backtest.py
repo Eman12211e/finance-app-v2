@@ -2,12 +2,12 @@
 # up to the current simulated day only. Read-only: it never changes the session, balances, orders or fills.
 import logging
 
-from flask import Blueprint
+from flask import Blueprint, request
+from werkzeug.exceptions import RequestEntityTooLarge
 
-from routes.analysis import _body
 from routes.envelope import fail, ok
 from services import backtest, indicators, paper_engine
-from services.errors import AppError, InvalidRequest
+from services.errors import AppError, InvalidRequest, RequestTooLarge
 
 log = logging.getLogger(__name__)
 bp = Blueprint("backtest", __name__, url_prefix="/api/backtest")
@@ -16,6 +16,16 @@ FIELDS = ("state", "symbol", "preset", "costs")
 CHART_LINES = {"sma_cross": (("sma", backtest.FAST), ("sma", backtest.SLOW)), "rsi_threshold": (("rsi", 14),)}
 STANDING_NOTE = ("This is a hypothetical test on computer-generated prices. A rule that did well here can do badly on "
                  "other prices. Past results, real or simulated, do not tell you what will happen next.")
+
+
+def _body():
+    try:
+        body = request.get_json(silent=True)
+    except RequestEntityTooLarge:
+        raise RequestTooLarge() from None
+    if not isinstance(body, dict):
+        raise InvalidRequest()
+    return body
 
 
 def _window(sim):
