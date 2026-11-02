@@ -1,0 +1,107 @@
+{
+ "source": "docs/P5_CONTENT.md (owner-approved). Static text: no AI, no network. Placeholders in {braces} are filled with the backtest API's own values.",
+ "label": "Our plain summary",
+ "footer": "Education only. This describes a test on past simulated prices; it is not a recommendation to buy or sell.",
+ "not_a_forecast": {
+  "title": "Why this is not a forecast",
+  "text": "A backtest replays a fixed rule on prices that have already happened and reports what that rule would have done. It cannot show what the rule would do on prices that have not happened yet. These prices were made by a computer program, and even with real prices the past is only one of many ways things could have gone. A rule can look good because it happened to suit this particular stretch of prices. The rules here use textbook settings chosen before any of these prices existed, and nothing is adjusted to make them fit, but a fixed rule is still only being tested on one set of prices."
+ },
+ "rules": {
+  "sma_cross": {
+   "title": "SMA crossover 20 / 50",
+   "setup": "Buys when the 20-day average crosses above the 50-day average; sells when it crosses back below.",
+   "what": "It starts in cash. After each day's close it compares two averages of closing prices: the last 20 days and the last 50 days. When the 20-day average moves from at-or-below the 50-day average to above it, the rule buys at the next day's open. When the 20-day average moves from above back to at-or-below, it sells everything at the next day's open. Equal averages count as \"not above\".",
+   "why": "It is a simple way to follow a trend: be in while recent prices are above longer-run prices, and step out when they are not.",
+   "watch": "Averages lag, so it enters and leaves after a move has already started. When prices go up and down without a clear direction, it can buy after a rise and sell after a fall again and again, paying costs each time.",
+   "start": "The test starts in cash and waits for a fresh crossing. If the 20-day average is already above the 50-day average on Day 50, that is not treated as a buy that happened earlier. The first crossing the test can see is on Day 51, so its first fill can be at the Day 52 open.",
+   "readings": {
+    "acted": "The rule acted on {n} crossings: {up} up through the 50-day average and {down} back down.",
+    "none": "The 20-day average never crossed above the 50-day average while the rule was in cash, so it never bought."
+   }
+  },
+  "rsi_threshold": {
+   "title": "RSI 14 below 30 / above 70",
+   "setup": "Buys when RSI 14 closes below 30; sells when it closes above 70.",
+   "what": "It starts in cash. While in cash, it buys at the next day's open when RSI 14 closes below 30. While holding shares, it sells everything at the next day's open when RSI 14 closes above 70. A close of exactly 30 or exactly 70 does nothing.",
+   "why": "It tries the opposite of following a trend: buying after a run of losses and selling after a run of gains.",
+   "watch": "RSI can stay below 30 while prices keep falling, and after a buy it may not close above 70 again for a long time, so the rule can hold through a long decline. Between 30 and 70 it does nothing at all.",
+   "start": "RSI 14 already has values on Day 50. If it closed below 30 that day, the rule buys at the Day 51 open, the same day buy and hold buys. This rule could start sooner, but it uses the same Day 50 start as the crossover rule so every test covers the same days.",
+   "readings": {
+    "acted": "The rule acted on {n} RSI readings: {low} below 30 while in cash and {high} above 70 while holding.",
+    "none": "RSI 14 never closed below 30 while the rule was in cash, so it never bought."
+   }
+  }
+ },
+ "buy_hold": {
+  "title": "Buy and hold",
+  "what": "It buys as many whole shares as $10,000 allows at the first opening price after the start (Day 51) and never sells.",
+  "why": "It answers \"what if I had bought this ticker and done nothing?\" over exactly the same days, with the same costs. A rule's result means more next to it than on its own.",
+  "watch": "It is a point of comparison, not a target. Over a different stretch of prices buy and hold can do very differently, and so can the rule.",
+  "readings": {
+   "bought": "Buy and hold bought {shares} shares at the Day 51 open (${open}, fill price ${price}) and kept them.",
+   "skipped": "Buy and hold could not afford one share at the Day 51 open (fill price ${price}), so it stayed in cash."
+  }
+ },
+ "metrics": {
+  "total_return": {
+   "title": "Total return",
+   "reading": "The $10,000 became ${end}, a change of {return}.",
+   "what": "How much the $10,000 grew or shrank from the Day 50 close to the last close, after the costs chosen: (value at the end − $10,000) ÷ $10,000. Shares still held at the end are valued at the last close; they are not sold and no further cost is charged.",
+   "watch": "One number for the whole stretch hides how bumpy it was along the way. Read it with the largest drop and daily volatility."
+  },
+  "difference": {
+   "title": "Compared with buy and hold",
+   "reading": "This rule ended at ${end} ({return}). Buying and holding {symbol} over the same days ended at ${bh_end} ({bh_return}), so the rule ended {points} points {higher | lower}.",
+   "level": ", so the rule ended level with buying and holding (0.00 points).",
+   "what": "The rule's total return minus buy and hold's, in percentage points. +4.43% against +10.30% is 5.87 points lower: a difference between two percentages, not \"57% lower\".",
+   "how": "From the exact end values, then rounded once, so it can differ by 0.01 from subtracting the two rounded returns shown above it.",
+   "watch": "It compares two results on the same synthetic days. It says nothing about which would do differently on other prices."
+  },
+  "drawdown": {
+   "title": "Largest drop from a high",
+   "readings": {
+    "fell": "The value fell {pct} from its high on {peak date} to a low on {trough date}.",
+    "never": "The value never fell below an earlier high on these days.",
+    "cash": "The value stayed at $10,000.00 in cash, so it never dropped."
+   },
+   "what": "The worst fall from a high point to a later low, measured on the value at each day's close, as a share of that high. It shows how uncomfortable the ride could have been, which the final number hides.",
+   "watch": "It only covers these days and closing values; moves during a day are not counted. A longer or different stretch can have a deeper drop. Recovering from a drop takes a bigger percentage gain than the drop itself: after a 10% fall, it takes about an 11% rise to get back."
+  },
+  "volatility": {
+   "title": "Daily volatility",
+   "reading": "The value's daily changes had a standard deviation of {vol}.",
+   "what": "A measure of how much the value moved up or down from one close to the next: the standard deviation of the daily changes, in percent. A bigger number means a bumpier ride. It is for one day, not a year.",
+   "watch": "Days spent in cash move by 0%, which makes this number smaller without making the rule any safer. A low number does not mean a big drop cannot happen."
+  },
+  "trades": {
+   "title": "Trades",
+   "reading": "The rule bought {buys} times and sold {sells} times.",
+   "what": "How often the rule acted: each buy and each sell is one fill, and each fill pays the cost setting. Buy and hold shows 1 buy and 0 sells.",
+   "watch": "More trades mean more costs. A count does not say whether the trades helped."
+  },
+  "days_invested": {
+   "title": "Days invested",
+   "reading": "Shares were held at the close on {n} of {days} test days ({pct}).",
+   "what": "On how many of the test days the rule ended the day holding shares, out of all the test days. The rest of the time the money sat in cash, earning nothing.",
+   "watch": "Time out of the market avoids some falls and also misses some rises."
+  },
+  "costs": {
+   "title": "Costs paid",
+   "readings": {
+    "example": "The example costs added up to ${costs} across {fills} fills.",
+    "none": "No costs were charged."
+   },
+   "what": "The total of the 0.10% example cost over every fill, in dollars. With No costs it is $0.00.",
+   "watch": "See \"Trading costs and slippage\": the effect on the final value is not exactly this number."
+  }
+ },
+ "slippage": {
+  "title": "Trading costs and slippage",
+  "what": "Slippage is the gap between the price you see and the price you actually get. Here it is a fixed example: every fill is 0.10% worse than that day's opening price. On a $100.00 open, a buy fills at $100.10 and a sell at $99.90. \"Costs paid\" adds up that gap over every fill.",
+  "watch": "Costs change more than the costs line. A buy at a higher price can mean one fewer whole share, so the final value can move by more or less than the costs paid. Real costs vary from trade to trade and can be larger than this example."
+ },
+ "halves": {
+  "title": "Earlier and later halves",
+  "how": "Each half is a separate test that starts with $10,000.00 in cash and no shares at the close of its first day. Nothing carries over from the full test: no shares, no cash, no trades. The later half still uses the prices before it to build its averages, so a crossing on its first day counts as a signal, and an average that was already above the other on that day is not treated as an earlier buy."
+ }
+}

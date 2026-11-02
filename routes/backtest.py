@@ -6,7 +6,7 @@ from flask import Blueprint, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from routes.envelope import fail, ok
-from services import backtest, indicators, paper_engine
+from services import backtest, indicators, paper_engine, strategy_guide
 from services.errors import AppError, InvalidRequest, RequestTooLarge
 
 log = logging.getLogger(__name__)
@@ -76,7 +76,23 @@ def run_data(body):
         "bars": [{"time": d, "o": b["o"], "h": b["h"], "l": b["l"], "c": b["c"]} for d, b in zip(dates, bars)],
         "indicators": [{"type": kind, "period": n, "series": indicators.compute(kind, n, closes)}
                        for kind, n in CHART_LINES[preset]]}
-    return out | {"window": result.pop("window"), "result": result}
+    out = out | {"window": result.pop("window"), "result": result}
+    try:  # the cards' sentences; a damaged guide file costs the explanations, never the results
+        result["readings"] = strategy_guide.readings(out)
+    except (OSError, ValueError, KeyError, TypeError):
+        log.exception("strategy guide unavailable")
+        result["readings"] = None
+    return out
+
+
+@bp.get("/guide")
+def guide_endpoint():
+    """The approved explanation text (static), for Learn more and What is this?."""
+    try:
+        return ok(strategy_guide.guide(), None, None)
+    except Exception:
+        log.exception("strategy guide failed")
+        return fail(AppError())
 
 
 @bp.post("/run")

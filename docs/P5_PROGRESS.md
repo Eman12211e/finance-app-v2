@@ -12,7 +12,8 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `6a363c1` | 4: `POST /api/backtest/run`, API contract, validation and fuzz tests |
 | `5fc8e88` | 5 (draft, approved 2026-11-02): `docs/P5_CONTENT.md`; brief import line corrected; route body helper made local |
 | `1495829` | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
-| this commit | 7: the strategy chart (prices, the rule's lines, In / Out markers, value pane) |
+| `f89445f` | 7: the strategy chart (prices, the rule's lines, In / Out markers, value pane) |
+| this commit | 8: `data/strategy_guide.json`, `GET /api/backtest/guide`, readings, explanation cards, What is this? |
 
 ## Step 2 — Backtesting engine
 
@@ -260,4 +261,31 @@ drawings 41, backtest 58 passed; `visual_audit` was stopped by a low-memory even
   line at the Day 50 close, candles ending today, repeated runs, theme change, resize, view switching, Next day, no
   trades, not enough data, last-day signal, RSI rule, phone); workflows 198, overlays 36, panes 26, explanations 22,
   drawings 41, visual_audit 20, each run on its own.
+
+## Step 8 — Guide and explanation cards
+
+- **`data/strategy_guide.json`**: every card text, Learn more part and reading template, copied word for word from the
+  approved `docs/P5_CONTENT.md` (with its own placeholders). **`services/strategy_guide.py`** loads it, refuses it unless
+  every text is present and non-empty, and fills each card's reading from a run's own reply (counts, cents, the API's
+  rounded percentages, dates): nothing is recalculated. `GET /api/backtest/guide` serves it; `/api/backtest/run`
+  carries `result.readings`, or `null` (logged) if the guide cannot be read, so a damaged file costs the
+  explanations, never the results.
+- **`static/js/backtest.js`**: nine cards after the fills (mockup 09): the rule, buy and hold, total return, the
+  comparison, largest drop, daily volatility, trades, days invested, costs paid; each with the API's reading, a closed
+  Learn more (`<details>`, named "Learn more about …", kept open across runs) and the approved footer. Learn more also
+  under the costs point (Trading costs and slippage) and in the halves panel (How it works). **What is this?** beside
+  each rule (mockup 11): a button with `aria-expanded` / `aria-controls`, one open at a time, Close and Esc return
+  focus to it, and it never chooses or runs the rule. Why this is not a forecast is unchanged. A guide that fails to
+  load or arrives malformed shows "The explanation could not load." in Learn more and What is this?, while the
+  readings, results and chart still show.
+- **Content integrity:** every guide string is in the approved document word for word (57 parametrised checks); the
+  readings are checked exactly for the mockup run, no trades, a last-day signal, the RSI rule with no costs, singular
+  forms, a skipped buy and hold entry, a level result and "never fell", and for every symbol, rule and cost setting of
+  both markets (filled, ending in a full stop, stating the API's numbers); the browser checks every card reading
+  against the API's `readings` and the Learn more and What is this? text against `/api/backtest/guide`.
+- **For the step 9 accessibility audit:** the chart is pointer-only (its readout follows a pointer; no keyboard
+  stepping). Keyboard and screen-reader users have its text version, the metrics table, the fills table and now the
+  cards; recorded here and in a test that keeps the chart code free of keyboard handling until step 9 decides.
+- **Checks:** pytest 991 passed; `check_endpoints.py` exit 0; browser `backtest` 112/112, explanations 22, workflows
+  198, overlays 36, panes 26, drawings 41, visual_audit 20, each run on its own.
 

@@ -190,6 +190,7 @@
       if (o.note) text.appendChild(el("span", "pt-tiny muted", o.note));
       row.appendChild(text);
       fs.appendChild(row);
+      if (key === "preset") fs.appendChild(whatIsThis(o.value));  // outside the label, so it never changes the choice
     });
     return fs;
   }
@@ -348,6 +349,7 @@
     resultsBox.appendChild(main);
     resultsBox.appendChild(chartPanel(d));
     if (!quiet(r)) resultsBox.appendChild(fillsPanel(d));
+    resultsBox.appendChild(cards(d));
     resultsBox.appendChild(howItWorks(d.preset, d.costs));
     resultsBox.appendChild(halvesPanel(d));
     resultsBox.appendChild(el("p", "pt-bt-standing", STANDING));
@@ -512,7 +514,11 @@
     details.open = true;
     details.appendChild(el("summary", null, "How this test works"));
     var list = el("ul", "pt-small");
-    HOW.forEach(function (text) { list.appendChild(el("li", null, text || COST_POINT[costs])); });
+    HOW.forEach(function (text) {
+      var li = el("li", null, text || COST_POINT[costs]);
+      if (!text) li.appendChild(learnMore("slippage", "trading costs and slippage"));  // under the costs point
+      list.appendChild(li);
+    });
     list.appendChild(el("li", null, RULES[preset].start));
     details.appendChild(list);
     details.appendChild(el("h4", null, "Why this is not a forecast"));
@@ -527,6 +533,7 @@
     if (!h) {
       box.appendChild(el("p", "pt-small", "Too short to split: each half needs at least 40 test days, and there are "
         + d.window.evaluation_days + " so far. Available from Day 130."));
+      box.appendChild(learnMore("halves", "the earlier and later halves"));
       return box;
     }
     box.appendChild(el("p", "pt-small", "The same rule, tested again on each half from a fresh $10,000."));
@@ -556,6 +563,7 @@
     table.appendChild(tbody);
     box.appendChild(table);
     box.appendChild(el("p", "pt-small muted", HALVES_NOTE));
+    box.appendChild(learnMore("halves", "the earlier and later halves"));
     return box;
   }
 
@@ -803,6 +811,156 @@
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawForTheme);
   new MutationObserver(redrawForTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
+  // ---- explanations (step 8): the approved text from /api/backtest/guide, readings from the run's own reply ----
+
+  var FOOTER = "Education only. This describes a test on past simulated prices; it is not a recommendation to buy or "
+    + "sell.";
+  var CARD_TITLES = { buy_hold: "Buy and hold", total_return: "Total return", difference: "Compared with buy and hold",
+    drawdown: "Largest drop from a high", volatility: "Daily volatility", trades: "Trades", days_invested: "Days invested",
+    costs: "Costs paid" };
+  var CARDS = ["rule", "buy_hold", "total_return", "difference", "drawdown", "volatility", "trades", "days_invested",
+    "costs"];
+  var guideText = null;  // the guide reply: null, {loading}, {error} or the approved text
+  var learnOpen = {};    // which Learn more panels are open, kept across runs
+  var whatOpen = null;   // the rule whose What is this? is open in the setup form
+
+  function loadGuide() {
+    if (guideText && !guideText.error) return;
+    guideText = { loading: true };
+    window.Api.getBacktestGuide().then(function (env) {
+      guideText = env.ok && validGuide(env.data) ? env.data : { error: true };
+      if (resultsBox) renderResults();  // every view has Learn more panels (the costs point at least)
+      if (whatOpen) fillWhat(whatOpen);
+    });
+  }
+
+  function validGuide(g) {  // a damaged reply counts as no guide: the readings and results still show
+    var ok = function (v) { return typeof v === "string" && v.trim() !== ""; };
+    var has = function (o, keys) { return !!o && keys.every(function (k) { return ok(o[k]); }); };
+    return !!g && ok(g.label) && !!g.rules && !!g.metrics && has(g.buy_hold, ["what", "why", "watch"])
+      && Object.keys(RULES).every(function (k) { return has(g.rules[k], ["what", "why", "watch"]); })
+      && Object.keys(CARD_TITLES).every(function (k) { return k === "buy_hold" || has(g.metrics[k], ["what", "watch"]); })
+      && has(g.metrics.difference, ["how"]) && has(g.slippage, ["what", "watch"]) && has(g.halves, ["how"]);
+  }
+
+  function parts(key, preset) {  // [label, text] rows of one explanation, in the approved order
+    var g = guideText;
+    if (key === "rule") {
+      var r = g.rules[preset];
+      return [["What it does", r.what], ["Why people test it", r.why], ["Watch out", r.watch]];
+    }
+    if (key === "buy_hold") {
+      return [["What it does", g.buy_hold.what], ["Why it is here", g.buy_hold.why], ["Watch out", g.buy_hold.watch]];
+    }
+    if (key === "halves") return [["How it works", g.halves.how]];
+    var m = key === "slippage" ? g.slippage : g.metrics[key];
+    return [["What it shows", m.what]].concat(m.how ? [["How it is worked out", m.how]] : [], [["Watch out", m.watch]]);
+  }
+
+  function explanation(key, preset) {
+    var box = el("div", "pt-explain");
+    if (!guideText || guideText.loading || guideText.error) {
+      box.appendChild(el("p", "pt-tiny muted", guideText && guideText.error ? "The explanation could not load."
+        : "The explanation is loading."));
+      return box;
+    }
+    box.appendChild(el("p", "pt-summary-tag", guideText.label));
+    var dl = el("dl");
+    parts(key, preset).forEach(function (row) {
+      dl.appendChild(el("dt", null, row[0]));
+      dl.appendChild(el("dd", null, row[1]));
+    });
+    box.appendChild(dl);
+    return box;
+  }
+
+  function learnMore(key, about, preset) {  // a Learn more disclosure that stays open across runs
+    var openKey = key === "rule" ? "rule-" + preset : key;
+    var more = el("details", "pt-learn-more");
+    more.open = !!learnOpen[openKey];
+    more.addEventListener("toggle", function () { learnOpen[openKey] = more.open; });
+    var summary = el("summary", null, "Learn more");
+    summary.dataset.key = "bt-learn-" + openKey;
+    summary.setAttribute("aria-label", "Learn more about " + about);
+    more.appendChild(summary);
+    more.appendChild(explanation(key, preset));
+    return more;
+  }
+
+  function cards(d) {
+    var r = d.result;
+    var wrap = el("div", "pt-cards pt-bt-cards");
+    CARDS.forEach(function (key) {
+      var title = key === "rule" ? RULES[d.preset].name : CARD_TITLES[key];
+      var card = el("section", "pt-card");
+      var head = el("h3", null, title + " ");
+      head.id = "pt-bt-card-" + key;
+      head.appendChild(sim());
+      card.setAttribute("aria-labelledby", head.id);
+      card.appendChild(head);
+      card.appendChild(el("p", "pt-card-now", r.readings ? r.readings[key] : "The explanation could not load."));
+      card.appendChild(learnMore(key, title, d.preset));
+      card.appendChild(el("p", "pt-edu-note", FOOTER));
+      wrap.appendChild(card);
+    });
+    return wrap;
+  }
+
+  // What is this? beside each rule: the rule's full explanation, without choosing or running it (mockup 11)
+  function whatIsThis(preset) {
+    var wrap = el("div", "pt-bt-what");
+    var b = el("button", "pt-what", "What is " + RULES[preset].name + "?");
+    b.type = "button";
+    b.dataset.key = "what-" + preset;
+    var box = el("div", "pt-what-panel");
+    box.id = "pt-bt-what-" + preset;
+    box.hidden = whatOpen !== preset;
+    b.setAttribute("aria-expanded", whatOpen === preset ? "true" : "false");
+    b.setAttribute("aria-controls", box.id);
+    b.addEventListener("click", function () { setWhat(whatOpen === preset ? null : preset); });
+    box.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      setWhat(null);
+      b.focus();
+    });
+    wrap.appendChild(b);
+    wrap.appendChild(box);
+    if (whatOpen === preset) setTimeout(function () { fillWhat(preset); }, 0);  // once it is in the page
+    return wrap;
+  }
+
+  function setWhat(preset) {
+    whatOpen = preset;
+    Object.keys(RULES).forEach(function (k) {
+      var b = setupBox.querySelector('[data-key="what-' + k + '"]'), box = document.getElementById("pt-bt-what-" + k);
+      if (!b || !box) return;
+      b.setAttribute("aria-expanded", k === preset ? "true" : "false");
+      box.hidden = k !== preset;
+    });
+    if (preset) fillWhat(preset);
+  }
+
+  function fillWhat(preset) {
+    var box = document.getElementById("pt-bt-what-" + preset);
+    if (!box) return;
+    box.textContent = "";
+    var head = el("p", "pt-bt-what-head");
+    head.appendChild(el("strong", null, RULES[preset].name + " "));
+    head.appendChild(sim());
+    box.appendChild(head);
+    box.appendChild(explanation("rule", preset));
+    box.appendChild(el("p", "pt-edu-note", FOOTER));
+    var close = el("button", "button-secondary", "Close");
+    close.type = "button";
+    close.dataset.key = "what-close-" + preset;
+    close.addEventListener("click", function () {
+      setWhat(null);
+      var b = setupBox.querySelector('[data-key="what-' + preset + '"]');
+      if (b) b.focus();
+    });
+    box.appendChild(close);
+  }
+
   // ---- hooks for paper.js ----
 
   window.Backtest = {
@@ -814,6 +972,8 @@
       choice = { symbol: ctx.symbol(), preset: "sma_cross", costs: "example" };
       shown = null;
       running = null;
+      whatOpen = null;
+      loadGuide();
       renderSetup();
       renderResults();
     },

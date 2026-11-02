@@ -65,7 +65,7 @@ def test_the_mockup_request_returns_the_approved_numbers_and_shape(client):
     assert d["notice"] == m["notice"] and d["education"].startswith("This is a hypothetical test")
     r = d["result"]
     assert set(r) == {"strategy", "benchmark", "difference_pp", "unacted_signal", "halves", "dates", "bars",
-                      "indicators"}
+                      "indicators", "readings"}
     assert r["bars"] == [{"time": t, "o": x["o"], "h": x["h"], "l": x["l"], "c": x["c"]}
                          for t, x in zip(m["dates"][:161], m["bars"]["SYN-HLT1"][:161])]  # stops at today
     s, b = r["strategy"], r["benchmark"]

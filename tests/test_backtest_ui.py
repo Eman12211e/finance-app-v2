@@ -142,5 +142,22 @@ def test_the_chart_draws_only_the_reply_and_marks_fills_on_their_own_day():
     assert 'r.strategy.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; })' in source
     assert 'r.benchmark.values.map(function (v) { return { time: v.time, value: v.value_cents / 100 }; })' in source
     assert 'return { time: f.date, position: buy ? "belowBar" : "aboveBar"' in source  # the fill day, not signal_date
-    assert 'canvas.setAttribute("aria-hidden", "true")' in source and "addEventListener(\"keydown\"" not in source
+    chart_code = source[source.index("function drawChart()"):source.index("function redrawForTheme()")]
+    # the chart is pointer-only (recorded for the step 9 accessibility audit); its text version is the alternative
+    assert 'canvas.setAttribute("aria-hidden", "true")' in source and "keydown" not in chart_code
 
+
+
+def test_the_cards_use_the_approved_footer_titles_and_labels():
+    from services import strategy_guide
+    g, t = strategy_guide.load(), text()
+    assert '"' + g["footer"] + '"' in t  # the footer also shows while the guide is unavailable
+    titles = {k: m["title"] for k, m in g["metrics"].items()} | {"buy_hold": g["buy_hold"]["title"]}
+    for key, title in titles.items():
+        assert f'{key}: "{title}"' in t, key
+    for label in ("What it does", "Why people test it", "Why it is here", "What it shows", "How it is worked out",
+                  "Watch out", "How it works", "Our plain summary"):
+        assert label in content(), label
+    assert "window.Api.getBacktestGuide()" in t and 'request("/api/backtest/guide")' in read("static", "js", "api.js")
+    assert 'b.setAttribute("aria-expanded"' in t and 'b.setAttribute("aria-controls", box.id)' in t
+    assert 'summary.setAttribute("aria-label", "Learn more about " + about)' in t

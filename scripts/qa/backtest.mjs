@@ -16,11 +16,20 @@ ws.onmessage = e => {
     hosts.add(new URL(m.params.request.url).host);
     requests.push({ method: m.params.request.method, path: new URL(m.params.request.url).pathname, body: m.params.request.postData });
   }
-  if (m.method === "Fetch.requestPaused") paused.push(m.params.requestId);
+  if (m.method === "Fetch.requestPaused") {
+    if (guideMode && m.params.request.url.includes("/api/backtest/guide")) {  // the test answers the guide request
+      const body = guideMode === "unavailable" ? { ok: false, data: null, source: null, as_of: null, error: { code: "INTERNAL_ERROR", message: "Something went wrong. Please try again." } }
+        : { ok: true, data: { label: "Our plain summary", rules: {} }, source: null, as_of: null, error: null };
+      ws.send(JSON.stringify({ id: ++id, method: "Fetch.fulfillRequest", sessionId: m.sessionId, params: { requestId: m.params.requestId,
+        responseCode: guideMode === "unavailable" ? 500 : 200, responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+        body: Buffer.from(JSON.stringify(body)).toString("base64") } }));
+    } else paused.push(m.params.requestId);
+  }
 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const results = []; const check = (name, ok, detail = "") => results.push([ok ? "PASS" : "FAIL", name, String(detail).slice(0, 260)]);
 const MINUS = "−";
+let guideMode = null;  // "unavailable" or "malformed" while the guide request is answered by the test
 
 ws.onopen = async () => {
   const { targetId } = await send("Target.createTarget", { url: "about:blank" });
@@ -68,6 +77,10 @@ ws.onopen = async () => {
   const table = sel => ev(`[...document.querySelectorAll(${JSON.stringify(sel + " tbody tr")})].map(tr => [...tr.children].map(c => c.textContent))`);
   const text = sel => ev(`(document.querySelector(${JSON.stringify(sel)}) || {}).textContent || ""`);
   const all = () => ev(`document.querySelector(".pt-bt-results-box").textContent`);
+  const guideApi = () => ev(`fetch("/api/backtest/guide").then(r => r.json()).then(j => j.data)`);
+  const cardList = () => ev(`[...document.querySelectorAll(".pt-bt-cards .pt-card")].map(c => ({ head: c.querySelector("h3").textContent.trim(), now: c.querySelector(".pt-card-now").textContent, foot: c.querySelector(":scope > .pt-edu-note").textContent, labelled: document.getElementById(c.getAttribute("aria-labelledby")) === c.querySelector("h3"), learn: c.querySelector("summary").getAttribute("aria-label"), open: c.querySelector("details").open }))`);
+  const FOOTER = "Education only. This describes a test on past simulated prices; it is not a recommendation to buy or sell.";
+  const CARD_ORDER = ["rule", "buy_hold", "total_return", "difference", "drawdown", "volatility", "trades", "days_invested", "costs"];
   const chartQa = () => ev(`(() => { const c = document.querySelector(".pt-bt-canvas"); return c && c.dataset.qa ? JSON.parse(c.dataset.qa) : null; })()`);
   const longD = iso => new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
   const expectedReadout = (d, j) => {  // the crosshair readout for day j, built here from the API's reply
@@ -99,6 +112,23 @@ ws.onopen = async () => {
   const tradeTicker = await ev(`document.querySelector('.pt-watch-item[aria-current="true"]').dataset.symbol`);
   check("the ticker list starts on the trade ticker", (await ev(`document.getElementById("pt-bt-symbol").value`)) === tradeTicker, tradeTicker);
   await shot("setup-1280-light");
+
+  const guide = await guideApi();
+  const sentBefore = requests.filter(r => r.method === "POST").length;
+  check("What is this? beside each rule, closed, with its panel named", await ev(`["sma_cross", "rsi_threshold"].every(k => { const b = document.querySelector('[data-key="what-' + k + '"]'); return b && b.getAttribute("aria-expanded") === "false" && document.getElementById(b.getAttribute("aria-controls")).hidden && !b.closest("label"); })`) && (await text('[data-key="what-rsi_threshold"]')) === "What is RSI 14 below 30 / above 70?");
+  await ev(`document.querySelector('[data-key="what-rsi_threshold"]').focus(); true`); await key("Enter", "Enter", 13); await sleep(150);
+  check("Enter opens the rule's full explanation, word for word from the guide", await ev(`(() => { const b = document.querySelector('[data-key="what-rsi_threshold"]'), p = document.getElementById(b.getAttribute("aria-controls")); const dd = [...p.querySelectorAll("dd")].map(x => x.textContent); const dt = [...p.querySelectorAll("dt")].map(x => x.textContent);
+    return b.getAttribute("aria-expanded") === "true" && !p.hidden && JSON.stringify(dt) === JSON.stringify(["What it does", "Why people test it", "Watch out"]) && JSON.stringify(dd) === ${JSON.stringify(JSON.stringify([guide.rules.rsi_threshold.what, guide.rules.rsi_threshold.why, guide.rules.rsi_threshold.watch]))} && p.textContent.includes("Our plain summary") && p.textContent.includes(${JSON.stringify(FOOTER)}); })()`));
+  check("…without choosing that rule or sending anything", await ev(`document.querySelector('[data-key="pt-bt-rule-sma_cross"]').checked`) && requests.filter(r => r.method === "POST").length === sentBefore);
+  await shotEl("what-is-this-1280-light", ".pt-bt-setup");
+  await ev(`document.querySelector('[data-key="what-sma_cross"]').click(); true`); await sleep(120);
+  check("opening the other rule's explanation closes the first", await ev(`document.querySelector('[data-key="what-rsi_threshold"]').getAttribute("aria-expanded") === "false" && document.getElementById("pt-bt-what-rsi_threshold").hidden && !document.getElementById("pt-bt-what-sma_cross").hidden`) && (await text("#pt-bt-what-sma_cross dd")) === guide.rules.sma_cross.what);
+  await ev(`document.querySelector('[data-key="what-close-sma_cross"]').focus(); true`); await key("Escape", "Escape", 27);
+  check("Esc closes it and returns focus to What is this?", await ev(`document.getElementById("pt-bt-what-sma_cross").hidden && document.activeElement.dataset.key === "what-sma_cross" && document.activeElement.getAttribute("aria-expanded") === "false"`));
+  await ev(`document.querySelector('[data-key="what-sma_cross"]').click(); true`); await sleep(100);
+  await ev(`document.querySelector('[data-key="what-close-sma_cross"]').click(); true`); await sleep(100);
+  check("Close closes it and returns focus too", await ev(`document.getElementById("pt-bt-what-sma_cross").hidden && document.activeElement.dataset.key === "what-sma_cross"`));
+  check("before a run: the costs point has its Learn more from the guide", await ev(`(() => { const s = document.querySelector('[data-key="bt-learn-slippage"]'); return !!s && s.getAttribute("aria-label") === "Learn more about trading costs and slippage" && s.parentElement.textContent.includes(${JSON.stringify(guide.slippage.what)}); })()`));
 
   requests.length = 0;
   check("Run test shows a result", await runTest("SYN-HLT1", "sma_cross", "example"));
@@ -164,6 +194,24 @@ ws.onopen = async () => {
   check("the chart follows a narrower window", narrow > 300 && narrow !== box.w && await ev(`(() => { const c = document.querySelector(".pt-bt-canvas canvas"); return !!c && c.getBoundingClientRect().width > 300; })()`), narrow);
   await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false }, s); await sleep(500);
   await runTest("SYN-HLT1", "sma_cross", "example");
+  // ---------- explanation cards (step 8): readings equal the API's, Learn more equal the guide ----------
+  const hltNow = await api("SYN-HLT1", "sma_cross", "example");
+  let cs = await cardList();
+  check("nine cards, after the fills and before How this test works (mockup 09)", cs.length === 9 && await ev(`(() => { const y = q => document.querySelector(q).getBoundingClientRect().top; return y(".pt-bt-fills") < y(".pt-bt-cards") && y(".pt-bt-cards") < y(".pt-bt-how"); })()`), cs.length);
+  check("card headings, each labelling its card and marked Simulated", JSON.stringify(cs.map(c => c.head)) === JSON.stringify(["SMA crossover 20 / 50 Simulated", "Buy and hold Simulated", "Total return Simulated", "Compared with buy and hold Simulated", "Largest drop from a high Simulated", "Daily volatility Simulated", "Trades Simulated", "Days invested Simulated", "Costs paid Simulated"]) && cs.every(c => c.labelled), cs.map(c => c.head).join("|"));
+  check("every reading is exactly the API's reading for this run", JSON.stringify(cs.map(c => c.now)) === JSON.stringify(CARD_ORDER.map(k => hltNow.result.readings[k])), cs.map(c => c.now).join(" | "));
+  check("the readings state this run's numbers", cs[0].now === "The rule acted on 3 crossings: 2 up through the 50-day average and 1 back down." && cs[4].now === "The value fell 10.51% from its high on May 12 to a low on Jun 9." && cs[7].now === "Shares were held at the close on 49 of 111 test days (44.14%)." && cs[3].now === (await text(".pt-bt-outcome")));
+  check("every card has the footer and a closed Learn more with a specific name", cs.every(c => c.foot === FOOTER && !c.open) && cs[0].learn === "Learn more about SMA crossover 20 / 50" && cs[4].learn === "Learn more about Largest drop from a high");
+  await ev(`document.querySelector('[data-key="bt-learn-drawdown"]').focus(); true`); await key("Enter", "Enter", 13); await sleep(150);
+  check("Learn more opens from the keyboard with the guide's text", await ev(`(() => { const d = document.querySelector('[data-key="bt-learn-drawdown"]').parentElement; return d.open && JSON.stringify([...d.querySelectorAll("dd")].map(x => x.textContent)) === ${JSON.stringify(JSON.stringify([guide.metrics.drawdown.what, guide.metrics.drawdown.watch]))}; })()`));
+  await ev(`document.querySelector('[data-key="bt-learn-difference"]').click(); true`); await sleep(100);
+  check("the comparison card explains how the points are worked out", (await ev(`[...document.querySelector('[data-key="bt-learn-difference"]').parentElement.querySelectorAll("dt")].map(x => x.textContent).join("|")`)) === "What it shows|How it is worked out|Watch out");
+  await shotEl("cards-1280-light", ".pt-bt-cards");
+  await runTest("SYN-HLT1", "sma_cross", "example");
+  check("open Learn more panels stay open after another run", await ev(`document.querySelector('[data-key="bt-learn-drawdown"]').parentElement.open && document.querySelector('[data-key="bt-learn-difference"]').parentElement.open`));
+  check("halves: How it works from the guide", await ev(`(() => { const s = document.querySelector('.pt-bt-halves [data-key="bt-learn-halves"]'); return !!s && s.getAttribute("aria-label") === "Learn more about the earlier and later halves" && s.parentElement.querySelector("dd").textContent === ${JSON.stringify(guide.halves.how)}; })()`));
+  check("Why this is not a forecast is kept", (await text(".pt-bt-how")).includes(guide.not_a_forecast.text));
+  check("the cards, Learn more and What is this? sent nothing and changed no account", requests.filter(r => r.method === "POST" && r.path !== "/api/backtest/run").length === 0 && (await ev(`localStorage.getItem("paper-session-v1")`)) === accountBefore);
   check("no price or percentage wraps inside a table cell", await ev(`[...document.querySelectorAll(".pt-bt-table tbody td")].every(td => { const n = td.firstChild; if (!n || n.nodeType !== 3) return true; const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length <= 1; })`));
   await shotEl("chart-1280-light", ".pt-bt-chart");
   await shot("result-1280-light");
@@ -185,6 +233,9 @@ ws.onopen = async () => {
   check("no trades: no fills list, the table still compares", !(await ev(`!!document.querySelector(".pt-bt-fills")`)) && (await table(".pt-bt-metrics"))[4][1] === "0 buys, 0 sells" && (await table(".pt-bt-metrics"))[2][1] === "No drop");
   const nq = await chartQa();
   check("no trades: no markers, this rule's line flat at $10,000, the summary says so", nq.marks.length === 0 && nq.strategy.every(p => p[1] === 10000) && (await text(".pt-bt-chart > p.pt-small")).includes("the rule made no fills on these days."));
+  const tecNow = await api("SYN-TEC1", "sma_cross", "example");
+  cs = await cardList();
+  check("no trades: cards read the API's no-trade sentences", JSON.stringify(cs.map(c => c.now)) === JSON.stringify(CARD_ORDER.map(k => tecNow.result.readings[k])) && cs[0].now === "The 20-day average never crossed above the 50-day average while the rule was in cash, so it never bought." && cs[4].now === "The value stayed at $10,000.00 in cash, so it never dropped.");
   await shot("no-trades-1280-light");
 
   // ---------- running state and a failed request (the network is paused, then failed) ----------
@@ -229,7 +280,7 @@ ws.onopen = async () => {
   // ---------- back to Trade: P4 and the workspace are intact ----------
   await ev(`document.querySelector('[data-key="view-trade"]').click(); true`);
   await waitFor(`!!document.querySelector(".pt-chart-canvas canvas") && document.querySelector(".pt-chart-canvas").getBoundingClientRect().width > 300`);
-  check("Trade again: chart drawn at full size with the saved indicator, ticket back, test hidden", await ev(`(() => { const c = document.querySelector(".pt-chart-canvas").getBoundingClientRect(); return c.width > 300 && c.height > 150 && !!document.querySelector(".pt-ticket").offsetParent && !document.querySelector(".pt-bt-setup").offsetParent && document.querySelectorAll(".pt-card").length === 1; })()`));
+  check("Trade again: chart drawn at full size with the saved indicator, ticket back, test hidden", await ev(`(() => { const c = document.querySelector(".pt-chart-canvas").getBoundingClientRect(); return c.width > 300 && c.height > 150 && !!document.querySelector(".pt-ticket").offsetParent && !document.querySelector(".pt-bt-setup").offsetParent && document.querySelectorAll(".pt-chart .pt-card").length === 1; })()`));
   await toStrategy();
   check("the result is still there when the view is opened again", (await text("#pt-bt-title")) === "SMA crossover 20 / 50 on SYN-HLT1");
   await sleep(300);
@@ -237,12 +288,14 @@ ws.onopen = async () => {
 
   // ---------- dark, desktop ----------
   await seed(160); await open(1280, "dark"); await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example");
+  await shotEl("cards-1280-dark", ".pt-bt-cards");
   await shotEl("chart-1280-dark", ".pt-bt-chart");
   await shot("result-1280-dark");
 
   // ---------- Not enough data (Day 41) ----------
   await seed(40); await open(1280, "light"); await toStrategy(); await runTest("SYN-HLT1", "sma_cross", "example");
   check("not enough data: approved wording, nothing estimated", (await text("#pt-bt-title")) === "Not enough data yet" && (await all()).includes("This test needs 70 trading days of history: 50 to build the 50-day average and at least 20 to test on. You have reached 41 so far.") && (await all()).includes("Advance 29 more days in Practice Trading to run it. Nothing is estimated in the meantime.") && !(await ev(`!!document.querySelector(".pt-bt-metrics")`)));
+  check("not enough data: no cards (nothing to read yet)", !(await ev(`!!document.querySelector(".pt-bt-cards")`)));
   check("not enough data: no chart is drawn", !(await ev(`!!document.querySelector(".pt-bt-canvas")`)));
   await shot("not-enough-data-1280-light");
 
@@ -256,7 +309,25 @@ ws.onopen = async () => {
   await sleep(150);
   const lq = await chartQa(), con = await api("SYN-CON1", "sma_cross", "example");
   check("last-day signal: marked on the current day, not as a fill; open position valued to the end", lq.marks.some(m => m.time === con.date && m.text === "Signal, not acted on") && lq.marks.filter(m => m.text === "In" || m.text === "Out").length === con.result.strategy.fills.length && lq.strategy.at(-1)[1] === con.result.strategy.metrics.final_value_cents / 100 && (await text(".pt-bt-chart > p.pt-small")).includes("A signal on the last day, not acted on, is marked on the last day."));
+  check("last-day signal: the rule card counts it, as the API reads it", (await text("#pt-bt-card-rule + .pt-card-now")) === con.result.readings.rule && con.result.readings.rule === "The rule acted on 4 crossings: 2 up through the 50-day average and 2 back down.");
   await shot("last-day-signal-1280-light");
+
+  // ---------- the guide unavailable, then malformed ----------
+  await send("Fetch.enable", { patterns: [{ urlPattern: "*/api/backtest/guide*" }] }, s);
+  for (const mode of ["unavailable", "malformed"]) {
+    guideMode = mode;
+    await seed(160); await open(1280, "light"); await toStrategy();
+    await ev(`document.querySelector('[data-key="what-sma_cross"]').click(); true`); await sleep(150);
+    check(`guide ${mode}: What is this? says the explanation could not load`, (await text("#pt-bt-what-sma_cross")).includes("The explanation could not load."));
+    await runTest("SYN-HLT1", "sma_cross", "example");
+    const c2 = await cardList();
+    check(`guide ${mode}: results, chart and readings still show`, (await text(".pt-bt-outcome")).startsWith("This rule ended at $10,442.81") && !!(await chartQa()) && c2.length === 9 && c2[0].now === "The rule acted on 3 crossings: 2 up through the 50-day average and 1 back down.");
+    await ev(`document.querySelector('[data-key="bt-learn-total_return"]').click(); true`); await sleep(100);
+    check(`guide ${mode}: Learn more says the explanation could not load`, (await ev(`document.querySelector('[data-key="bt-learn-total_return"]').parentElement.textContent`)).includes("The explanation could not load.") && (await text(".pt-bt-cards")).includes(FOOTER));
+  }
+  await shotEl("guide-unavailable-1280-light", ".pt-bt-cards");
+  guideMode = null;
+  await send("Fetch.disable", {}, s);
 
   // ---------- phone, light and dark ----------
   await seed(160); await open(390, "light");
@@ -272,12 +343,19 @@ ws.onopen = async () => {
   check("phone: each fill is a card with its labels", await ev(`(() => { const td = document.querySelector(".pt-bt-fills tbody td"); return getComputedStyle(document.querySelector(".pt-bt-fills tr")).display === "grid" && getComputedStyle(td, "::before").content.includes("Signal at the close of"); })()`));
   check("phone: no price or percentage wraps inside a table cell", await ev(`[...document.querySelectorAll(".pt-bt-table tbody td")].every(td => { const n = td.firstChild; if (!n || n.nodeType !== 3) return true; const r = document.createRange(); r.selectNodeContents(n); return r.getClientRects().length <= 1; })`));
   check("phone: the chart fits the screen", await ev(`(() => { const r = document.querySelector(".pt-bt-canvas").getBoundingClientRect(); return r.width > 300 && r.right <= document.documentElement.clientWidth && r.height > 300; })()`));
+  check("phone: cards stack in one column and fit", await ev(`(() => { const c = [...document.querySelectorAll(".pt-bt-cards .pt-card")].map(x => x.getBoundingClientRect()); return c.length === 9 && new Set(c.map(r => Math.round(r.left))).size === 1 && c.every(r => r.right <= document.documentElement.clientWidth); })()`));
+  await ev(`document.querySelector('[data-key="bt-learn-rule-sma_cross"]').click(); true`); await sleep(120);
+  await shotEl("cards-390-light", ".pt-bt-cards");
   await shotEl("chart-390-light", ".pt-bt-chart");
   await shot("result-390-light");
   await open(390, "dark");
   await ev(`(() => { const b = document.querySelector('[data-key="view-strategy"]'); b.scrollIntoView({ block: "center" }); b.click(); return true; })()`); await sleep(150);
   await runTest("SYN-HLT1", "sma_cross", "example");
   check("phone dark: no horizontal overflow", (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0);
+  await ev(`(() => { const b = document.querySelector('[data-key="what-sma_cross"]'); b.click(); return true; })()`); await sleep(150);
+  check("phone: What is this? opens in place and fits", await ev(`(() => { const p = document.getElementById("pt-bt-what-sma_cross"); const r = p.getBoundingClientRect(); return !p.hidden && r.right <= document.documentElement.clientWidth && r.width > 250; })()`) && (await ev(`document.documentElement.scrollWidth - document.documentElement.clientWidth`)) === 0);
+  await shotEl("what-is-this-390-dark", ".pt-bt-setup");
+  await shotEl("cards-390-dark", ".pt-bt-cards");
   await shotEl("chart-390-dark", ".pt-bt-chart");
   await shot("result-390-dark");
 

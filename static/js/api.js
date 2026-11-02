@@ -75,6 +75,9 @@
         body: JSON.stringify(body),
       });
     },
+    getBacktestGuide: function () {
+      return request("/api/backtest/guide");
+    },
     postBacktest: function (body) {
       return request("/api/backtest/run", {
         method: "POST",

@@ -321,10 +321,10 @@ they are in use.
   followed by the outcome sentence; "Not enough data yet."; "The test could not run."
 - **Metrics table footer when the difference is exactly 0.00:** "Level with buy and hold (0.00 points)".
 
-## Step 7 addendum: chart text (for owner approval)
+## Step 7 addendum: chart text (approved by the owner 2026-11-02)
 
 The chart's heading, readout, warm-up labels, legend and text version follow approved mockup 09 word for word. These
-lines cover cases the mockup did not show; they are in use and can be changed if the owner prefers other wording.
+lines cover cases the mockup did not show; they are in use.
 
 - **Text version, RSI rule:** "RSI 14 in a pane below the prices, with guides at 30 and 70;" (in place of the SMA
   sentence) and "price history for the indicator only" (in place of "for the averages only").

@@ -621,7 +621,10 @@ orders or fills; it uses its own fictional $10,000.00 and ignores the learner's 
   values); `unacted_signal` {index, date, side} or `null` (a decision on today's close, which has no next open yet);
   `halves` or `null`; `dates` (every session day up to today); `bars` [{time, o, h, l, c}] (integer cents, the
   same days, for the chart's candles; nothing after today); `indicators` [{type, period, series}] the rule's own
-  lines aligned with `dates`, in P4 display units (SMA 20 and 50 in dollars, or RSI 14 0–100).
+  lines aligned with `dates`, in P4 display units (SMA 20 and 50 in dollars, or RSI 14 0–100). `readings` {rule,
+  buy_hold, total_return, difference, drawdown, volatility, trades, days_invested, costs}: one sentence per explanation
+  card, the approved templates of `data/strategy_guide.json` filled with this reply's own numbers (nothing
+  recalculated), or `null` if the guide file cannot be read (the results are still returned).
 - `metrics` (integer cents and counts are exact; `_pct` values are rounded half away from zero to two decimals):
   `start_value_cents`, `final_value_cents`, `total_return_pct`, `max_drawdown_pct`, `max_drawdown` {peak, trough:
   {index, date, value_cents}} or `null`, `daily_volatility_pct` (sample standard deviation of daily value changes,
@@ -632,3 +635,9 @@ orders or fills; it uses its own fictional $10,000.00 and ignores the learner's 
 - Errors: `INVALID_STATE` for a missing, malformed or tampered session; `INVALID_REQUEST` (readable message) for a
   body that is not a JSON object, an unknown field, or an unknown or wrongly typed symbol, preset or cost setting
   (booleans and numbers included); `REQUEST_TOO_LARGE` (413) over 64 KB; `INTERNAL_ERROR` (500, logged, no details).
+
+`GET /api/backtest/guide` → the approved, static explanation text (`data/strategy_guide.json`, copied word for word
+from `docs/P5_CONTENT.md`): `label`, `footer`, `not_a_forecast`, `rules` {sma_cross, rsi_threshold: title, setup,
+what, why, watch, start, readings}, `buy_hold`, `metrics` {total_return, difference, drawdown, volatility, trades,
+days_invested, costs}, `slippage`, `halves`. Validated when loaded (every text present and non-empty); a damaged file
+answers `INTERNAL_ERROR` (500, logged). No AI, no market data.
