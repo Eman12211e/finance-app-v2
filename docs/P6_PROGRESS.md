@@ -6,7 +6,8 @@ Base: `dev/v2` at `c335175` (P5 accepted 2026-11-02, including the step 9 conten
 | Commit | Step |
 |---|---|
 | `5d05c73` | 0: release-readiness audit, brief and roadmap (approved 2026-11-02 with Steps 1–4 authorized) |
-| this commit | 1: reproducible environment (split requirements, full locks, V2 venv, second clean install) |
+| `ca30613` | 1: reproducible environment (split requirements, full locks, V2 venv, second clean install) |
+| this commit | 2: CI workflow (committed locally, not active) and `check_all` scripts |
 
 ## Resolve before next step
 
@@ -76,3 +77,27 @@ or decision.
 - **Inventory:** licences as declared in each installed package's metadata, in the evidence folder; no licensing
   decision made.
 
+
+## Step 2 — CI and the verification pathway
+
+- **`scripts/check_all.sh`** (and the PowerShell twin `scripts/check_all.ps1`) runs every check from scratch:
+  - a fresh temporary venv on a short path, installed from `requirements-dev.lock`;
+  - `pip check`, and the installed packages must equal the lock exactly;
+  - pytest with `ZERO_COST_MODE=1`;
+  - each browser suite on its own (`CHECK_SUITES` limits them);
+  - no tracked file may change.
+
+  Any failure gives a non-zero exit. Logs go to the output folder (`check-all-out/` and `ci-out/` are gitignored).
+- **`.github/workflows/ci.yml`** runs that same script on a clean Ubuntu 24.04 runner: Python 3.12, Node 22, the
+  runner's Chrome, read-only permissions, no secrets, `ZERO_COST_MODE=1`, a 45-minute limit, and logs and screenshots
+  uploaded as an artifact even on failure. **Committed locally only**: no push, no activation, no account. External CI
+  verification stays pending until the owner authorizes a push.
+- **`tests/test_ci.py`** pins that the workflow calls `check_all.sh` with read-only permissions, no secrets and zero
+  cost; that both scripts install the lock, run every suite the runner knows and fail on any failure; and that the
+  output folders are ignored.
+- **Validated locally (self-run, not independent):**
+  - `check_all.sh` end to end: PASSED (pytest 997; browser 198 / 36 / 26 / 22 / 41 / 133 / 24);
+  - with an unknown suite: FAILED with exit 1, as it should;
+  - `check_all.ps1` with the backtest suite: PASSED.
+
+  YAML syntax, Linux Chrome behaviour (fonts in the visual audit) and run time are verified only when CI first runs.

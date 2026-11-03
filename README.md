@@ -44,6 +44,22 @@ venv\Scripts\python app.py      # development server, http://127.0.0.1:5000
 venv\Scripts\python -m pytest
 ```
 
+**Every check, from scratch** (a fresh virtual environment from `requirements-dev.lock`, pytest in zero-cost mode, then
+each browser suite on its own; needs Node 22+ and Edge or Chrome; about 15 minutes; exits non-zero if anything
+fails):
+
+```powershell
+powershell -File scripts\check_all.ps1 check-all-out      # Windows
+bash scripts/check_all.sh check-all-out                   # Git Bash, macOS or Linux
+```
+
+Logs and screenshots go to `check-all-out/` (gitignored). `CHECK_SUITES="backtest workflows"` runs only those suites.
+
+**CI:** `.github/workflows/ci.yml` runs `scripts/check_all.sh` on a clean GitHub-hosted Ubuntu runner (Python 3.12,
+Node 22, Chrome), with no secrets and read-only permissions, and keeps the logs as an artifact. It runs only once the
+repository is pushed with that file; until then CI results do not exist, and local `check_all` runs are the
+implementer's own, not independent verification.
+
 ## Scripts
 
 ```powershell

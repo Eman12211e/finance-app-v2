@@ -1,0 +1,39 @@
+# Independent checks on a clean GitHub-hosted runner: the same script a person runs locally (scripts/check_all.sh).
+# Zero cost and offline: no secrets, no keys, no market data, ZERO_COST_MODE=1; the browser suites talk only to the app
+# they start on 127.0.0.1. Any failed check fails the job. Logs and screenshots are kept as an artifact for 14 days.
+# Committed locally in P6 step 2; it runs only after the owner authorizes a push.
+name: CI
+
+on:
+  push:
+    branches: [dev/v2, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Every check (fresh venv from the lock, pytest, each browser suite on its own)
+        env:
+          ZERO_COST_MODE: "1"
+          BROWSER: /usr/bin/google-chrome
+        run: bash scripts/check_all.sh ci-out
+      - name: Keep the logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-all-${{ github.sha }}
+          path: ci-out/
+          retention-days: 14

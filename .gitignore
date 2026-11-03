@@ -11,3 +11,6 @@ hf_cache/
 data/lab_spend.json
 # Paper Trading Lab signing key (local only)
 data/paper_state.key
+# check_all and CI output (logs, screenshots)
+check-all-out/
+ci-out/
