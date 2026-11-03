@@ -14,6 +14,8 @@ def create_app():
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
+    for problem in config.PROBLEMS:  # serve.py refuses to start on these; development carries on with the defaults
+        logging.getLogger(__name__).warning("setting ignored: %s", problem)
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = config.MAX_REQUEST_BYTES
     for module in (stocks, earnings, chat, alerts, sentiment, lab, documents, brokerages, paper, analysis, backtest):

@@ -35,8 +35,25 @@ installs; regenerate them the same way after an intended version change.
 ## Run
 
 ```powershell
-venv\Scripts\python app.py      # development server, http://127.0.0.1:5000
+venv\Scripts\python serve.py           # release: Waitress, http://127.0.0.1:5000, only on this computer
+venv\Scripts\python serve.py --check   # only check the settings and data files, then exit (0 = ready); starts nothing
+venv\Scripts\python app.py             # development: Flask's own server, for local work only
 ```
+
+`serve.py` checks every setting and data file first. If anything is wrong it lists each problem in plain words and
+exits with code 1 instead of starting (for example `PORT must be a whole number from 1 to 65535 (got 'abc')`, or
+`data/strategy_guide.json is missing`). `app.py` starts anyway and logs the same problems as warnings. Stop either
+with Ctrl+C.
+
+Release settings (in `.env` or the environment):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `HOST` | `127.0.0.1` | Where it listens. The default is reachable only from this computer. Any other value, such as `0.0.0.0`, opens it to every computer that can reach this one, and `serve.py` says so in capitals when it starts. There is no login, so only do that on a private network you trust |
+| `PORT` | `5000` | 1 to 65535 |
+| `THREADS` | `4` | Requests handled at once, 1 to 64 |
+
+Release mode logs warnings and errors only (no request bodies).
 
 ## Tests
 

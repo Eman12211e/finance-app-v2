@@ -5,3 +5,5 @@ python-dotenv==1.2.4
 requests==2.34.2
 # imported by services/ai_service.py and services/llm_providers.py; never called while ZERO_COST_MODE is on
 anthropic==2.3.0
+# release server for serve.py: pure Python, no dependencies of its own, works on Windows
+waitress==3.0.2

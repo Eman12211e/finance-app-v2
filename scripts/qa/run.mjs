@@ -74,8 +74,11 @@ if (!browser) {
   process.exit(2);
 }
 
-const server = spawn(process.env.PYTHON || "python", ["-B", "-c", `from app import create_app; create_app().run(port=${port}, debug=False)`],
-  { cwd: repo, env: { ...process.env, ZERO_COST_MODE: "1", DATA_MODE: "demo", WARM_CACHE: "0" }, stdio: "ignore" });
+// QA_SERVE=1 runs the suites against the release server (serve.py, Waitress) instead of Flask's development server
+const serverArgs = process.env.QA_SERVE === "1" ? ["-B", "serve.py"]
+  : ["-B", "-c", `from app import create_app; create_app().run(port=${port}, debug=False)`];
+const server = spawn(process.env.PYTHON || "python", serverArgs,
+  { cwd: repo, env: { ...process.env, ZERO_COST_MODE: "1", DATA_MODE: "demo", WARM_CACHE: "0", HOST: "127.0.0.1", PORT: String(port) }, stdio: "ignore" });
 const profile = mkdtempSync(join(tmpdir(), "finance-app-v2-qa-"));
 const edge = spawn(browser, ["--headless=new", "--disable-gpu", "--no-first-run", "--disable-extensions",
   `--user-data-dir=${profile}`, `--remote-debugging-port=${debugPort}`, "about:blank"], { stdio: "ignore" });

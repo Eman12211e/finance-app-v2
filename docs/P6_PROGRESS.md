@@ -7,7 +7,8 @@ Base: `dev/v2` at `c335175` (P5 accepted 2026-11-02, including the step 9 conten
 |---|---|
 | `5d05c73` | 0: release-readiness audit, brief and roadmap (approved 2026-11-02 with Steps 1–4 authorized) |
 | `ca30613` | 1: reproducible environment (split requirements, full locks, V2 venv, second clean install) |
-| this commit | 2: CI workflow (committed locally, not active) and `check_all` scripts |
+| `f6e6e41` | 2: CI workflow (committed locally, not active) and `check_all` scripts |
+| this commit | 3: release runtime (`serve.py` on Waitress, loopback by default), settings validation, start-up check |
 
 ## Resolve before next step
 
@@ -101,3 +102,32 @@ or decision.
   - `check_all.ps1` with the backtest suite: PASSED.
 
   YAML syntax, Linux Chrome behaviour (fonts in the visual audit) and run time are verified only when CI first runs.
+
+## Step 3 — Production-ready local runtime (F2, F6)
+
+- **`serve.py`:** the app on Waitress 3.0.2 (a new runtime dependency, named in the Steps 1–4 authorization; pure
+  Python, no dependencies of its own; both locks regenerated, one line each).
+  - It listens on `127.0.0.1` by default; `HOST`, `PORT` and `THREADS` are validated. Any non-loopback host is
+    allowed only when set explicitly, and is announced at start as "ON THE NETWORK".
+  - It logs warnings only and sends no `Server` header. Port-in-use and unknown arguments give plain messages.
+- **`--check` mode:** checks and exits (0 ready, 1 problem, 2 usage); it starts nothing and writes nothing.
+- **`app.py`** stays the development server; it now logs settings problems as warnings and keeps the safe defaults.
+- **`config.py` (F6):** whole-number settings are range-checked; flags must be 0 or 1; `DATA_MODE` must be demo or
+  live; the Lab budget must be a non-negative amount. A bad value is listed in `config.PROBLEMS` with the safe default
+  kept, instead of a traceback at import. Existing defaults and the zero-cost rule are unchanged: only an explicit 0
+  turns zero-cost mode off.
+- **`services/startup.py`:** the read-only release check. It covers the settings, the eight required data files
+  (missing), every JSON file under `data/` (unreadable), the strategy guide's own validation, both practice markets,
+  and whether practice sessions can be signed (secret, key file or a writable key folder).
+- **QA:** `run.mjs` gained `QA_SERVE=1` to run the suites against `serve.py`. `.gitattributes` keeps `*.sh` LF for
+  Linux CI. The README and `.env.example` document both run modes and the release settings.
+- **Checks (self-run):**
+  - pytest 1030 passed;
+  - every browser suite against Waitress: 198 / 36 / 26 / 22 / 41 / 133 / 24;
+  - netstat shows 127.0.0.1 only;
+  - the port is freed on stop;
+  - protected files unchanged.
+
+  Evidence: `..\finance-app-v2-screenshots\P6\step-3\`.
+- **Limitation:** a graceful Ctrl+C is handled but was not exercised by an automated test on Windows.
+
