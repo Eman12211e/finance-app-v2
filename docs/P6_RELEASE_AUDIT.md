@@ -66,7 +66,27 @@ explicitly accepted by the owner before the release-candidate gate (P6 Step 8).
 - **Offline:** no CDN or remote resource. Every external URL in the templates and JS is an outbound link (investor.gov, finra.org, irs.gov, tradingview.com credit). Lightweight Charts 5.2.1 is vendored with its Apache-2.0 LICENSE and NOTICE and hash-pinned by a test.
 - **Rendering:** text nodes only (no HTML-string sinks); Jinja autoescaping.
 - **Sessions:** HMAC-SHA256 with `hmac.compare_digest`; the key comes from `PAPER_STATE_SECRET` or a local key file, created atomically and gitignored. `.env` and `data/paper_state.key` are untracked; only `.env.example` is tracked.
-- **Input limits:** a 64 KB request limit answers a JSON 413. Each endpoint validates exact fields and types, with fuzz tests (P4 and P5).
+- **Input limits:** a 64 KB request limit answers a JSON 413. Each endpoint validates exact fields and types, with fuzz tests (P4 and P5). *Correction (Step 4): not true for every route. See F11.*
 - **Errors:** route errors use the JSON envelope with a generic message and are logged server-side (no stack traces sent). F5 is the exception.
 - **No real transactions:** practice trading and strategy tests are synthetic and fictional; the education footer appears on every page; P5 results carry the standing note.
 - **Performance:** about 25 ms per Day 250 backtest; page shell 7 KB plus about 450 KB of scripts and styles, served locally.
+
+## Found during P6 Steps 1–4 (all fixed)
+
+| ID | Sev. | Area | Finding | Fixed in |
+|---|---|---|---|---|
+| F11 | Medium | Request limits | The chat, AI Lab and sentiment endpoints answered a body over 64 KB with **500 `INTERNAL_ERROR`** and logged a traceback, instead of the JSON 413: their broad `except Exception` swallowed the size error. Step 0 wrongly listed the limit as confirmed for every route. | Step 4: the limit is checked in `before_request`, before any route runs; a test covers six POST endpoints |
+| F12 | Medium | CSP compatibility | `static/js/chat.js` (from V1) injected its CSS as a `<style>` element. The strict CSP blocks it, so the chat panel would lose its styling. Found by the new violation check in the visual audit. | Step 4: the 15 rules moved unchanged to `features.css`; a test forbids injected `<style>` |
+| F13 | Low | Environment | On Windows without long-path support, installing `anthropic` fails in a deeply nested folder. | Step 1: README asks for a short project path; `check_all` uses short temporary paths |
+| F14 | Low | Data loss | A keyless `check_endpoints.py` run overwrote the last real `data/endpoint_check.json` (read by live mode) with SKIP rows. It was more than the dirty tree described in F7. | Step 1: a run that checks nothing leaves the file alone (test) |
+
+Status of the Step 0 findings after Step 4:
+- **Fixed:** F2, F3, F4, F5, F6, F7, F8.
+- **F1, partly fixed:**
+  - clean installs are reproduced: two clean environments, and installed packages equal the lock;
+  - the CI workflow is written;
+  - **external CI has not run**, so there is still no independent verification.
+- **Open:**
+  - R1 and R4: Step 5, owner decisions;
+  - R2, F9 and F10: Steps 6–7;
+  - R3 and R5: accepted risks pending owner confirmation, described in `docs/SECURITY.md`.

@@ -11,7 +11,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // runs in the page: layout and accessibility problems a script can see
 const AUDIT = `(() => {
-  const out = { overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth, offscreen: [], clipped: [], lowContrast: [], unnamed: [], badRefs: [], dupIds: [], smallTargets: [] };
+  const out = { cspViolations: (window.__csp || []).slice(), overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth, offscreen: [], clipped: [], lowContrast: [], unnamed: [], badRefs: [], dupIds: [], smallTargets: [] };
   const vis = n => { const s = getComputedStyle(n); const r = n.getBoundingClientRect(); return s.visibility !== "hidden" && s.display !== "none" && r.width > 1 && r.height > 1 && !/^rect\\(0(px)?,? 0/.test(s.clip) && !n.closest("[hidden],[aria-hidden=true],.visually-hidden"); };
   const parse = c => { const m = c.match(/rgba?\\(([^)]+)\\)/); if (!m) return null; const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 }; };
   const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c.r) + .7152 * f(c.g) + .0722 * f(c.b); };
@@ -52,6 +52,8 @@ ws.onopen = async () => {
     if (m.method === "Log.entryAdded" && m.params.entry.level === "error") errors.push("log: " + m.params.entry.text + " " + (m.params.entry.url || ""));
   });
   await send("Network.enable", {}, s); await send("Runtime.enable", {}, s); await send("Page.enable", {}, s); await send("Log.enable", {}, s);
+  // every Content Security Policy violation on a page is recorded from its first script on, and fails that screen
+  await send("Page.addScriptToEvaluateOnNewDocument", { source: "window.__csp = []; document.addEventListener('securitypolicyviolation', e => window.__csp.push(e.violatedDirective + ' ' + e.blockedURI + ' at ' + (e.sourceFile || '?') + ':' + e.lineNumber + ' ' + (e.sample || '')));" }, s);
   const ev = async e => { const r = await send("Runtime.evaluate", { expression: e, returnByValue: true, awaitPromise: true }, s); if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails).slice(0, 300)); return r.result.value; };
   const shot = async (name, full) => { const r = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: !!full }, s); writeFileSync(`${outDir}/${name}.png`, Buffer.from(r.data, "base64")); };
 

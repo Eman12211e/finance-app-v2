@@ -66,3 +66,15 @@ class BudgetExceeded(AppError):
     code = "BUDGET_EXCEEDED"
     http_status = 402
     default_message = "This request could go over the AI spending limit, so it was not sent."
+
+
+class NotFound(AppError):
+    code = "NOT_FOUND"
+    http_status = 404
+    default_message = "That address is not part of this app."
+
+
+class MethodNotAllowed(AppError):
+    code = "METHOD_NOT_ALLOWED"
+    http_status = 405
+    default_message = "That address does not accept this kind of request."

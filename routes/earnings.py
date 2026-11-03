@@ -24,5 +24,5 @@ def earnings(ticker):
     except AppError as err:
         return fail(err)
     except Exception:
-        log.exception("earnings failed for ticker=%s", ticker)
+        log.exception("earnings failed for ticker=%r", ticker)
         return fail(AppError())

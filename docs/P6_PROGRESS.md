@@ -8,7 +8,8 @@ Base: `dev/v2` at `c335175` (P5 accepted 2026-11-02, including the step 9 conten
 | `5d05c73` | 0: release-readiness audit, brief and roadmap (approved 2026-11-02 with Steps 1–4 authorized) |
 | `ca30613` | 1: reproducible environment (split requirements, full locks, V2 venv, second clean install) |
 | `f6e6e41` | 2: CI workflow (committed locally, not active) and `check_all` scripts |
-| this commit | 3: release runtime (`serve.py` on Waitress, loopback by default), settings validation, start-up check |
+| `fa816dc` | 3: release runtime (`serve.py` on Waitress, loopback by default), settings validation, start-up check |
+| this commit | 4: security headers and CSP, JSON API errors, request limit for every route, log hygiene, threat model |
 
 ## Resolve before next step
 
@@ -131,3 +132,28 @@ or decision.
   Evidence: `..\finance-app-v2-screenshots\P6\step-3\`.
 - **Limitation:** a graceful Ctrl+C is handled but was not exercised by an automated test on Windows.
 
+
+## Step 4 — Security hardening (F4, F5, F8; F11 and F12 found and fixed)
+
+- **Security headers on every response:** a strict CSP (`default-src 'self'`, no inline script or style, no remote
+  origin, `frame-ancestors 'none'`), plus nosniff, `X-Frame-Options: DENY`, no referrer and same-origin opener.
+- **JSON envelope for every `/api/` error:** 404 `NOT_FOUND`, 405 `METHOD_NOT_ALLOWED` (with an `Allow` header), and
+  500 `INTERNAL_ERROR` with no details. Pages keep Flask's 404.
+- **F11, found by the new tests:** chat, AI Lab and sentiment answered an over-limit body with a 500 and a logged
+  traceback. The limit is now enforced before any route runs.
+- **F12, found by the new CSP check:** `chat.js` injected a `<style>` element that the CSP blocks. Its 15 rules moved
+  unchanged to `features.css`, and a test forbids injected styles.
+- **Logs:** user values in route logs are `%r`. A test confirms no secret, signature or session reaches a log or a
+  reply.
+- **Threat model:** `docs/SECURITY.md`. The API contract lists the new error codes and the headers.
+- **QA:**
+  - the visual audit fails any screen with a CSP violation (proven by a control run that blocked fonts: 0/24);
+  - the strategy suite logs CSP entries as errors and checks the headers.
+- **Checks (self-run):**
+  - pytest 1049 passed;
+  - every browser suite through `serve.py` under the CSP: 198 / 36 / 26 / 22 / 41 / 134 / 24 (481);
+  - protected files unchanged.
+
+  Evidence: `..\finance-app-v2-screenshots\P6\step-4\`.
+- **Not done (out of scope or needing approval):** a dependency vulnerability scan (I1); a rate limit (R3, accepted
+  for the local model pending the owner); HTTPS.

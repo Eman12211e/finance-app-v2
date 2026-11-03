@@ -20,5 +20,5 @@ def snapshot(ticker):
     except AppError as err:
         return fail(err)
     except Exception:
-        log.exception("snapshot failed for ticker=%s", ticker)
+        log.exception("snapshot failed for ticker=%r", ticker)
         return fail(AppError())

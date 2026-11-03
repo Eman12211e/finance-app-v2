@@ -33,5 +33,5 @@ def get_document(doc_id):
     except AppError as err:
         return fail(err)
     except Exception:
-        log.exception("document get failed for id=%s", doc_id)
+        log.exception("document get failed for id=%r", doc_id)
         return fail(AppError())

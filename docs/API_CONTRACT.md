@@ -53,6 +53,12 @@ Every `/api/*` endpoint returns this shape. No exceptions.
 | `PROVIDER_ERROR` | 502 | Reserved for logging. Routes should fall back to demo instead of returning this when possible. |
 | `AI_UNAVAILABLE` | 503 | Chat only. Claude call failed or timed out. (Earnings never returns this; it uses fallback text.) |
 | `INTERNAL_ERROR` | 500 | Anything unexpected. Full traceback goes to the server log only. |
+| `REQUEST_TOO_LARGE` | 413 | Body over 64 KB, refused before any route runs |
+| `NOT_FOUND` | 404 | No such `/api/` address (P6) |
+| `METHOD_NOT_ALLOWED` | 405 | The `/api/` address exists but not for this method; the `Allow` header lists the methods it accepts (P6) |
+
+Every response, page or API, also carries the security headers in `docs/SECURITY.md` (a strict Content Security
+Policy, `nosniff`, no framing, no referrer).
 
 ---
 

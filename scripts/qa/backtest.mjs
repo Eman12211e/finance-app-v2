@@ -11,6 +11,7 @@ ws.onmessage = e => {
   const m = JSON.parse(e.data);
   if (m.id && pend[m.id]) return pend[m.id](m.result || m);
   if (m.method === "Runtime.exceptionThrown") errors.push(m.params.exceptionDetails.exception?.description || "exception");
+  if (m.method === "Log.entryAdded" && /Content Security Policy/i.test(m.params.entry.text)) errors.push("CSP: " + m.params.entry.text);
   if (m.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(m.params.type)) errors.push(m.params.args.map(a => a.value).join(" "));
   if (m.method === "Network.requestWillBeSent" && /^https?:/.test(m.params.request.url)) {
     hosts.add(new URL(m.params.request.url).host);
@@ -39,7 +40,7 @@ let runFixture = null;  // a committed /api/backtest/run reply (scripts/qa/fixtu
 ws.onopen = async () => {
   const { targetId } = await send("Target.createTarget", { url: "about:blank" });
   const { sessionId: s } = await send("Target.attachToTarget", { targetId, flatten: true });
-  for (const d of ["Runtime", "Network", "Page"]) await send(d + ".enable", {}, s);
+  for (const d of ["Runtime", "Network", "Page", "Log"]) await send(d + ".enable", {}, s);
   const ev = async e => { const r = await send("Runtime.evaluate", { expression: e, returnByValue: true, awaitPromise: true }, s); if (r.exceptionDetails) throw new Error(e.slice(0, 80) + " -> " + JSON.stringify(r.exceptionDetails).slice(0, 300)); return r.result.value; };
   const key = async (k, code, vk, shift) => { const text = k === "Enter" ? String.fromCharCode(13) : k === " " ? " " : undefined; for (const t of ["keyDown", "keyUp"]) await send("Input.dispatchKeyEvent", { type: t, key: k, code, windowsVirtualKeyCode: vk, modifiers: shift ? 8 : 0, text: t === "keyDown" ? text : undefined }, s); await sleep(80); };
   const waitFor = async (expr, ms = 8000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await ev(expr)) return true; await sleep(80); } return false; };
@@ -434,6 +435,7 @@ ws.onopen = async () => {
   await shotEl("chart-390-dark", ".pt-bt-chart");
   await shot("result-390-dark");
 
+  check("the page ran under the security headers and CSP", await ev(`fetch("/").then(r => [r.headers.get("content-security-policy"), r.headers.get("x-frame-options")]).then(h => !!h[0] && h[0].includes("default-src 'self'") && h[1] === "DENY")`));
   check("only the local server was contacted", [...hosts].every(h => h.startsWith("127.0.0.1")), [...hosts].join(","));
   check("no console errors or warnings", errors.filter(e => !/ERR_CONNECTION_REFUSED|Failed to fetch|Failed to load resource/.test(e)).length === 0, errors.join(" | "));
   results.forEach(r => console.log(r.join("  ")));
