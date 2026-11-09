@@ -335,13 +335,14 @@ lines cover cases the mockup did not show; they are in use.
   In and Out.
 - **Library missing:** "The chart could not load." followed by the text version.
 
-## Step 9 addendum: the chart's keyboard readout (for owner approval)
+## Step 9 addendum: the chart's keyboard readout (approved by the owner 2026-11-09)
 
 Added by the step 9 accessibility audit: the chart's per-day values (each day's close, any fill and both values of
 $10,000) were only reachable with a pointer, and neither the text version nor the tables carry them. A range control
 under the readout now steps through the days by keyboard and announces the same readout sentence (mockup 09 format).
 
-- **Label:** "Day shown in the readout"- **Singular forms (audit correction):** "Still holding {shares} shares…" and "Buy and hold bought {shares} shares…"
+- **Label:** "Day shown in the readout"
+- **Singular forms (audit correction):** "Still holding {shares} shares…" and "Buy and hold bought {shares} shares…"
   read "1 share" when one share is held or bought, as the approved text already does for "1 crossing" and "1 fill".
   Found with the skipped-entry fixture, where the rule ends holding one share.
 

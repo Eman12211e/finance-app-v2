@@ -14,7 +14,7 @@ Read this first after any context reset. Brief and decisions: `docs/P5_BRIEF.md`
 | `1495829` | 6: Trade / Test a strategy switch, setup form, results, fills, halves and states (no chart, no cards) |
 | `f89445f` | 7: the strategy chart (prices, the rule's lines, In / Out markers, value pane) |
 | `7b07360` | 8: `data/strategy_guide.json`, `GET /api/backtest/guide`, readings, explanation cards, What is this? |
-| this commit | 9: final audit, the chart's keyboard readout, 44 px phone targets, singular wording, extended browser QA |
+| `1a48c39` | 9: final audit, the chart's keyboard readout, 44 px phone targets, singular wording, extended browser QA |
 
 ## Step 2 — Backtesting engine
 
@@ -308,7 +308,7 @@ drawings 41, backtest 58 passed; `visual_audit` was stopped by a low-memory even
    by pytest), Reset and Change market from this view, 200% zoom, reduced motion, and the visual audit extended to the
    view (it was listed in the brief but not done).
 New interface text (the slider label) and the singular rule are in a marked step 9 addendum in `docs/P5_CONTENT.md`
-for owner approval.
+for owner approval. Approved by the owner 2026-11-09.
 
 **Checks (self-run; no CI):** pytest 993 passed; mutation checks engine 12/12, readings 7/7, route 6/7 (the one
 miss is the documented equivalent mutant); every-window-end audit 13,644 runs and 7,872 half runs, 0 mismatches;
